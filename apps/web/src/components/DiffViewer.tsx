@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Check,
   ChevronDown,
@@ -27,6 +27,14 @@ interface DiffLineItem {
   code: string;
   oldLine: number | null;
   newLine: number | null;
+  highlighted?: ReactNode;
+}
+
+interface SplitRow {
+  left: DiffLineItem | null;
+  leftIndex: number | null;
+  right: DiffLineItem | null;
+  rightIndex: number | null;
 }
 
 interface ParsedHunk {
@@ -35,6 +43,7 @@ interface ParsedHunk {
   oldStart: number;
   newStart: number;
   lines: DiffLineItem[];
+  splitRows?: SplitRow[];
 }
 
 interface ParsedDiffFile {
@@ -45,7 +54,16 @@ interface ParsedDiffFile {
   headerLines: string[];
   hunks: ParsedHunk[];
   binary: boolean;
+  additions: number;
+  deletions: number;
+  totalLines: number;
 }
+
+const MAX_AUTO_EXPANDED_FILES = 8;
+const INITIAL_MOUNTED_FILES = 24;
+const MOUNT_BATCH_SIZE = 24;
+const MAX_INITIAL_LINES_PER_FILE = 300;
+const MAX_HIGHLIGHT_LINE_LENGTH = 200;
 
 const KEYWORD_SET = new Set([
   'import',
@@ -93,6 +111,7 @@ const KEYWORD_SET = new Set([
 
 function highlightCode(code: string): ReactNode {
   if (!code) return ' ';
+  if (code.length > MAX_HIGHLIGHT_LINE_LENGTH) return code;
   const trimmed = code.trimStart();
   if (trimmed.startsWith('//') || trimmed.startsWith('# ')) {
     return <span className="italic opacity-60">{code}</span>;
@@ -101,6 +120,7 @@ function highlightCode(code: string): ReactNode {
   const tokens = code.split(
     /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|\b[A-Za-z_][A-Za-z0-9_]*\b|\b\d+(?:\.\d+)?\b)/g,
   );
+  if (tokens.length <= 1) return code;
 
   return tokens.map((token, idx) => {
     if (!token) return null;
@@ -119,7 +139,7 @@ function highlightCode(code: string): ReactNode {
         </span>
       );
     }
-    if (/^\d/.test(token)) {
+    if (first !== undefined && first >= '0' && first <= '9') {
       return (
         <span key={idx} className="text-accent-2">
           {token}
@@ -128,6 +148,14 @@ function highlightCode(code: string): ReactNode {
     }
     return token;
   });
+}
+
+function renderLineCode(line: DiffLineItem, allowHighlight: boolean): ReactNode {
+  if (!allowHighlight) return line.code || ' ';
+  if (line.highlighted === undefined) {
+    line.highlighted = highlightCode(line.code);
+  }
+  return line.highlighted;
 }
 
 function isMetadataNoiseLine(line: string): boolean {
@@ -164,13 +192,21 @@ function parseHunkHeader(line: string): { oldStart: number; newStart: number; la
 
 function parseDiffFiles(patch: string, files?: DiffFile[]): ParsedDiffFile[] {
   const sections: ParsedDiffFile[] = [];
+  const fileMetaByPath = new Map<string, DiffFile>();
+  if (files) {
+    for (const file of files) {
+      fileMetaByPath.set(file.path, file);
+      if (file.oldPath) fileMetaByPath.set(file.oldPath, file);
+    }
+  }
+
   let current: ParsedDiffFile | null = null;
   let currentHunk: ParsedHunk | null = null;
   let oldLine = 1;
   let newLine = 1;
 
   const startSection = (path: string, oldPath: string | null, index: number, rawDiffLine?: string) => {
-    const meta = files?.[index];
+    const meta = fileMetaByPath.get(path) ?? (oldPath ? fileMetaByPath.get(oldPath) : undefined) ?? files?.[index];
     const resolvedPath = meta?.path ?? path;
     const resolvedOldPath = meta?.oldPath ?? oldPath;
     const key = resolvedPath || `file-${index}`;
@@ -182,6 +218,9 @@ function parseDiffFiles(patch: string, files?: DiffFile[]): ParsedDiffFile[] {
       headerLines: rawDiffLine ? [rawDiffLine] : [`diff --git a/${resolvedPath} b/${resolvedPath}`],
       hunks: [],
       binary: meta?.binary ?? false,
+      additions: meta?.additions ?? 0,
+      deletions: meta?.deletions ?? 0,
+      totalLines: 0,
     };
     currentHunk = null;
     sections.push(current);
@@ -309,6 +348,9 @@ function parseDiffFiles(patch: string, files?: DiffFile[]): ParsedDiffFile[] {
         section.status === 'deleted' ? '+++ /dev/null' : `+++ b/${section.path}`,
       );
     }
+    let calcAdditions = 0;
+    let calcDeletions = 0;
+    let totalLines = 0;
     for (const hunk of section.hunks) {
       while (
         hunk.lines.length > 0 &&
@@ -317,6 +359,16 @@ function parseDiffFiles(patch: string, files?: DiffFile[]): ParsedDiffFile[] {
       ) {
         hunk.lines.pop();
       }
+      totalLines += hunk.lines.length;
+      for (const line of hunk.lines) {
+        if (line.kind === 'add') calcAdditions += 1;
+        else if (line.kind === 'del') calcDeletions += 1;
+      }
+    }
+    section.totalLines = totalLines;
+    if (section.additions === 0 && section.deletions === 0) {
+      section.additions = calcAdditions;
+      section.deletions = calcDeletions;
     }
   }
 
@@ -356,14 +408,9 @@ function buildSingleLinePatch(
   return `${[...section.headerLines, hunk.rawHeader, ...bodyLines].join('\n')}\n`;
 }
 
-interface SplitRow {
-  left: DiffLineItem | null;
-  leftIndex: number | null;
-  right: DiffLineItem | null;
-  rightIndex: number | null;
-}
-
-function buildSplitRows(lines: DiffLineItem[]): SplitRow[] {
+function getSplitRows(hunk: ParsedHunk): SplitRow[] {
+  if (hunk.splitRows) return hunk.splitRows;
+  const lines = hunk.lines;
   const rows: SplitRow[] = [];
   let idx = 0;
   while (idx < lines.length) {
@@ -393,29 +440,8 @@ function buildSplitRows(lines: DiffLineItem[]): SplitRow[] {
       });
     }
   }
+  hunk.splitRows = rows;
   return rows;
-}
-
-function fileStats(section: ParsedDiffFile, files?: DiffFile[]) {
-  const meta = files?.find(
-    (file) => file.path === section.path || file.oldPath === section.path,
-  );
-  if (meta) {
-    return {
-      additions: meta.additions,
-      deletions: meta.deletions,
-      status: meta.status ?? section.status,
-    };
-  }
-  let additions = 0;
-  let deletions = 0;
-  for (const hunk of section.hunks) {
-    for (const line of hunk.lines) {
-      if (line.kind === 'add') additions += 1;
-      else if (line.kind === 'del') deletions += 1;
-    }
-  }
-  return { additions, deletions, status: section.status };
 }
 
 function statusBadge(status: FileKind | null) {
@@ -456,17 +482,39 @@ export function DiffViewer({
 }) {
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<'unified' | 'split'>('unified');
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const sections = useMemo(() => parseDiffFiles(patch, files), [patch, files]);
+
+  const [collapsed, setCollapsed] = useState<Set<string>>(() =>
+    sections.length > MAX_AUTO_EXPANDED_FILES
+      ? new Set(sections.slice(MAX_AUTO_EXPANDED_FILES).map((s) => s.key))
+      : new Set(),
+  );
+  const [expandedLongFiles, setExpandedLongFiles] = useState<Set<string>>(new Set());
+  const [mountedCount, setMountedCount] = useState(INITIAL_MOUNTED_FILES);
   const [highlight, setHighlight] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const sections = useMemo(() => parseDiffFiles(patch, files), [patch, files]);
+
+  useEffect(() => {
+    setCollapsed(
+      sections.length > MAX_AUTO_EXPANDED_FILES
+        ? new Set(sections.slice(MAX_AUTO_EXPANDED_FILES).map((s) => s.key))
+        : new Set(),
+    );
+    setExpandedLongFiles(new Set());
+    setMountedCount(INITIAL_MOUNTED_FILES);
+  }, [sections]);
 
   useEffect(() => {
     if (!reveal) return;
-    const target = sections.find(
+    const targetIndex = sections.findIndex(
       (section) => section.path === reveal.path || section.oldPath === reveal.path,
     );
-    if (!target) return;
+    if (targetIndex < 0) return;
+    const target = sections[targetIndex]!;
+
+    if (targetIndex >= mountedCount) {
+      setMountedCount(Math.min(sections.length, targetIndex + MOUNT_BATCH_SIZE));
+    }
 
     setCollapsed((previous) => {
       if (!previous.has(target.key)) return previous;
@@ -495,7 +543,7 @@ export function DiffViewer({
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
     };
-  }, [reveal, sections]);
+  }, [reveal, sections, mountedCount]);
 
   if (!patch.trim()) {
     if (binary) {
@@ -524,6 +572,9 @@ export function DiffViewer({
   };
 
   const canPartialStage = Boolean(stageMode && onApplyPatch);
+  const visibleSections =
+    sections.length > mountedCount ? sections.slice(0, mountedCount) : sections;
+  const allowSyntaxHighlight = sections.length <= 40;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -542,7 +593,7 @@ export function DiffViewer({
                 'inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition',
                 viewMode === 'unified' ? 'bg-raised text-ink' : 'text-muted hover:text-ink',
               )}
-              onClick={() => setViewMode('unified')}
+              onClick={() => startTransition(() => setViewMode('unified'))}
               title="Unified diff"
             >
               <Rows3 className="h-3 w-3" />
@@ -554,7 +605,7 @@ export function DiffViewer({
                 'inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition',
                 viewMode === 'split' ? 'bg-raised text-ink' : 'text-muted hover:text-ink',
               )}
-              onClick={() => setViewMode('split')}
+              onClick={() => startTransition(() => setViewMode('split'))}
               title="Side-by-side split diff"
             >
               <Columns2 className="h-3 w-3" />
@@ -566,11 +617,13 @@ export function DiffViewer({
               type="button"
               className="btn btn-ghost h-7 text-xs"
               onClick={() =>
-                setCollapsed((previous) =>
-                  previous.size >= sections.length
-                    ? new Set()
-                    : new Set(sections.map((section) => section.key)),
-                )
+                startTransition(() => {
+                  setCollapsed((previous) =>
+                    previous.size >= sections.length
+                      ? new Set()
+                      : new Set(sections.map((section) => section.key)),
+                  );
+                })
               }
             >
               <ChevronDown className="h-3.5 w-3.5" />
@@ -593,15 +646,29 @@ export function DiffViewer({
         </div>
       </div>
 
-      <div ref={scrollRef} className="scrollbar-thin min-h-0 flex-1 overflow-auto bg-canvas/70 p-2.5">
+      <div
+        ref={scrollRef}
+        className="scrollbar-thin min-h-0 flex-1 overflow-auto bg-canvas/70 p-2.5"
+        onScroll={(event) => {
+          if (mountedCount >= sections.length) return;
+          const el = event.currentTarget;
+          if (el.scrollTop + el.clientHeight >= el.scrollHeight - 480) {
+            setMountedCount((prev) => Math.min(sections.length, prev + MOUNT_BATCH_SIZE));
+          }
+        }}
+      >
         <div className="space-y-2.5">
-          {sections.map((section, sectionIndex) => {
+          {visibleSections.map((section, sectionIndex) => {
             const isCollapsed = collapsed.has(section.key);
-            const stats = fileStats(section, files);
             const displayLabel =
               section.oldPath && section.oldPath !== section.path
                 ? `${section.oldPath} → ${section.path}`
                 : section.path || 'Patch';
+            const isLongFile = section.totalLines > MAX_INITIAL_LINES_PER_FILE;
+            const showFullLongFile = !isLongFile || expandedLongFiles.has(section.key);
+            let remainingLineBudget = showFullLongFile
+              ? Number.POSITIVE_INFINITY
+              : MAX_INITIAL_LINES_PER_FILE;
 
             return (
               <section
@@ -620,7 +687,7 @@ export function DiffViewer({
                 >
                   <ChevronDown
                     className={cn(
-                      'h-4 w-4 shrink-0 text-muted transition-transform duration-200',
+                      'h-4 w-4 shrink-0 text-muted transition-transform duration-150',
                       isCollapsed && '-rotate-90',
                     )}
                   />
@@ -629,22 +696,17 @@ export function DiffViewer({
                     text={displayLabel}
                     className="min-w-0 flex-1 text-left font-mono text-xs text-ink"
                   />
-                  {statusBadge(stats.status)}
+                  {statusBadge(section.status)}
                   {section.binary ? <span className="badge">binary</span> : null}
-                  {stats.additions > 0 ? (
-                    <span className="diff-additions">+{stats.additions}</span>
+                  {section.additions > 0 ? (
+                    <span className="diff-additions">+{section.additions}</span>
                   ) : null}
-                  {stats.deletions > 0 ? (
-                    <span className="diff-deletions">-{stats.deletions}</span>
+                  {section.deletions > 0 ? (
+                    <span className="diff-deletions">-{section.deletions}</span>
                   ) : null}
                 </button>
 
-                <div
-                  className={cn(
-                    'grid transition-[grid-template-rows] duration-300 ease-out',
-                    isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
-                  )}
-                >
+                {!isCollapsed ? (
                   <div className="overflow-hidden">
                     {section.binary ? (
                       <div className="border-t border-edge/70 px-3 py-5 text-center text-xs text-muted">
@@ -652,15 +714,61 @@ export function DiffViewer({
                       </div>
                     ) : (
                       <div className="border-t border-edge/70">
-                        {section.hunks.map((hunk, hunkIdx) => (
-                          <div key={`${hunkIdx}-${hunk.rawHeader}`}>
-                            {(section.hunks.length > 1 || canPartialStage) ? (
-                              <div className="diff-hunk flex items-center justify-between gap-2 px-3 py-1 font-mono text-[11px]">
-                                <span className="truncate">{hunk.label}</span>
-                                {canPartialStage && onApplyPatch ? (
-                                  <div className="flex items-center gap-1">
-                                    {stageMode === 'unstaged' ? (
-                                      <>
+                        {section.hunks.map((hunk, hunkIdx) => {
+                          if (remainingLineBudget <= 0) return null;
+                          const unifiedLines =
+                            hunk.lines.length > remainingLineBudget
+                              ? hunk.lines.slice(0, remainingLineBudget)
+                              : hunk.lines;
+                          const allSplitRows = viewMode === 'split' ? getSplitRows(hunk) : [];
+                          const splitRows =
+                            viewMode === 'split' && allSplitRows.length > remainingLineBudget
+                              ? allSplitRows.slice(0, remainingLineBudget)
+                              : allSplitRows;
+                          remainingLineBudget -=
+                            viewMode === 'split' ? splitRows.length : unifiedLines.length;
+
+                          return (
+                            <div key={`${hunkIdx}-${hunk.rawHeader}`}>
+                              {(section.hunks.length > 1 || canPartialStage) ? (
+                                <div className="diff-hunk flex items-center justify-between gap-2 px-3 py-1 font-mono text-[11px]">
+                                  <span className="truncate">{hunk.label}</span>
+                                  {canPartialStage && onApplyPatch ? (
+                                    <div className="flex items-center gap-1">
+                                      {stageMode === 'unstaged' ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            className="btn h-5 px-1.5 text-[10px]"
+                                            onClick={() =>
+                                              onApplyPatch({
+                                                patch: buildHunkPatch(section, hunk),
+                                                cached: true,
+                                                reverse: false,
+                                                label: 'Hunk staged.',
+                                              })
+                                            }
+                                          >
+                                            <Plus className="h-3 w-3 text-success" />
+                                            Stage hunk
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="btn h-5 px-1.5 text-[10px] hover:text-danger"
+                                            onClick={() =>
+                                              onApplyPatch({
+                                                patch: buildHunkPatch(section, hunk),
+                                                cached: false,
+                                                reverse: true,
+                                                label: 'Hunk discarded.',
+                                              })
+                                            }
+                                          >
+                                            <Undo2 className="h-3 w-3 text-danger" />
+                                            Discard hunk
+                                          </button>
+                                        </>
+                                      ) : (
                                         <button
                                           type="button"
                                           className="btn h-5 px-1.5 text-[10px]"
@@ -668,85 +776,93 @@ export function DiffViewer({
                                             onApplyPatch({
                                               patch: buildHunkPatch(section, hunk),
                                               cached: true,
-                                              reverse: false,
-                                              label: 'Hunk staged.',
-                                            })
-                                          }
-                                        >
-                                          <Plus className="h-3 w-3 text-success" />
-                                          Stage hunk
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="btn h-5 px-1.5 text-[10px] hover:text-danger"
-                                          onClick={() =>
-                                            onApplyPatch({
-                                              patch: buildHunkPatch(section, hunk),
-                                              cached: false,
                                               reverse: true,
-                                              label: 'Hunk discarded.',
+                                              label: 'Hunk unstaged.',
                                             })
                                           }
                                         >
-                                          <Undo2 className="h-3 w-3 text-danger" />
-                                          Discard hunk
+                                          <Minus className="h-3 w-3 text-warning" />
+                                          Unstage hunk
                                         </button>
-                                      </>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        className="btn h-5 px-1.5 text-[10px]"
-                                        onClick={() =>
-                                          onApplyPatch({
-                                            patch: buildHunkPatch(section, hunk),
-                                            cached: true,
-                                            reverse: true,
-                                            label: 'Hunk unstaged.',
-                                          })
-                                        }
-                                      >
-                                        <Minus className="h-3 w-3 text-warning" />
-                                        Unstage hunk
-                                      </button>
-                                    )}
-                                  </div>
-                                ) : null}
-                              </div>
-                            ) : null}
+                                      )}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : null}
 
-                            {viewMode === 'unified' ? (
-                              hunk.lines.map((line, lineIdx) => {
-                                const className =
-                                  line.kind === 'add'
-                                    ? 'diff-add'
-                                    : line.kind === 'del'
-                                      ? 'diff-del'
-                                      : 'text-muted';
-                                const isChanged = line.kind === 'add' || line.kind === 'del';
-                                return (
-                                  <div
-                                    key={`${lineIdx}-${line.rawText.slice(0, 12)}`}
-                                    className={cn(
-                                      'group diff-line flex items-start gap-2',
-                                      className,
-                                    )}
-                                  >
-                                    <span className="w-8 shrink-0 select-none text-right text-[10px] text-faint/70">
-                                      {line.oldLine ?? ''}
-                                    </span>
-                                    <span className="w-8 shrink-0 select-none text-right text-[10px] text-faint/70">
-                                      {line.newLine ?? ''}
-                                    </span>
-                                    <span className="w-3 shrink-0 select-none text-center opacity-70">
-                                      {line.kind === 'add' ? '+' : line.kind === 'del' ? '-' : ' '}
-                                    </span>
-                                    <span className="min-w-0 flex-1">
-                                      {highlightCode(line.code)}
-                                    </span>
-                                    {canPartialStage && isChanged && onApplyPatch ? (
-                                      <span className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
-                                        {stageMode === 'unstaged' ? (
-                                          <>
+                              {viewMode === 'unified' ? (
+                                unifiedLines.map((line, lineIdx) => {
+                                  const className =
+                                    line.kind === 'add'
+                                      ? 'diff-add'
+                                      : line.kind === 'del'
+                                        ? 'diff-del'
+                                        : 'text-muted';
+                                  const isChanged = line.kind === 'add' || line.kind === 'del';
+                                  return (
+                                    <div
+                                      key={lineIdx}
+                                      className={cn(
+                                        'group diff-line flex items-start gap-2',
+                                        className,
+                                      )}
+                                    >
+                                      <span className="w-8 shrink-0 select-none text-right text-[10px] text-faint/70">
+                                        {line.oldLine ?? ''}
+                                      </span>
+                                      <span className="w-8 shrink-0 select-none text-right text-[10px] text-faint/70">
+                                        {line.newLine ?? ''}
+                                      </span>
+                                      <span className="w-3 shrink-0 select-none text-center opacity-70">
+                                        {line.kind === 'add' ? '+' : line.kind === 'del' ? '-' : ' '}
+                                      </span>
+                                      <span className="min-w-0 flex-1">
+                                        {renderLineCode(line, allowSyntaxHighlight)}
+                                      </span>
+                                      {canPartialStage && isChanged && onApplyPatch ? (
+                                        <span className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                                          {stageMode === 'unstaged' ? (
+                                            <>
+                                              <button
+                                                type="button"
+                                                className="rounded border border-edge bg-panel/90 px-1.5 py-0 text-[10px] text-ink hover:border-accent"
+                                                onClick={() =>
+                                                  onApplyPatch({
+                                                    patch: buildSingleLinePatch(
+                                                      section,
+                                                      hunk,
+                                                      lineIdx,
+                                                      false,
+                                                    ),
+                                                    cached: true,
+                                                    reverse: false,
+                                                    label: 'Line staged.',
+                                                  })
+                                                }
+                                              >
+                                                + Stage line
+                                              </button>
+                                              <button
+                                                type="button"
+                                                className="rounded border border-edge bg-panel/90 px-1.5 py-0 text-[10px] text-danger hover:border-danger"
+                                                onClick={() =>
+                                                  onApplyPatch({
+                                                    patch: buildSingleLinePatch(
+                                                      section,
+                                                      hunk,
+                                                      lineIdx,
+                                                      true,
+                                                    ),
+                                                    cached: false,
+                                                    reverse: true,
+                                                    label: 'Line discarded.',
+                                                  })
+                                                }
+                                              >
+                                                Discard
+                                              </button>
+                                            </>
+                                          ) : (
                                             <button
                                               type="button"
                                               className="rounded border border-edge bg-panel/90 px-1.5 py-0 text-[10px] text-ink hover:border-accent"
@@ -756,118 +872,116 @@ export function DiffViewer({
                                                     section,
                                                     hunk,
                                                     lineIdx,
-                                                    false,
-                                                  ),
-                                                  cached: true,
-                                                  reverse: false,
-                                                  label: 'Line staged.',
-                                                })
-                                              }
-                                            >
-                                              + Stage line
-                                            </button>
-                                            <button
-                                              type="button"
-                                              className="rounded border border-edge bg-panel/90 px-1.5 py-0 text-[10px] text-danger hover:border-danger"
-                                              onClick={() =>
-                                                onApplyPatch({
-                                                  patch: buildSingleLinePatch(
-                                                    section,
-                                                    hunk,
-                                                    lineIdx,
                                                     true,
                                                   ),
-                                                  cached: false,
+                                                  cached: true,
                                                   reverse: true,
-                                                  label: 'Line discarded.',
+                                                  label: 'Line unstaged.',
                                                 })
                                               }
                                             >
-                                              Discard
+                                              - Unstage line
                                             </button>
-                                          </>
-                                        ) : (
-                                          <button
-                                            type="button"
-                                            className="rounded border border-edge bg-panel/90 px-1.5 py-0 text-[10px] text-ink hover:border-accent"
-                                            onClick={() =>
-                                              onApplyPatch({
-                                                patch: buildSingleLinePatch(
-                                                  section,
-                                                  hunk,
-                                                  lineIdx,
-                                                  true,
-                                                ),
-                                                cached: true,
-                                                reverse: true,
-                                                label: 'Line unstaged.',
-                                              })
-                                            }
-                                          >
-                                            - Unstage line
-                                          </button>
+                                          )}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="divide-y divide-edge/30">
+                                  {splitRows.map((row, rowIdx) => (
+                                    <div
+                                      key={rowIdx}
+                                      className="grid grid-cols-2 divide-x divide-edge/50"
+                                    >
+                                      <div
+                                        className={cn(
+                                          'diff-line flex items-start gap-2',
+                                          row.left?.kind === 'del'
+                                            ? 'diff-del'
+                                            : 'text-muted',
                                         )}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                );
-                              })
-                            ) : (
-                              <div className="divide-y divide-edge/30">
-                                {buildSplitRows(hunk.lines).map((row, rowIdx) => (
-                                  <div
-                                    key={rowIdx}
-                                    className="grid grid-cols-2 divide-x divide-edge/50"
-                                  >
-                                    <div
-                                      className={cn(
-                                        'diff-line flex items-start gap-2',
-                                        row.left?.kind === 'del'
-                                          ? 'diff-del'
-                                          : 'text-muted',
-                                      )}
-                                    >
-                                      <span className="w-7 shrink-0 select-none text-right text-[10px] text-faint/70">
-                                        {row.left?.oldLine ?? ''}
-                                      </span>
-                                      <span className="w-3 shrink-0 select-none text-center opacity-70">
-                                        {row.left?.kind === 'del' ? '-' : ' '}
-                                      </span>
-                                      <span className="min-w-0 flex-1">
-                                        {row.left ? highlightCode(row.left.code) : ' '}
-                                      </span>
+                                      >
+                                        <span className="w-7 shrink-0 select-none text-right text-[10px] text-faint/70">
+                                          {row.left?.oldLine ?? ''}
+                                        </span>
+                                        <span className="w-3 shrink-0 select-none text-center opacity-70">
+                                          {row.left?.kind === 'del' ? '-' : ' '}
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                          {row.left
+                                            ? renderLineCode(row.left, allowSyntaxHighlight)
+                                            : ' '}
+                                        </span>
+                                      </div>
+                                      <div
+                                        className={cn(
+                                          'diff-line flex items-start gap-2',
+                                          row.right?.kind === 'add'
+                                            ? 'diff-add'
+                                            : 'text-muted',
+                                        )}
+                                      >
+                                        <span className="w-7 shrink-0 select-none text-right text-[10px] text-faint/70">
+                                          {row.right?.newLine ?? ''}
+                                        </span>
+                                        <span className="w-3 shrink-0 select-none text-center opacity-70">
+                                          {row.right?.kind === 'add' ? '+' : ' '}
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                          {row.right
+                                            ? renderLineCode(row.right, allowSyntaxHighlight)
+                                            : ' '}
+                                        </span>
+                                      </div>
                                     </div>
-                                    <div
-                                      className={cn(
-                                        'diff-line flex items-start gap-2',
-                                        row.right?.kind === 'add'
-                                          ? 'diff-add'
-                                          : 'text-muted',
-                                      )}
-                                    >
-                                      <span className="w-7 shrink-0 select-none text-right text-[10px] text-faint/70">
-                                        {row.right?.newLine ?? ''}
-                                      </span>
-                                      <span className="w-3 shrink-0 select-none text-center opacity-70">
-                                        {row.right?.kind === 'add' ? '+' : ' '}
-                                      </span>
-                                      <span className="min-w-0 flex-1">
-                                        {row.right ? highlightCode(row.right.code) : ' '}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {!showFullLongFile ? (
+                          <div className="border-t border-edge/60 bg-canvas/40 px-3 py-2 text-center">
+                            <button
+                              type="button"
+                              className="btn h-6 text-xs"
+                              onClick={() =>
+                                setExpandedLongFiles((prev) => {
+                                  const next = new Set(prev);
+                                  next.add(section.key);
+                                  return next;
+                                })
+                              }
+                            >
+                              Show all {section.totalLines} lines (+
+                              {section.totalLines - MAX_INITIAL_LINES_PER_FILE} more)
+                            </button>
                           </div>
-                        ))}
+                        ) : null}
                       </div>
                     )}
                   </div>
-                </div>
+                ) : null}
               </section>
             );
           })}
+
+          {mountedCount < sections.length ? (
+            <div className="py-2 text-center">
+              <button
+                type="button"
+                className="btn h-7 text-xs"
+                onClick={() =>
+                  setMountedCount((prev) => Math.min(sections.length, prev + MOUNT_BATCH_SIZE * 2))
+                }
+              >
+                Show more files ({sections.length - mountedCount} remaining)
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

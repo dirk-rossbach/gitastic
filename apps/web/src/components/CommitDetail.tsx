@@ -36,6 +36,7 @@ export function CommitDetail({ hash }: { hash: string }) {
   const [branchName, setBranchName] = useState('');
   const [copied, setCopied] = useState(false);
   const [diffReveal, setDiffReveal] = useState<DiffReveal | null>(null);
+  const [showAllBadges, setShowAllBadges] = useState(false);
 
   if (detail.isLoading) return <LoadingState label="Loading commit..." />;
   if (detail.isError || !detail.data) {
@@ -44,6 +45,7 @@ export function CommitDetail({ hash }: { hash: string }) {
 
   const { commit, files, patch, binary, tooLarge } = detail.data;
   const remoteProvider = providerQuery.data?.remote ?? null;
+  const visibleBadges = showAllBadges || files.length <= 24 ? files : files.slice(0, 24);
 
   const cherryPick = async () => {
     const result = await run(() => api.cherryPick([commit.hash]), 'Commit cherry-picked.');
@@ -54,7 +56,7 @@ export function CommitDetail({ hash }: { hash: string }) {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-panel/60 backdrop-blur-xl">
+    <div className="flex h-full min-h-0 flex-col bg-panel/85">
       <div className="shrink-0 border-b border-edge p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -151,7 +153,7 @@ export function CommitDetail({ hash }: { hash: string }) {
       {files.length > 0 ? (
         <div className="shrink-0 border-b border-edge px-3 py-2">
           <div className="scrollbar-thin flex max-h-24 flex-wrap gap-1 overflow-auto">
-            {files.map((file) => (
+            {visibleBadges.map((file) => (
               <button
                 key={`${file.path}-${file.status}`}
                 type="button"
@@ -164,6 +166,15 @@ export function CommitDetail({ hash }: { hash: string }) {
                 {file.deletions > 0 ? <span className="text-danger">-{file.deletions}</span> : null}
               </button>
             ))}
+            {files.length > 24 && !showAllBadges ? (
+              <button
+                type="button"
+                className="badge badge-accent cursor-pointer"
+                onClick={() => setShowAllBadges(true)}
+              >
+                +{files.length - 24} more files
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
