@@ -1,0 +1,195 @@
+@import 'tailwindcss';
+
+:root,
+[data-theme='dark'] {
+  --canvas: #0b0e14;
+  --panel: #11151d;
+  --raised: #191e28;
+  --edge: #2e3543;
+  --ink: #e6ebf4;
+  --muted: #949fb2;
+  --faint: #606b7e;
+  --accent: #60a5fa;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --canvas: #f6f7f9;
+  --panel: #ffffff;
+  --raised: #f0f3f7;
+  --edge: #d4dae2;
+  --ink: #161b23;
+  --muted: #525c6b;
+  --faint: #808b9a;
+  --accent: #2563eb;
+  --success: #059669;
+  --warning: #b45309;
+  --danger: #dc2626;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-raised: var(--raised);
+  --color-edge: var(--edge);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
+  --shadow-panel: 0 10px 40px rgb(0 0 0 / 0.25);
+}
+
+@layer base {
+  * {
+    border-color: var(--edge);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+
+  *:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 80%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-edge bg-raised px-3 py-1.5 text-sm font-medium text-ink transition hover:border-faint hover:bg-edge disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply border-accent bg-accent text-canvas hover:border-accent hover:bg-accent/90;
+  }
+
+  .btn-danger {
+    @apply border-danger/40 bg-danger/10 text-danger hover:border-danger hover:bg-danger/20;
+  }
+
+  .btn-ghost {
+    @apply border-transparent bg-transparent hover:bg-raised;
+  }
+
+  .btn-icon {
+    @apply h-8 w-8 rounded-md border border-transparent p-0 text-muted hover:bg-raised hover:text-ink;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-edge bg-canvas px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none;
+  }
+
+  .select {
+    @apply rounded-md border border-edge bg-canvas px-2.5 py-1.5 text-sm text-ink focus:border-accent focus:outline-none;
+  }
+
+  .card {
+    @apply rounded-lg border border-edge bg-panel;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full border border-edge bg-raised px-2 py-0.5 text-[11px] font-medium text-muted;
+  }
+
+  .badge-accent {
+    @apply border-accent/40 bg-accent/10 text-accent;
+  }
+
+  .badge-success {
+    @apply border-success/40 bg-success/10 text-success;
+  }
+
+  .badge-danger {
+    @apply border-danger/40 bg-danger/10 text-danger;
+  }
+
+  .nav-item {
+    @apply flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-muted transition hover:bg-raised hover:text-ink;
+  }
+
+  .nav-item-active {
+    @apply bg-raised text-ink;
+  }
+
+  .panel-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-faint;
+  }
+
+  .mono {
+    @apply font-mono;
+  }
+
+  .diff-line {
+    @apply whitespace-pre-wrap break-all px-3 font-mono text-xs leading-5;
+  }
+
+  .diff-add {
+    @apply bg-success/10 text-success;
+  }
+
+  .diff-del {
+    @apply bg-danger/10 text-danger;
+  }
+
+  .diff-hunk {
+    @apply bg-accent/10 text-accent;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded bg-raised;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--edge) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--edge);
+    border-radius: 999px;
+    border: 2px solid var(--canvas);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: var(--faint);
+  }
+}
