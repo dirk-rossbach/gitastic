@@ -9,28 +9,6 @@
 
 ---
 
-## Screenshots
-
-### Welcome Screen — Open Local or Clone from Remote
-![Welcome Screen](docs/screenshots/welcome.png)
-
-### Animated Branch Graph Timeline & Grouped Commit Diffs (`Gorgeous` Style)
-![Timeline & Commit Diff](docs/screenshots/timeline.png)
-
-### Side-by-Side Split Diff, Syntax Highlighting & Hunk / Single-Line Staging (`Synthwave` Style)
-![Split Diff & Partial Staging in Synthwave Style](docs/screenshots/diff-split-synthwave.png)
-
-### Interactive Block-by-Block Merge Conflict Resolver
-![Merge Conflict Resolver](docs/screenshots/conflicts.png)
-
-### Instant Command Palette (`Ctrl + P` / `⌘P` / `⌘K`)
-![Command Palette](docs/screenshots/command-palette.png)
-
-### Settings Overlay — Styles (`Gorgeous`, `Synthwave`, `Focus`), Modes, Git Identity, Tokens & SSH Keys
-![Settings](docs/screenshots/settings.png)
-
----
-
 ## Highlights & Features
 
 ### 1. Native Rust Desktop App + Local Web Mode
@@ -133,3 +111,19 @@ docs/            Screenshots and documentation assets
 If you enjoy using **Gitastic**, consider supporting its development via GitHub Sponsors:
 
 - **[♥ Sponsor @dirk-rossbach on GitHub](https://github.com/sponsors/dirk-rossbach)**
+
+---
+
+## Screenshots
+
+| Welcome Screen (`Gorgeous` Style) | Timeline & Grouped Commit Diffs (`Gorgeous` Style) |
+| :---: | :---: |
+| ![Welcome Screen](docs/screenshots/welcome.png) | ![Timeline & Commit Diff](docs/screenshots/timeline.png) |
+
+| Split Diff & Partial Staging (`Synthwave` Style) | Interactive Merge Conflict Resolver |
+| :---: | :---: |
+| ![Split Diff in Synthwave Style](docs/screenshots/diff-split-synthwave.png) | ![Merge Conflict Resolver](docs/screenshots/conflicts.png) |
+
+| Command Palette (`Ctrl + P` / `⌘P`) | Settings Overlay (Styles, Modes, Identity & SSH) |
+| :---: | :---: |
+| ![Command Palette](docs/screenshots/command-palette.png) | ![Settings](docs/screenshots/settings.png) |
