@@ -13,6 +13,7 @@ import type {
   Stash,
   Status,
   Tag,
+  Worktree,
 } from '@gitastic/shared';
 import { COMMIT_LOG_FORMAT } from './parse';
 import { parseStatusV2, combineDiffFiles } from './parse';
@@ -279,4 +280,50 @@ export function applyOperation(status: Status, operation: OperationKind | null):
 
 export async function changedFiles(runner: GitRunner, repoPath: string): Promise<FileStatus[]> {
   return (await getStatus(runner, repoPath)).files;
+}
+
+export async function listWorktrees(runner: GitRunner, repoPath: string): Promise<Worktree[]> {
+  const out = await runner.run(repoPath, ['worktree', 'list', '--porcelain'], {
+    allowFail: true,
+  });
+  if (out.exitCode !== 0) return [];
+  const blocks = out.stdout.trim().split(/\n\n+/);
+  const worktrees: Worktree[] = [];
+
+  blocks.forEach((block, index) => {
+    const lines = block.split('\n').map((line) => line.trim());
+    let wtPath = '';
+    let head = '';
+    let branch: string | null = null;
+    let bare = false;
+    let detached = false;
+    let locked = false;
+    let prunable = false;
+
+    for (const line of lines) {
+      if (line.startsWith('worktree ')) wtPath = line.slice('worktree '.length).trim();
+      else if (line.startsWith('HEAD ')) head = line.slice('HEAD '.length).trim();
+      else if (line.startsWith('branch ')) {
+        branch = line.slice('branch '.length).trim().replace(/^refs\/heads\//, '');
+      } else if (line === 'bare') bare = true;
+      else if (line === 'detached') detached = true;
+      else if (line.startsWith('locked')) locked = true;
+      else if (line.startsWith('prunable')) prunable = true;
+    }
+
+    if (wtPath) {
+      worktrees.push({
+        path: wtPath,
+        head,
+        branch,
+        bare,
+        detached,
+        locked,
+        prunable,
+        isMain: index === 0,
+      });
+    }
+  });
+
+  return worktrees;
 }

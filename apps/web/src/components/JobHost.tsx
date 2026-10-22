@@ -36,7 +36,7 @@ export function JobHost() {
   const terminal = ['done', 'error', 'cancelled'].includes(job.status);
 
   return (
-    <div className="fixed bottom-4 right-4 z-[60] w-[min(30rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-edge bg-panel shadow-panel">
+    <div className="fixed bottom-4 right-4 z-[60] w-[min(30rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-edge/80 bg-panel/90 shadow-panel backdrop-blur-xl">
       <div className="flex items-center gap-3 border-b border-edge px-3 py-2">
         {terminal ? (
           <span

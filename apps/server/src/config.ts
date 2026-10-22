@@ -18,18 +18,20 @@ function resolveDirectory(input: string): string {
 }
 
 export const homeDir = resolveDirectory(process.env.GITASTIC_HOME ?? os.homedir());
+export const rootDir = path.parse(homeDir).root;
 export const configDir = resolveDirectory(process.env.GITASTIC_CONFIG_DIR ?? paths.config);
 export const dataDir = resolveDirectory(process.env.GITASTIC_DATA_DIR ?? paths.data);
 export const configFile = path.join(configDir, 'config.json');
 
 const defaults: AppConfig = {
   theme: 'dark',
+  uiStyle: 'gorgeous',
   gitPath: 'git',
   editor: '',
   pullStrategy: 'ff-only',
   diffContext: 3,
   confirmDestructive: true,
-  repoRoots: [homeDir],
+  repoRoots: [rootDir],
   recentRepos: [],
 };
 
@@ -43,9 +45,9 @@ export async function loadConfig(): Promise<AppConfig> {
 
   const parsed = AppConfigSchema.safeParse({ ...defaults, ...(stored as object) });
   const config = parsed.success ? parsed.data : defaults;
-  config.repoRoots = [homeDir];
+  config.repoRoots = [rootDir];
   config.recentRepos = config.recentRepos
-    .filter((repo) => isPathInside(homeDir, repo.path))
+    .filter((repo) => isPathInside(rootDir, repo.path))
     .slice(0, 20);
   return config;
 }
@@ -58,7 +60,7 @@ export async function saveConfig(config: AppConfig): Promise<void> {
 }
 
 export async function updateSettings(config: AppConfig, patch: Settings): Promise<AppConfig> {
-  const next: AppConfig = { ...config, ...patch, repoRoots: [homeDir] };
+  const next: AppConfig = { ...config, ...patch, repoRoots: [rootDir] };
   await saveConfig(next);
   return next;
 }

@@ -1,111 +1,135 @@
-# Gitastic
+# Gitastic 1.0
 
-Gitastic is a local web-based Git client. It runs a small Fastify server on loopback, uses the system Git CLI for every repository operation, and serves a React UI for history, changes, branches, tags, remotes, merges, stashes, blame and conflict resolution.
+**Gitastic** is a fast, native local Git client for macOS (powered by **Tauri v2 + Rust**) that also runs as a local loopback web app. It combines a high-contrast, modern developer UI with deep Git power features — without cloud accounts, telemetry, or storing plaintext tokens.
 
-There are no accounts, no cloud service and no provider tokens. Git uses your existing credential helper, SSH agent and commit-signing configuration.
+[![Version](https://img.shields.io/badge/version-1.0.0-38bdf8?style=flat-square)](#)
+[![Built with Tauri](https://img.shields.io/badge/Tauri_v2-Rust-ff2a85?style=flat-square)](#)
+[![React 19](https://img.shields.io/badge/React_19-Tailwind_CSS_4-a78bfa?style=flat-square)](#)
+[![Sponsor](https://img.shields.io/badge/%E2%99%A5_Sponsor-dirk--rossbach-fb7185?style=flat-square)](https://github.com/sponsors/dirk-rossbach)
 
-## Requirements
+---
 
-- Node.js 22 or newer (the repository is tested on Node 24)
-- Git 2.38.0 or newer
-- A current Chrome, Chromium, Edge or Safari browser
+## Screenshots
 
-## Quick start
+### Welcome Screen — Open Local or Clone from Remote
+![Welcome Screen](docs/screenshots/welcome.png)
 
+### Animated Branch Graph Timeline & Grouped Commit Diffs (`Gorgeous` Style)
+![Timeline & Commit Diff](docs/screenshots/timeline.png)
+
+### Side-by-Side Split Diff, Syntax Highlighting & Hunk / Single-Line Staging (`Synthwave` Style)
+![Split Diff & Partial Staging in Synthwave Style](docs/screenshots/diff-split-synthwave.png)
+
+### Interactive Block-by-Block Merge Conflict Resolver
+![Merge Conflict Resolver](docs/screenshots/conflicts.png)
+
+### Instant Command Palette (`Ctrl + P` / `⌘P` / `⌘K`)
+![Command Palette](docs/screenshots/command-palette.png)
+
+### Settings Overlay — Styles (`Gorgeous`, `Synthwave`, `Focus`), Modes, Git Identity, Tokens & SSH Keys
+![Settings](docs/screenshots/settings.png)
+
+---
+
+## Highlights & Features
+
+### 1. Native Rust Desktop App + Local Web Mode
+- **15 MB native macOS `.app` bundle** built with **Tauri v2** and a 100% native **Rust backend** (`src-tauri/src/`).
+- Uses Tauri IPC (`#[tauri::command]`) directly — zero Node.js runtime or open network ports required in the desktop app.
+- Also includes a standalone local loopback server (`npm start` on `127.0.0.1:8787`) for browser or headless workflows.
+
+### 2. Three Visual Styles × Dark & Light Modes
+- **Gorgeous (Default):** Aurora gradients, neon accents, glowing commit dots, and fluid timeline flow animations.
+- **Synthwave / Cyberpunk:** Deep midnight indigo (`#0b0316`), hot-magenta (`#ff2a85`), cyber-cyan (`#00f0ff`), laser-yellow (`#ffe600`), and an outrun neon grid.
+- **Focus:** Minimalist, distraction-free flat palette with zero animations, zero gradients, and muted colors.
+- Every style supports **Dark**, **Light**, and **System** modes.
+
+### 3. Pro Diff Viewer & Partial Staging
+- **Unified & Side-by-Side (Split) Diff:** Switch between unified and split views at any time.
+- **Hunk & Single-Line Staging / Unstaging / Discarding:** Stage, unstage, or discard individual hunks (`Stage hunk` / `Unstage hunk` / `Discard hunk`) or hover any changed line (`+` / `-`) to stage or discard that single line (`+ Stage line` / `- Unstage line` / `Discard`) via `git apply --unidiff-zero --recount`.
+- **Zero Diff Noise:** Strips internal Git patch headers (`index ...`, `--- a/...`, `+++ b/...`, `new file mode`) and surfaces clean status badges (`new`, `deleted`, `renamed`, `copied`).
+- **Collapsible File Cards & Badge Jump:** Click any file badge in a commit to scroll straight to its diff card and highlight it.
+
+### 4. Animated Branch Graph & Persistent History Cache
+- **Server- & Rust-computed Lane Graph:** Continuous SVG branch lanes, animated commit flow, and branch labels along lanes (both inline and on lane hover).
+- **Instant Re-Open Cache:** Commit histories and computed graph layouts are cached in memory and on disk (`dataDir/cache/<repoId>.json`) keyed by `git show-ref --head` fingerprint — reopening large repositories is instant. Cache can be cleared anytime in **Settings**.
+
+### 5. GitHub & GitLab Integration (Including Self-Hosted)
+- **Repo Browser & 1-Click Clone:** Search and clone your GitHub and GitLab repositories over HTTPS or SSH.
+- **Pull Requests & Merge Requests:** Browse open PRs/MRs of the current repository and check them out into a local tracking branch with one click.
+- **Deep-Links & Shortcuts:** Direct links to view the repository, branch, or commit on GitHub/GitLab and to create a new PR/MR for the current branch.
+- **Zero-Token-Storage Security:** Gitastic never stores tokens in its own files — tokens are verified and stored exclusively in your OS credential helper (`osxkeychain` / `git credential`) or `gh` / `glab` keyring.
+
+### 6. SSH Key & Git Identity Manager
+- **SSH Key Management:** List keys in `~/.ssh`, generate new `ed25519` keys, copy `.pub` keys, load passphrase-protected keys into `ssh-agent` + macOS Keychain via an interactive passphrase modal, unload keys from `ssh-agent`, or delete keys.
+- **Git User Identity:** View and update global `user.name` and `user.email` directly in Settings.
+
+### 7. Merge Conflicts, Worktrees, Stashes & Undo Safety Net
+- **Interactive Conflict Resolver:** Resolve merge, rebase, and cherry-pick conflicts block-by-block (`Ours`, `Theirs`, `Both`, or manual edit) with a live resolved preview.
+- **Git Worktrees:** List, create, switch to, and remove linked Git worktrees (`git worktree`) for parallel branch workflows.
+- **Undo Time Machine:** Destructive actions (`reset --hard`, `clean`, `restore`, branch deletion, pull/merge/rebase) automatically create backup refs (`refs/gitastic/backup/...`) and trash snapshots that can be undone with one click.
+- **IDE & OS Integration:** Open the repository or any changed file directly in **Cursor**, **Zed**, **VS Code**, **Terminal**, or **Finder**.
+
+---
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+| :--- | :--- |
+| **`Ctrl + P`** / **`⌘P`** / **`⌘K`** | Open **Command Palette** (run Git actions, switch branches, switch repos, change style/theme) |
+| **`⌘,`** / **`Ctrl + ,`** | Open **Settings** overlay |
+| **`⌘ + Enter`** / **`Ctrl + Enter`** | Commit staged changes (in Changes view) |
+| **`Esc`** | Close active modal, Command Palette, or Settings overlay |
+
+---
+
+## Quick Start & Development
+
+### Requirements
+- **Node.js** >= 22
+- **Git** >= 2.38.0
+- **Rust & Cargo** (for building the native Tauri desktop app)
+
+### Install & Run Native Desktop App (Tauri)
 ```bash
 npm install
+npm run tauri:dev      # Run native macOS desktop app in development mode
+npm run tauri:build    # Build optimized production Gitastic.app / .dmg bundle
+```
+The compiled macOS app bundle is output to:
+`src-tauri/target/release/bundle/macos/Gitastic.app`
+
+### Run Local Web / Loopback Server Mode
+```bash
 npm run build
-npm start
+npm start              # Starts local server on http://127.0.0.1:8787
 ```
 
-`npm start` opens the UI at `http://127.0.0.1:8787` unless the port is busy; in that case it searches the next ports in the 8787–8796 range. Use `--port <n>` to choose a port and `--no-open` to skip opening a browser.
-
-For development:
-
+### Verification & Tests
 ```bash
-npm run dev
+npm run lint           # ESLint
+npm run typecheck      # TypeScript (server & web)
+npm test               # Vitest integration suite (20 tests)
+npm run e2e            # Playwright end-to-end UI suite
 ```
 
-This starts the API with file watching on port 8787 and Vite on port 5173. Vite proxies `/api` to the server. Open `http://localhost:5173`.
+---
 
-## Features
-
-- **Repositories:** open a local repository, browse directories, clone over HTTPS or SSH, and reopen recent repositories.
-- **History:** lane-based commit graph, pagination, search, ref filtering, commit details and per-file diffs.
-- **Working tree:** stage, unstage, commit, amend, sign off, discard selected files, clean untracked files, and stash changes.
-- **Branches and tags:** create, switch, rename, delete, set upstream, create/delete tags and push tags.
-- **Remotes:** add, edit, remove, fetch, pull and push. Force pushes use `--force-with-lease`.
-- **Merges and conflicts:** merge, rebase and cherry-pick, with block-level conflict resolution (ours, theirs, both, base) and operation continue/abort/skip.
-- **Inspection:** file blame, file history and commit file lists.
-- **Safety:** confirmation for destructive actions, backup refs for reset/merge/rebase/cherry-pick, a trash directory for deleted branches and discarded files, and undo entries for supported operations.
-- **Jobs:** clone, fetch, pull and push run as cancellable background jobs with live progress over server-sent events.
-- **Themes:** dark and light themes, adjustable diff context and Git executable path.
-
-## Security model
-
-- The server binds only to loopback and rejects non-loopback requests.
-- Mutating API calls require the `x-gitastic-request: 1` header.
-- Browser origins must be same-origin or an explicitly allowed local origin.
-- Repositories, clone targets and file operations are restricted to the current home directory.
-- The server does not store Git credentials or provider tokens.
-- Git hooks run normally. Gitastic does not pass `--no-verify`.
-- Commits use the repository's existing Git signing configuration.
-
-Gitastic is a local developer tool, not a multi-user server. Do not expose the port to a network or reverse proxy it.
-
-## Configuration
-
-Configuration is stored as JSON with mode `0600`:
-
-- macOS: `~/Library/Preferences/gitastic/config.json`
-- Linux: `~/.config/gitastic/config.json`
-- Windows: `%APPDATA%\gitastic\Config\config.json`
-
-For tests or portable setups, override the directories:
-
-```bash
-GITASTIC_HOME=/path/to/home \
-GITASTIC_CONFIG_DIR=/path/to/config \
-GITASTIC_DATA_DIR=/path/to/data \
-npm start
-```
-
-`GITASTIC_HOME` also becomes the repository boundary.
-
-## Commands
-
-```bash
-npm run dev        # API + Vite development servers
-npm run build      # build web assets, then the server bundle
-npm start          # run the built server
-npm run lint       # ESLint
-npm run typecheck  # server and web TypeScript checks
-npm test           # Vitest server integration tests
-npm run e2e        # Playwright UI test (requires a prior build)
-npm run format     # Prettier
-```
-
-The Playwright test starts its own server and uses `apps/web/dist`, so run `npm run build` first. Install Playwright browsers with `npx playwright install chromium` if needed.
-
-## Project layout
+## Project Architecture
 
 ```text
-apps/server/     Fastify API, Git runner, jobs and security checks
-apps/web/        React UI (Vite, Tailwind CSS 4, TanStack Query, Zustand)
-packages/shared/ Shared Zod schemas and TypeScript types
-e2e/             Playwright configuration, server launcher and UI test
+src-tauri/       Native Rust backend & Tauri v2 desktop app (runner, parser, graph, ops, providers)
+apps/web/        React 19 UI (Vite 8, Tailwind CSS 4, TanStack Query, Zustand)
+apps/server/     Fastify loopback server for standalone web/CLI mode
+packages/shared/ Shared Zod schemas, API contracts & URL builders
+e2e/             Playwright end-to-end test suite
+docs/            Screenshots and documentation assets
 ```
 
-The server supports one current repository per running instance and keeps a list of recent repositories. The shared package is the source of truth for request and response contracts.
+---
 
-## Limitations
+## Support & Sponsoring
 
-- No GitHub/GitLab/Gitea provider integration; remotes are plain Git remotes.
-- No interactive rebase, full 3-way merge editor or conflict resolution for binary files beyond choosing a side.
-- Submodules, linked worktrees and Git LFS are detected and displayed, but not managed.
-- Repository access is limited to the configured home directory.
-- Very large diffs are truncated by the API (2 MB patch limit).
+If you enjoy using **Gitastic**, consider supporting its development via GitHub Sponsors:
 
-## License
-
-Proprietary. `UNLICENSED`.
+- **[♥ Sponsor @dirk-rossbach on GitHub](https://github.com/sponsors/dirk-rossbach)**

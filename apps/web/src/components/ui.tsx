@@ -1,7 +1,84 @@
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
 import { cn, errorMessage } from '../lib/utils';
+
+
+function fitMiddle(text: string, maxWidth: number, measure: (value: string) => number): string {
+  if (!text || maxWidth <= 0) return text;
+  if (measure(text) <= maxWidth) return text;
+
+  const ellipsis = '…';
+  const budget = maxWidth - measure(ellipsis);
+  if (budget <= 0) return ellipsis;
+
+  const suffixBudget = budget * 0.72;
+  let suffixStart = text.length;
+  for (let index = 0; index < text.length; index += 1) {
+    if (measure(text.slice(index)) <= suffixBudget) {
+      suffixStart = index;
+      break;
+    }
+  }
+  if (suffixStart < text.length && suffixStart > 0) {
+    const slash = text.lastIndexOf('/', suffixStart);
+    if (slash >= 0) suffixStart = slash;
+  }
+  const suffix = text.slice(suffixStart) || text.slice(-1);
+  const prefixBudget = Math.max(0, budget - measure(suffix));
+  let prefix = '';
+  for (let index = 1; index <= text.length - suffix.length; index += 1) {
+    const candidate = text.slice(0, index);
+    if (measure(candidate) > prefixBudget) break;
+    prefix = candidate;
+  }
+  if (prefix && !prefix.endsWith('/')) {
+    const slash = prefix.lastIndexOf('/');
+    prefix = slash > 0 ? prefix.slice(0, slash + 1) : '';
+  }
+  return `${prefix}${ellipsis}${suffix}`;
+}
+
+export function PathText({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [display, setDisplay] = useState(text);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    const fit = () => {
+      const style = getComputedStyle(element);
+      context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      setDisplay(fitMiddle(text, element.clientWidth, (value) => context.measureText(value).width));
+    };
+
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(element);
+    void document.fonts?.ready.then(fit);
+    return () => observer.disconnect();
+  }, [text]);
+
+  return (
+    <span
+      ref={ref}
+      className={cn('block min-w-0 overflow-hidden whitespace-nowrap', className)}
+      title={text}
+    >
+      {display}
+    </span>
+  );
+}
 
 export function Spinner({ className }: { className?: string }) {
   return <Loader2 className={cn('h-4 w-4 animate-spin', className)} />;
@@ -71,10 +148,10 @@ export function Modal({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px]" />
+        <Dialog.Overlay className="modal-overlay fixed inset-0 z-40" />
         <Dialog.Content
           className={cn(
-            'fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-edge bg-panel shadow-panel focus:outline-none',
+            'modal-card fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-edge/80 focus:outline-none',
             wide ? 'max-w-3xl' : 'max-w-lg',
           )}
         >

@@ -95,6 +95,12 @@ export const CommitSummarySchema = CommitBaseSchema.extend({
   activeLanes: z.array(z.number().int().nonnegative()),
   nextActiveLanes: z.array(z.number().int().nonnegative()),
   parentLanes: z.array(z.number().int().nonnegative()),
+  laneBranches: z.array(
+    z.object({
+      lane: z.number().int().nonnegative(),
+      labels: z.array(z.string()),
+    }),
+  ),
   maxLanes: z.number().int().positive(),
 });
 export type CommitSummary = z.infer<typeof CommitSummarySchema>;
@@ -243,8 +249,12 @@ export const UndoEntrySchema = z.object({
 });
 export type UndoEntry = z.infer<typeof UndoEntrySchema>;
 
+export const UiStyleSchema = z.enum(['gorgeous', 'focus', 'synthwave']);
+export type UiStyle = z.infer<typeof UiStyleSchema>;
+
 export const SettingsSchema = z.object({
   theme: z.enum(['dark', 'light', 'system']),
+  uiStyle: UiStyleSchema.default('gorgeous'),
   gitPath: z.string().min(1),
   editor: z.string(),
   pullStrategy: z.enum(['ff-only', 'merge', 'rebase']),
@@ -273,6 +283,7 @@ export type OnboardingCheck = z.infer<typeof OnboardingCheckSchema>;
 
 export const OnboardingReportSchema = z.object({
   home: z.string(),
+  root: z.string(),
   gitVersion: z.string().nullable(),
   minGitVersion: z.string(),
   checks: z.array(OnboardingCheckSchema),
@@ -386,6 +397,169 @@ export const ConflictBinarySchema = z.object({
   path: z.string().min(1),
   side: z.enum(['ours', 'theirs']),
 });
+
+export const ProviderKindSchema = z.enum(['github', 'gitlab']);
+export type ProviderKind = z.infer<typeof ProviderKindSchema>;
+
+export const ProviderAccountStatusSchema = z.object({
+  provider: ProviderKindSchema,
+  host: z.string(),
+  connected: z.boolean(),
+  username: z.string().nullable(),
+  method: z.enum(['gh-cli', 'glab-cli', 'git-credential', 'none']),
+  cliInstalled: z.boolean(),
+  detail: z.string(),
+});
+export type ProviderAccountStatus = z.infer<typeof ProviderAccountStatusSchema>;
+
+export const SshKeyEntrySchema = z.object({
+  name: z.string(),
+  path: z.string(),
+  publicPath: z.string().nullable(),
+  publicKey: z.string().nullable(),
+  loaded: z.boolean(),
+});
+export type SshKeyEntry = z.infer<typeof SshKeyEntrySchema>;
+
+export const ProvidersStatusResponseSchema = z.object({
+  accounts: z.array(ProviderAccountStatusSchema),
+  sshKeys: z.array(SshKeyEntrySchema),
+  credentialHelper: z.string().nullable(),
+});
+export type ProvidersStatusResponse = z.infer<typeof ProvidersStatusResponseSchema>;
+
+export const ProviderRepoSchema = z.object({
+  id: z.string(),
+  provider: ProviderKindSchema,
+  host: z.string(),
+  name: z.string(),
+  fullName: z.string(),
+  description: z.string().nullable(),
+  private: z.boolean(),
+  defaultBranch: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+  webUrl: z.string(),
+  cloneUrl: z.string(),
+  sshUrl: z.string(),
+});
+export type ProviderRepo = z.infer<typeof ProviderRepoSchema>;
+
+export const RemoteProviderInfoSchema = z.object({
+  remoteName: z.string(),
+  provider: ProviderKindSchema,
+  host: z.string(),
+  owner: z.string(),
+  repo: z.string(),
+  fullName: z.string(),
+  webUrl: z.string(),
+  pullsUrl: z.string(),
+  issuesUrl: z.string(),
+  branchUrlTemplate: z.string(),
+  commitUrlTemplate: z.string(),
+  createPullUrlTemplate: z.string(),
+});
+export type RemoteProviderInfo = z.infer<typeof RemoteProviderInfoSchema>;
+
+export const PullRequestItemSchema = z.object({
+  id: z.string(),
+  number: z.number().int(),
+  provider: ProviderKindSchema,
+  title: z.string(),
+  state: z.enum(['open', 'closed', 'merged']),
+  draft: z.boolean(),
+  author: z.string(),
+  sourceBranch: z.string(),
+  targetBranch: z.string(),
+  updatedAt: z.string(),
+  webUrl: z.string(),
+});
+export type PullRequestItem = z.infer<typeof PullRequestItemSchema>;
+
+export const PullRequestsResponseSchema = z.object({
+  remote: RemoteProviderInfoSchema.nullable(),
+  items: z.array(PullRequestItemSchema),
+  authHint: z.string().nullable(),
+});
+export type PullRequestsResponse = z.infer<typeof PullRequestsResponseSchema>;
+
+export const ProviderConnectSchema = z.object({
+  provider: ProviderKindSchema,
+  host: z.string().min(1).optional(),
+  username: z.string().optional(),
+  token: z.string().min(1),
+});
+export const ProviderDisconnectSchema = z.object({
+  provider: ProviderKindSchema,
+  host: z.string().min(1),
+});
+export const SshAddKeySchema = z.object({
+  path: z.string().min(1),
+  passphrase: z.string().optional(),
+});
+export const SshRemoveKeySchema = z.object({
+  path: z.string().min(1),
+  deleteFiles: z.boolean().optional(),
+});
+export const GitIdentitySchema = z.object({
+  name: z.string(),
+  email: z.string(),
+});
+export type GitIdentity = z.infer<typeof GitIdentitySchema>;
+export const SshGenerateKeySchema = z.object({ label: z.string().optional() });
+
+export const ApplyPatchSchema = z.object({
+  patch: z.string().min(1),
+  cached: z.boolean().optional(),
+  reverse: z.boolean().optional(),
+});
+
+export const WorktreeSchema = z.object({
+  path: z.string(),
+  head: z.string(),
+  branch: z.string().nullable(),
+  bare: z.boolean(),
+  detached: z.boolean(),
+  locked: z.boolean(),
+  prunable: z.boolean(),
+  isMain: z.boolean(),
+});
+export type Worktree = z.infer<typeof WorktreeSchema>;
+
+export const WorktreeAddSchema = z.object({
+  path: z.string().min(1),
+  branch: z.string().min(1),
+  createBranch: z.boolean().optional(),
+  startPoint: z.string().optional(),
+});
+export const WorktreeRemoveSchema = z.object({
+  path: z.string().min(1),
+  force: z.boolean().optional(),
+});
+export const SystemPathActionSchema = z.object({
+  path: z.string().optional(),
+});
+export const PullRequestCheckoutSchema = z.object({
+  number: z.number().int().positive(),
+  sourceBranch: z.string().min(1),
+  remote: z.string().optional(),
+});
+
+export function buildRemoteBranchUrl(info: RemoteProviderInfo, branch: string): string {
+  const clean = branch.replace(/^refs\/heads\//, '').replace(/^origin\//, '');
+  return info.branchUrlTemplate.replace('{branch}', encodeURIComponent(clean).replace(/%2F/g, '/'));
+}
+
+export function buildRemoteCommitUrl(info: RemoteProviderInfo, hash: string): string {
+  return info.commitUrlTemplate.replace('{hash}', encodeURIComponent(hash));
+}
+
+export function buildCreatePullUrl(info: RemoteProviderInfo, branch: string): string {
+  const clean = branch.replace(/^refs\/heads\//, '').replace(/^origin\//, '');
+  return info.createPullUrlTemplate.replace(
+    '{branch}',
+    encodeURIComponent(clean).replace(/%2F/g, '/'),
+  );
+}
 
 export function shortHash(hash: string): string {
   return hash.slice(0, 7);

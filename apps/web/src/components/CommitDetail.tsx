@@ -3,24 +3,31 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Check,
   Copy,
+  ExternalLink,
   GitBranch,
   GitCommitHorizontal,
   GitMerge,
   LogOut,
   User,
 } from 'lucide-react';
-import { shortHash } from '@gitastic/shared';
+import { buildRemoteCommitUrl, shortHash } from '@gitastic/shared';
 import { formatDate } from '../lib/utils';
 import { api } from '../api';
 import { useAction } from '../lib/hooks';
 import { useStore } from '../store';
-import { DiffViewer } from './DiffViewer';
-import { ErrorState, LoadingState, Modal } from './ui';
+import { DiffViewer, type DiffReveal } from './DiffViewer';
+import { ErrorState, LoadingState, Modal, PathText } from './ui';
 
 export function CommitDetail({ hash }: { hash: string }) {
   const detail = useQuery({
     queryKey: ['commit', hash],
     queryFn: () => api.commit(hash),
+    staleTime: Infinity,
+    gcTime: 30 * 60_000,
+  });
+  const providerQuery = useQuery({
+    queryKey: ['repo-provider'],
+    queryFn: api.repoProvider,
   });
   const { busy, run } = useAction();
   const setView = useStore((state) => state.setView);
@@ -28,6 +35,7 @@ export function CommitDetail({ hash }: { hash: string }) {
   const [branchOpen, setBranchOpen] = useState(false);
   const [branchName, setBranchName] = useState('');
   const [copied, setCopied] = useState(false);
+  const [diffReveal, setDiffReveal] = useState<DiffReveal | null>(null);
 
   if (detail.isLoading) return <LoadingState label="Loading commit..." />;
   if (detail.isError || !detail.data) {
@@ -35,6 +43,7 @@ export function CommitDetail({ hash }: { hash: string }) {
   }
 
   const { commit, files, patch, binary, tooLarge } = detail.data;
+  const remoteProvider = providerQuery.data?.remote ?? null;
 
   const cherryPick = async () => {
     const result = await run(() => api.cherryPick([commit.hash]), 'Commit cherry-picked.');
@@ -45,7 +54,7 @@ export function CommitDetail({ hash }: { hash: string }) {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-panel">
+    <div className="flex h-full min-h-0 flex-col bg-panel/60 backdrop-blur-xl">
       <div className="shrink-0 border-b border-edge p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -111,6 +120,18 @@ export function CommitDetail({ hash }: { hash: string }) {
             <LogOut className="h-3.5 w-3.5" />
             Checkout
           </button>
+          {remoteProvider ? (
+            <a
+              href={buildRemoteCommitUrl(remoteProvider, commit.hash)}
+              target="_blank"
+              rel="noreferrer"
+              className="btn h-7 text-xs"
+              title={`Open commit on ${remoteProvider.host}`}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {remoteProvider.provider === 'gitlab' ? 'GitLab' : 'GitHub'}
+            </a>
+          ) : null}
           <span className="ml-auto text-xs text-faint">
             {files.length} file{files.length === 1 ? '' : 's'} changed
           </span>
@@ -131,15 +152,17 @@ export function CommitDetail({ hash }: { hash: string }) {
         <div className="shrink-0 border-b border-edge px-3 py-2">
           <div className="scrollbar-thin flex max-h-24 flex-wrap gap-1 overflow-auto">
             {files.map((file) => (
-              <span
+              <button
                 key={`${file.path}-${file.status}`}
-                className="badge"
+                type="button"
+                className="badge max-w-[20rem] cursor-pointer transition hover:border-accent/60 hover:bg-accent/10 hover:text-ink"
                 title={`${file.status}: ${file.path}`}
+                onClick={() => setDiffReveal({ path: file.path, nonce: Date.now() })}
               >
-                <span className="truncate">{file.path}</span>
+                <PathText text={file.path} className="min-w-0 flex-1 text-left" />
                 {file.additions > 0 ? <span className="text-success">+{file.additions}</span> : null}
                 {file.deletions > 0 ? <span className="text-danger">-{file.deletions}</span> : null}
-              </span>
+              </button>
             ))}
           </div>
         </div>
@@ -150,6 +173,8 @@ export function CommitDetail({ hash }: { hash: string }) {
           patch={patch}
           binary={binary}
           tooLarge={tooLarge}
+          files={files}
+          reveal={diffReveal}
           emptyLabel="This commit has no textual changes."
         />
       </div>

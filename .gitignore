@@ -10,3 +10,4 @@ playwright-report/
 test-results/
 .blob-report/
 apps/server/test/.tmp/
+src-tauri/target/

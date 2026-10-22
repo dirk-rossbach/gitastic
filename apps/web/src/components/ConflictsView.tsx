@@ -6,7 +6,7 @@ import { api } from '../api';
 import { useAction } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
-import { EmptyState, ErrorState, LoadingState, Spinner } from './ui';
+import { EmptyState, ErrorState, LoadingState, PathText, Spinner } from './ui';
 
 type Choice = 'ours' | 'theirs' | 'both' | 'base';
 
@@ -122,7 +122,7 @@ export function ConflictsView() {
               onClick={() => setSelectedPath(entry.path)}
             >
               <FileWarning className="h-4 w-4 shrink-0 text-danger" />
-              <span className="min-w-0 flex-1 truncate text-xs text-ink">{entry.path}</span>
+              <PathText text={entry.path} className="min-w-0 flex-1 text-xs text-ink" />
               {entry.binary ? <span className="badge">binary</span> : null}
             </button>
           ))}
@@ -133,7 +133,7 @@ export function ConflictsView() {
         {file ? (
           <>
             <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-edge px-3 py-2">
-              <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted">{file.path}</span>
+              <PathText text={file.path} className="min-w-0 flex-1 font-mono text-xs text-muted" />
               {!file.binary && file.blocks.length > 0 ? (
                 <>
                   <button type="button" className="btn h-7 text-xs" onClick={() => chooseAll('ours')}>

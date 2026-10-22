@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import type {
   AppConfig,
@@ -8,7 +9,7 @@ import type {
   SettingsPatch,
   UndoEntry,
 } from '@gitastic/shared';
-import { homeDir, saveConfig } from './config';
+import { dataDir, homeDir, rootDir, saveConfig } from './config';
 import { AppError } from './errors';
 import { getOnboardingReport } from './git/onboarding';
 import { getRepoSummary } from './git/repo';
@@ -58,7 +59,6 @@ export class AppState {
       ...this.config.recentRepos.filter((repo) => repo.path !== repoPath),
     ].slice(0, 20);
     await saveConfig(this.config);
-    this.invalidate(id);
     return getRepoSummary(this.runner, repoPath, id);
   }
 
@@ -105,10 +105,16 @@ export class AppState {
     const repoId = id ?? this.currentRepoId;
     if (!repoId) return;
     this.historyCaches.delete(repoId);
+    void fs.rm(path.join(dataDir, 'cache', `${repoId}.json`), { force: true }).catch(() => undefined);
+  }
+
+  async clearCache(): Promise<void> {
+    this.historyCaches.clear();
+    await fs.rm(path.join(dataDir, 'cache'), { recursive: true, force: true }).catch(() => undefined);
   }
 
   async updateSettings(patch: SettingsPatch): Promise<AppConfig> {
-    this.config = { ...this.config, ...patch, repoRoots: [homeDir] };
+    this.config = { ...this.config, ...patch, repoRoots: [rootDir] };
     if (patch.gitPath) this.runner.gitPath = patch.gitPath;
     await saveConfig(this.config);
     return this.config;

@@ -9,20 +9,29 @@ import type {
   DiffResponse,
   DirectoryListing,
   FileHistoryResponse,
+  GitIdentity,
   HistoryPage,
   Job,
   OnboardingReport,
+  ProviderAccountStatus,
+  ProviderKind,
+  ProviderRepo,
+  ProvidersStatusResponse,
+  PullRequestsResponse,
   RecentRepo,
   Remote,
+  RemoteProviderInfo,
   RepoSummary,
   ResetSchema,
   RestoreSchema,
   Session,
   SettingsPatch,
+  SshKeyEntry,
   Stash,
   Status,
   Tag,
   UndoEntry,
+  Worktree,
 } from '@gitastic/shared';
 import { API_REQUEST_HEADER } from '@gitastic/shared';
 
@@ -42,6 +51,19 @@ export class ApiError extends Error {
 
 type Query = Record<string, string | number | boolean | null | undefined>;
 
+interface TauriInternals {
+  invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
+}
+
+function getTauriInternals(): TauriInternals | null {
+  if (typeof window === 'undefined') return null;
+  const win = window as unknown as {
+    __TAURI_INTERNALS__?: TauriInternals;
+    __TAURI__?: { core?: TauriInternals };
+  };
+  return win.__TAURI_INTERNALS__ ?? win.__TAURI__?.core ?? null;
+}
+
 function withQuery(path: string, query?: Query): string {
   if (!query) return path;
   const params = new URLSearchParams();
@@ -57,6 +79,29 @@ async function request<T>(
   path: string,
   options: { method?: string; body?: unknown; query?: Query; signal?: AbortSignal } = {},
 ): Promise<T> {
+  const tauri = getTauriInternals();
+  if (tauri) {
+    try {
+      return await tauri.invoke<T>('gitastic_api', {
+        method: options.method ?? 'GET',
+        path,
+        query: options.query ?? null,
+        body: options.body ?? null,
+      });
+    } catch (err) {
+      const payload = err as {
+        status?: number;
+        error?: { code?: string; message?: string; details?: unknown };
+      } | null;
+      throw new ApiError(
+        payload?.status ?? 422,
+        payload?.error?.code ?? 'TAURI_IPC_FAILED',
+        payload?.error?.message ?? (err instanceof Error ? err.message : String(err)),
+        payload?.error?.details,
+      );
+    }
+  }
+
   const response = await fetch(withQuery(`/api${path}`, options.query), {
     method: options.method ?? 'GET',
     headers: {
@@ -113,6 +158,14 @@ export const api = {
   settings: () => request<AppConfig>('/settings'),
   updateSettings: (patch: SettingsPatch) =>
     request<AppConfig>('/settings', { method: 'PUT', body: patch }),
+  clearCache: () => post<{ ok: boolean }>('/cache/clear'),
+  openExternal: (url: string) => {
+    if (getTauriInternals()) {
+      return post<{ ok: boolean }>('/system/open-url', { url });
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return Promise.resolve({ ok: true });
+  },
 
   listDirectories: (target?: string) =>
     request<DirectoryListing>('/fs/list', { query: { path: target } }),
@@ -121,7 +174,32 @@ export const api = {
   closeRepo: () => post<{ ok: boolean }>('/repos/close'),
   clone: (url: string, target: string) => post<JobResponse>('/repos/clone', { url, path: target }),
 
+  providersStatus: () => request<ProvidersStatusResponse>('/providers/status'),
+  connectProvider: (body: {
+    provider: ProviderKind;
+    host?: string;
+    username?: string;
+    token: string;
+  }) => post<ProviderAccountStatus>('/providers/connect', body),
+  disconnectProvider: (body: { provider: ProviderKind; host: string }) =>
+    post<{ ok: boolean }>('/providers/disconnect', body),
+  providerRepos: (options: { provider: ProviderKind; host?: string; q?: string }) =>
+    request<ProviderRepo[]>('/providers/repos', { query: options }),
+  addSshKey: (keyPath: string, passphrase?: string) =>
+    post<{ ok: boolean; detail: string }>('/providers/ssh/add', { path: keyPath, passphrase }),
+  removeSshKey: (keyPath: string, deleteFiles?: boolean) =>
+    post<{ ok: boolean; detail: string }>('/providers/ssh/remove', { path: keyPath, deleteFiles }),
+  generateSshKey: (label?: string) =>
+    post<SshKeyEntry>('/providers/ssh/generate', { label }),
+  gitIdentity: () => request<GitIdentity>('/git-identity'),
+  updateGitIdentity: (identity: GitIdentity) =>
+    request<GitIdentity>('/git-identity', { method: 'PUT', body: identity }),
+
   repo: () => request<RepoSummary>('/repo'),
+  repoProvider: () => request<{ remote: RemoteProviderInfo | null }>('/repo/provider'),
+  pulls: () => request<PullRequestsResponse>('/repo/pulls'),
+  checkoutPullRequest: (body: { number: number; sourceBranch: string; remote?: string }) =>
+    post<RepoSummary>('/repo/pulls/checkout', body),
   status: () => request<Status>('/repo/status'),
   history: (options: { offset: number; limit: number; ref?: string | null; q?: string | null }) =>
     request<HistoryPage>('/repo/history', { query: options }),
@@ -132,6 +210,20 @@ export const api = {
   tags: () => request<Tag[]>('/repo/tags'),
   remotes: () => request<Remote[]>('/repo/remotes'),
   stashes: () => request<Stash[]>('/repo/stashes'),
+  worktrees: () => request<Worktree[]>('/repo/worktrees'),
+  addWorktree: (body: {
+    path: string;
+    branch: string;
+    createBranch?: boolean;
+    startPoint?: string;
+  }) => post<{ ok: boolean }>('/repo/worktrees/add', body),
+  removeWorktree: (body: { path: string; force?: boolean }) =>
+    post<{ ok: boolean }>('/repo/worktrees/remove', body),
+  applyPatch: (body: { patch: string; cached?: boolean; reverse?: boolean }) =>
+    post<WriteResponse>('/repo/apply-patch', body),
+  revealInFinder: (path?: string) => post<{ ok: boolean }>('/system/reveal', { path }),
+  openTerminal: () => post<{ ok: boolean }>('/system/terminal', {}),
+  openInEditor: (path?: string) => post<{ ok: boolean }>('/system/editor', { path }),
   blame: (path: string, offset = 0, limit = 2000) =>
     request<BlameResponse>('/repo/blame', { query: { path, offset, limit } }),
   fileHistory: (path: string, offset = 0, limit = 200) =>
@@ -201,6 +293,32 @@ export function subscribeJob(
   onJob: (job: Job) => void,
   onEnd: (job: Job) => void,
 ): () => void {
+  if (getTauriInternals()) {
+    let stopped = false;
+    const poll = async () => {
+      while (!stopped) {
+        try {
+          const updated = await api.job(id);
+          if (stopped) return;
+          onJob(updated);
+          if (['done', 'error', 'cancelled'].includes(updated.status)) {
+            stopped = true;
+            onEnd(updated);
+            return;
+          }
+        } catch {
+          stopped = true;
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+    };
+    void poll();
+    return () => {
+      stopped = true;
+    };
+  }
+
   const source = new EventSource(`/api/jobs/${id}/events`);
   const handleJob = (event: MessageEvent<string>) => {
     try {

@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowUp,
+  ExternalLink,
   GitBranch,
   GitMerge,
+  GitPullRequest,
   LogIn,
   Pencil,
   Plus,
@@ -11,7 +13,11 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
-import type { Branch } from '@gitastic/shared';
+import {
+  buildCreatePullUrl,
+  buildRemoteBranchUrl,
+  type Branch,
+} from '@gitastic/shared';
 import { api } from '../api';
 import { useAction, useStartJob } from '../lib/hooks';
 import { cn, formatDate } from '../lib/utils';
@@ -23,6 +29,7 @@ type FormMode = 'create' | 'rename' | null;
 export function BranchesView() {
   const branches = useQuery({ queryKey: ['branches'], queryFn: api.branches });
   const repo = useQuery({ queryKey: ['repo'], queryFn: api.repo });
+  const providerQuery = useQuery({ queryKey: ['repo-provider'], queryFn: api.repoProvider });
   const setView = useStore((state) => state.setView);
   const notify = useStore((state) => state.notify);
   const { busy, run } = useAction();
@@ -40,6 +47,7 @@ export function BranchesView() {
   const [forcePushTarget, setForcePushTarget] = useState<Branch | null>(null);
 
   const current = repo.data?.branch ?? null;
+  const remoteProvider = providerQuery.data?.remote ?? null;
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     const list = branches.data ?? [];
@@ -199,6 +207,28 @@ export function BranchesView() {
           >
             <Upload className="h-4 w-4" />
           </button>
+        ) : null}
+        {remoteProvider ? (
+          <>
+            <a
+              href={buildCreatePullUrl(remoteProvider, branch.name)}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-icon"
+              title={`Create ${remoteProvider.provider === 'gitlab' ? 'Merge Request' : 'Pull Request'} for ${branch.name}`}
+            >
+              <GitPullRequest className="h-4 w-4 text-accent" />
+            </a>
+            <a
+              href={buildRemoteBranchUrl(remoteProvider, branch.name)}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-icon"
+              title={`View ${branch.name} on ${remoteProvider.host}`}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </>
         ) : null}
       </div>
     </div>

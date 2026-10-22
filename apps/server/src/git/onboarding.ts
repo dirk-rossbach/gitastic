@@ -4,7 +4,7 @@ import {
   type OnboardingCheck,
   type OnboardingReport,
 } from '@gitastic/shared';
-import { homeDir } from '../config';
+import { homeDir, rootDir } from '../config';
 import type { GitRunner } from './runner';
 
 function compareVersions(left: string, right: string): number {
@@ -113,6 +113,7 @@ export async function getOnboardingReport(runner: GitRunner): Promise<Onboarding
 
   return {
     home: homeDir,
+    root: rootDir,
     gitVersion,
     minGitVersion: MIN_GIT_VERSION,
     checks,

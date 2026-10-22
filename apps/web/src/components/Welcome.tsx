@@ -1,23 +1,35 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowUp,
   CheckCircle2,
   Circle,
+  CloudDownload,
+  Eye,
   Folder,
+  FolderOpen,
   GitBranch,
   Github,
   HardDrive,
+  Home,
   Info,
+  Moon,
   RefreshCw,
-  Terminal,
+  Settings,
+  Sparkles,
+  Sun,
+  Zap,
 } from 'lucide-react';
-import type { OnboardingCheck, Session } from '@gitastic/shared';
+import type { OnboardingCheck, Session, UiStyle } from '@gitastic/shared';
 import { api } from '../api';
+import { applyAppearance } from '../App';
 import { useAction, useStartJob } from '../lib/hooks';
 import { cn, formatDate, errorMessage } from '../lib/utils';
-import { Spinner } from './ui';
+import { useStore } from '../store';
+import { ProviderRepoBrowser } from './ProvidersPanel';
+import { PathText, Spinner } from './ui';
 
 function CheckRow({ check }: { check: OnboardingCheck }) {
   const Icon =
@@ -44,13 +56,19 @@ function CheckRow({ check }: { check: OnboardingCheck }) {
 }
 
 export function Welcome({ session }: { session: Session }) {
-  const [mode, setMode] = useState<'open' | 'clone'>('open');
+  const queryClient = useQueryClient();
+  const openSettings = useStore((state) => state.openSettings);
+  const [mode, setMode] = useState<'open' | 'clone' | null>(null);
   const [path, setPath] = useState(session.onboarding.home);
   const [browserPath, setBrowserPath] = useState(session.onboarding.home);
   const [cloneUrl, setCloneUrl] = useState('');
   const [clonePath, setClonePath] = useState(`${session.onboarding.home}/repo`);
+  const root = session.onboarding.root;
   const { busy, run } = useAction();
   const startJob = useStartJob();
+
+  const currentTheme = session.config.theme;
+  const currentStyle: UiStyle = session.config.uiStyle ?? 'gorgeous';
 
   const recents = useQuery({ queryKey: ['recent-repos'], queryFn: api.recentRepos });
   const listing = useQuery({
@@ -66,27 +84,120 @@ export function Welcome({ session }: { session: Session }) {
 
   const openPath = (target: string) => {
     setPath(target);
-    void run(() => api.openRepo(target), 'Repository opened');
+    void run(
+      async () => {
+        const opened = await api.openRepo(target);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['session'] }),
+          queryClient.invalidateQueries({ queryKey: ['repo'] }),
+          queryClient.invalidateQueries({ queryKey: ['recent-repos'] }),
+        ]);
+        return opened;
+      },
+      'Repository opened',
+      { refresh: false },
+    );
+  };
+
+  const quickAppearance = async (
+    nextTheme: 'dark' | 'light' | 'system',
+    nextStyle: UiStyle,
+  ) => {
+    applyAppearance(nextTheme, nextStyle);
+    await api.updateSettings({ theme: nextTheme, uiStyle: nextStyle });
+    await queryClient.invalidateQueries({ queryKey: ['session'] });
   };
 
   return (
-    <div className="scrollbar-thin h-full overflow-auto bg-canvas">
-      <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col gap-8 px-6 py-10">
-        <header className="flex items-start justify-between gap-6">
+    <div className="app-backdrop scrollbar-thin h-full overflow-auto bg-transparent">
+      <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col gap-8 px-6 py-10">
+        <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-accent/30 bg-accent/10 text-accent">
+            <div className="brand-mark flex h-11 w-11 items-center justify-center rounded-xl border">
               <GitBranch className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Gitastic</h1>
+              <h1 className="gradient-text text-2xl font-semibold tracking-tight">Gitastic</h1>
               <p className="text-sm text-muted">
-                A fast, local Git client. Your repositories never leave this machine.
+                Native local Git client.
               </p>
             </div>
           </div>
-          <div className="hidden items-center gap-2 text-xs text-faint sm:flex">
-            <Terminal className="h-3.5 w-3.5" />
-            {session.onboarding.gitVersion ?? 'Git not found'}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center rounded-lg border border-edge bg-panel/80 p-0.5 text-xs">
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition',
+                  currentStyle === 'gorgeous' ? 'bg-accent/20 text-accent' : 'text-muted hover:text-ink',
+                )}
+                onClick={() => void quickAppearance(currentTheme, 'gorgeous')}
+                title="Gorgeous style"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Gorgeous
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition',
+                  currentStyle === 'synthwave' ? 'bg-accent/20 text-accent' : 'text-muted hover:text-ink',
+                )}
+                onClick={() => void quickAppearance(currentTheme, 'synthwave')}
+                title="Cyberpunk / Synthwave style"
+              >
+                <Zap className="h-3.5 w-3.5" />
+                Synthwave
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition',
+                  currentStyle === 'focus' ? 'bg-accent/20 text-accent' : 'text-muted hover:text-ink',
+                )}
+                onClick={() => void quickAppearance(currentTheme, 'focus')}
+                title="Focus style"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Focus
+              </button>
+            </div>
+
+            <div className="flex items-center rounded-lg border border-edge bg-panel/80 p-0.5 text-xs">
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition',
+                  currentTheme === 'dark' ? 'bg-raised text-ink' : 'text-muted hover:text-ink',
+                )}
+                onClick={() => void quickAppearance('dark', currentStyle)}
+                title="Dark mode"
+              >
+                <Moon className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition',
+                  currentTheme === 'light' ? 'bg-raised text-ink' : 'text-muted hover:text-ink',
+                )}
+                onClick={() => void quickAppearance('light', currentStyle)}
+                title="Light mode"
+              >
+                <Sun className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="btn h-8 text-xs"
+              onClick={openSettings}
+              title="Settings (Cmd+,)"
+            >
+              <Settings className="h-3.5 w-3.5 text-accent" />
+              Settings
+            </button>
           </div>
         </header>
 
@@ -101,24 +212,113 @@ export function Welcome({ session }: { session: Session }) {
           </div>
         ) : null}
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-          <section className="card overflow-hidden">
-            <div className="flex items-center gap-1 border-b border-edge p-2">
+        {mode === null ? (
+          <div className="space-y-8">
+            <div className="grid gap-4 sm:grid-cols-2">
               <button
                 type="button"
-                className={cn('btn-ghost btn', mode === 'open' && 'bg-raised text-ink')}
                 onClick={() => setMode('open')}
+                className="repo-card group flex flex-col items-start gap-4 rounded-xl border p-6 text-left transition hover:border-accent"
               >
-                <Folder className="h-4 w-4" />
-                Open repository
+                <div className="brand-mark flex h-12 w-12 items-center justify-center rounded-xl border">
+                  <FolderOpen className="h-6 w-6" />
+                </div>
+                <div className="space-y-1">
+                  <h2 className="text-lg font-semibold text-ink">Open from local</h2>
+                  <p className="text-xs text-muted">
+                    Browse folders on this machine or enter a path to an existing Git repository.
+                  </p>
+                </div>
               </button>
+
               <button
                 type="button"
-                className={cn('btn-ghost btn', mode === 'clone' && 'bg-raised text-ink')}
                 onClick={() => setMode('clone')}
+                className="repo-card group flex flex-col items-start gap-4 rounded-xl border p-6 text-left transition hover:border-accent"
               >
-                <Github className="h-4 w-4" />
-                Clone
+                <div className="brand-mark flex h-12 w-12 items-center justify-center rounded-xl border">
+                  <CloudDownload className="h-6 w-6" />
+                </div>
+                <div className="space-y-1">
+                  <h2 className="text-lg font-semibold text-ink">Clone from remote</h2>
+                  <p className="text-xs text-muted">
+                    Browse your GitHub & GitLab repositories or clone from any remote URL.
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            <div className="card p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="panel-title">Recent repositories</h2>
+                <span className="text-xs text-faint">{recents.data?.length ?? 0}</span>
+              </div>
+              {recents.isLoading ? (
+                <div className="flex items-center gap-2 text-xs text-muted">
+                  <Spinner /> Loading...
+                </div>
+              ) : recents.data && recents.data.length > 0 ? (
+                <div className="-mx-2 space-y-0.5">
+                  {recents.data.map((repo) => (
+                    <button
+                      key={repo.path}
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-raised"
+                      onClick={() => openPath(repo.path)}
+                    >
+                      <GitBranch className="h-4 w-4 shrink-0 text-muted" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-ink">{repo.name}</span>
+                        <PathText
+                          text={repo.path}
+                          className="font-mono text-[11px] text-faint"
+                        />
+                      </span>
+                      <span className="shrink-0 text-[11px] text-faint">
+                        {formatDate(repo.lastOpened)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-muted">
+                  <Circle className="h-3 w-3" /> No repositories opened yet.
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <section className="card overflow-hidden">
+            <div className="flex items-center gap-3 border-b border-edge px-4 py-3">
+              <button
+                type="button"
+                className="btn h-8 px-2.5 text-xs"
+                onClick={() => setMode(null)}
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Back
+              </button>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-medium">
+                  {mode === 'open' ? 'Open from local' : 'Clone from remote'}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost h-8 text-xs"
+                onClick={() => setMode(mode === 'open' ? 'clone' : 'open')}
+              >
+                {mode === 'open' ? (
+                  <>
+                    <CloudDownload className="h-3.5 w-3.5" />
+                    Clone from remote
+                  </>
+                ) : (
+                  <>
+                    <FolderOpen className="h-3.5 w-3.5" />
+                    Open from local
+                  </>
+                )}
               </button>
             </div>
 
@@ -151,6 +351,32 @@ export function Welcome({ session }: { session: Session }) {
                     <button
                       type="button"
                       className="btn-icon h-7 w-7"
+                      aria-label="Home directory"
+                      title="Home directory"
+                      disabled={browserPath === session.onboarding.home}
+                      onClick={() => {
+                        setBrowserPath(session.onboarding.home);
+                        setPath(session.onboarding.home);
+                      }}
+                    >
+                      <Home className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-icon h-7 w-7"
+                      aria-label="Filesystem root"
+                      title="Filesystem root"
+                      disabled={browserPath === root}
+                      onClick={() => {
+                        setBrowserPath(root);
+                        setPath(root);
+                      }}
+                    >
+                      <HardDrive className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-icon h-7 w-7"
                       aria-label="Parent directory"
                       disabled={!listing.data?.parent}
                       onClick={() => {
@@ -164,9 +390,10 @@ export function Welcome({ session }: { session: Session }) {
                     </button>
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                       <HardDrive className="h-3.5 w-3.5 shrink-0 text-faint" />
-                      <p className="truncate font-mono text-xs text-muted">
-                        {listing.data?.path ?? browserPath}
-                      </p>
+                      <PathText
+                        text={listing.data?.path ?? browserPath}
+                        className="min-w-0 flex-1 font-mono text-xs text-muted"
+                      />
                     </div>
                     <button
                       type="button"
@@ -178,7 +405,7 @@ export function Welcome({ session }: { session: Session }) {
                     </button>
                   </div>
 
-                  <div className="scrollbar-thin max-h-72 overflow-auto">
+                  <div className="scrollbar-thin max-h-80 overflow-auto">
                     {listing.isLoading ? (
                       <div className="flex items-center justify-center gap-2 p-6 text-xs text-muted">
                         <Spinner /> Reading directory...
@@ -229,6 +456,17 @@ export function Welcome({ session }: { session: Session }) {
               </div>
             ) : (
               <div className="space-y-4 p-4">
+                <ProviderRepoBrowser
+                  cloneBaseDir={
+                    clonePath.includes('/')
+                      ? clonePath.slice(0, clonePath.lastIndexOf('/')) || session.onboarding.home
+                      : session.onboarding.home
+                  }
+                  onSelectRepo={(url, target) => {
+                    setCloneUrl(url);
+                    setClonePath(target);
+                  }}
+                />
                 <label className="block space-y-1.5">
                   <span className="text-xs font-medium uppercase tracking-wide text-faint">
                     Remote URL
@@ -252,9 +490,6 @@ export function Welcome({ session }: { session: Session }) {
                     onChange={(event) => setClonePath(event.target.value)}
                   />
                 </label>
-                <p className="text-xs text-faint">
-                  Uses your system Git credentials and SSH agent. Gitastic never stores tokens.
-                </p>
                 <button
                   type="button"
                   className="btn btn-primary w-full"
@@ -267,56 +502,7 @@ export function Welcome({ session }: { session: Session }) {
               </div>
             )}
           </section>
-
-          <section className="space-y-4">
-            <div className="card p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="panel-title">Recent repositories</h2>
-                <span className="text-xs text-faint">{recents.data?.length ?? 0}</span>
-              </div>
-              {recents.isLoading ? (
-                <div className="flex items-center gap-2 text-xs text-muted">
-                  <Spinner /> Loading...
-                </div>
-              ) : recents.data && recents.data.length > 0 ? (
-                <div className="-mx-2 space-y-0.5">
-                  {recents.data.map((repo) => (
-                    <button
-                      key={repo.path}
-                      type="button"
-                      className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-raised"
-                      onClick={() => openPath(repo.path)}
-                    >
-                      <GitBranch className="h-4 w-4 shrink-0 text-muted" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-ink">{repo.name}</span>
-                        <span className="block truncate font-mono text-[11px] text-faint">
-                          {repo.path}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-[11px] text-faint">
-                        {formatDate(repo.lastOpened)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-xs text-muted">
-                  <Circle className="h-3 w-3" /> No repositories opened yet.
-                </div>
-              )}
-            </div>
-
-            <div className="card p-4">
-              <h2 className="panel-title mb-3">Environment</h2>
-              <div className="space-y-2">
-                {session.onboarding.checks.map((check) => (
-                  <CheckRow key={check.id} check={check} />
-                ))}
-              </div>
-            </div>
-          </section>
-        </div>
+        )}
       </div>
     </div>
   );

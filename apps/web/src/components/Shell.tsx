@@ -7,20 +7,29 @@ import {
   ArrowUp,
   Cloud,
   Download,
+  ExternalLink,
   FileDiff,
+  FolderGit2,
+  FolderOpen,
   GitBranch,
   GitMerge,
+  GitPullRequest,
   History,
   PanelLeft,
   RefreshCw,
   RotateCcw,
   Settings,
+  SquareTerminal,
   Tags,
   Undo2,
   Upload,
   X,
 } from 'lucide-react';
-import type { Session } from '@gitastic/shared';
+import {
+  buildCreatePullUrl,
+  buildRemoteBranchUrl,
+  type Session,
+} from '@gitastic/shared';
 import { api } from '../api';
 import { useAction, useStartJob } from '../lib/hooks';
 import { cn } from '../lib/utils';
@@ -31,11 +40,13 @@ import { ChangesView } from './ChangesView';
 import { ConflictsView } from './ConflictsView';
 import { FileHistoryView } from './FileHistoryView';
 import { HistoryView } from './HistoryView';
+import { PullRequestsView } from './PullRequestsView';
 import { RemotesView } from './RemotesView';
 import { SettingsView } from './SettingsView';
 import { StashesView } from './StashesView';
 import { TagsView } from './TagsView';
-import { Modal, Spinner } from './ui';
+import { WorktreesView } from './WorktreesView';
+import { Modal, PathText, Spinner } from './ui';
 
 const operations: Record<string, string> = {
   merge: 'Merge',
@@ -58,11 +69,13 @@ function NavItem({
   danger?: boolean;
 }) {
   const active = useStore((state) => state.view);
+  const settingsOpen = useStore((state) => state.settingsOpen);
   const setView = useStore((state) => state.setView);
+  const isCurrent = view === 'settings' ? settingsOpen : !settingsOpen && active === view;
   return (
     <button
       type="button"
-      className={cn('nav-item', active === view && 'nav-item-active')}
+      className={cn('nav-item', isCurrent && 'nav-item-active')}
       onClick={() => setView(view)}
     >
       <Icon className="h-4 w-4" />
@@ -78,6 +91,8 @@ export function Shell({ session }: { session: Session }) {
   const queryClient = useQueryClient();
   const view = useStore((state) => state.view);
   const setView = useStore((state) => state.setView);
+  const settingsOpen = useStore((state) => state.settingsOpen);
+  const closeSettings = useStore((state) => state.closeSettings);
   const sidebarOpen = useStore((state) => state.sidebarOpen);
   const toggleSidebar = useStore((state) => state.toggleSidebar);
   const notify = useStore((state) => state.notify);
@@ -86,6 +101,7 @@ export function Shell({ session }: { session: Session }) {
   const [undoOpen, setUndoOpen] = useState(false);
 
   const repoQuery = useQuery({ queryKey: ['repo'], queryFn: api.repo });
+  const providerQuery = useQuery({ queryKey: ['repo-provider'], queryFn: api.repoProvider });
   const status = useQuery({
     queryKey: ['status'],
     queryFn: api.status,
@@ -99,6 +115,7 @@ export function Shell({ session }: { session: Session }) {
 
   const repo = repoQuery.data ?? session.repo;
   if (!repo) return null;
+  const remoteProvider = providerQuery.data?.remote ?? null;
 
   const changes = status.data?.files.length ?? repo.dirty;
   const conflicts = status.data
@@ -135,36 +152,43 @@ export function Shell({ session }: { session: Session }) {
   };
 
   return (
-    <div className="flex h-full min-h-0 bg-canvas">
+    <div className="app-backdrop flex h-full min-h-0 bg-transparent">
       <aside
         className={cn(
-          'flex shrink-0 flex-col border-r border-edge bg-panel transition-[width] duration-200',
+          'flex shrink-0 flex-col border-r border-edge/80 bg-panel/80 backdrop-blur-2xl transition-[width] duration-200',
           sidebarOpen ? 'w-60' : 'w-0 overflow-hidden border-r-0',
         )}
       >
         <div className="flex items-center gap-2.5 px-4 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent">
+          <div className="brand-mark flex h-8 w-8 items-center justify-center rounded-lg border">
             <GitBranch className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold">Gitastic</p>
+            <p className="brand-title text-sm font-semibold">Gitastic</p>
             <p className="truncate text-[11px] text-faint">local Git client</p>
           </div>
         </div>
 
-        <div className="mx-2 mb-3 rounded-lg border border-edge bg-raised/50 p-2.5">
+        <div className="repo-card mx-2 mb-3 rounded-lg border p-2.5">
           <div className="flex items-start gap-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-ink">{repo.name}</p>
-              <p className="truncate font-mono text-[10px] text-faint" title={repo.path}>
-                {repo.path}
-              </p>
+              <PathText text={repo.path} className="font-mono text-[10px] text-faint" />
             </div>
             <button
               type="button"
               className="btn-icon h-6 w-6"
               title="Close repository"
-              onClick={() => void run(() => api.closeRepo(), 'Repository closed')}
+              onClick={() =>
+                void run(
+                  async () => {
+                    await api.closeRepo();
+                    await queryClient.invalidateQueries({ queryKey: ['session'] });
+                  },
+                  'Repository closed',
+                  { refresh: false },
+                )
+              }
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -193,6 +217,12 @@ export function Shell({ session }: { session: Session }) {
           <NavItem view="history" label="Timeline" icon={History} />
           <NavItem view="changes" label="Changes" icon={FileDiff} count={changes} />
           <NavItem view="branches" label="Branches" icon={GitBranch} />
+          <NavItem
+            view="pulls"
+            label={remoteProvider?.provider === 'gitlab' ? 'Merge Requests' : 'Pull Requests'}
+            icon={GitPullRequest}
+          />
+          <NavItem view="worktrees" label="Worktrees" icon={FolderGit2} />
           <NavItem view="tags" label="Tags" icon={Tags} />
           <NavItem view="remotes" label="Remotes" icon={Cloud} />
           <NavItem view="stashes" label="Stashes" icon={Archive} />
@@ -208,7 +238,7 @@ export function Shell({ session }: { session: Session }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-edge bg-panel px-3">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-edge/80 bg-panel/75 px-3 backdrop-blur-2xl">
           <button
             type="button"
             className="btn-icon"
@@ -227,6 +257,58 @@ export function Shell({ session }: { session: Session }) {
           </div>
 
           <div className="ml-auto flex items-center gap-1">
+            {remoteProvider ? (
+              <>
+                {repo.branch ? (
+                  <a
+                    href={buildCreatePullUrl(remoteProvider, repo.branch)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-ghost"
+                    title={`Create ${remoteProvider.provider === 'gitlab' ? 'Merge Request' : 'Pull Request'} for ${repo.branch}`}
+                  >
+                    <GitPullRequest className="h-4 w-4 text-accent" />
+                    <span className="hidden xl:inline">
+                      New {remoteProvider.provider === 'gitlab' ? 'MR' : 'PR'}
+                    </span>
+                  </a>
+                ) : null}
+                <a
+                  href={
+                    repo.branch
+                      ? buildRemoteBranchUrl(remoteProvider, repo.branch)
+                      : remoteProvider.webUrl
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-ghost"
+                  title={`Open on ${remoteProvider.host}`}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span className="hidden 2xl:inline">
+                    {remoteProvider.provider === 'gitlab' ? 'GitLab' : 'GitHub'}
+                  </span>
+                </a>
+                <div className="mx-1 h-5 w-px bg-edge" />
+              </>
+            ) : null}
+            <button
+              type="button"
+              className="btn-icon"
+              title="Open repository in Editor"
+              onClick={() => void api.openInEditor()}
+            >
+              <SquareTerminal className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="btn-icon"
+              title="Reveal repository in Finder"
+              onClick={() => void api.revealInFinder()}
+            >
+              <FolderOpen className="h-4 w-4" />
+            </button>
+            <div className="mx-1 h-5 w-px bg-edge" />
             <button
               type="button"
               className="btn btn-ghost"
@@ -310,17 +392,23 @@ export function Shell({ session }: { session: Session }) {
           </div>
         ) : null}
 
-        <main className="min-h-0 flex-1 overflow-hidden">
+        <main key={view} className="view-enter relative min-h-0 flex-1 overflow-hidden">
           {view === 'history' ? <HistoryView /> : null}
           {view === 'changes' ? <ChangesView /> : null}
           {view === 'branches' ? <BranchesView /> : null}
+          {view === 'pulls' ? <PullRequestsView /> : null}
+          {view === 'worktrees' ? <WorktreesView /> : null}
           {view === 'tags' ? <TagsView /> : null}
           {view === 'remotes' ? <RemotesView /> : null}
           {view === 'stashes' ? <StashesView /> : null}
           {view === 'conflicts' ? <ConflictsView /> : null}
           {view === 'blame' ? <BlameView /> : null}
           {view === 'file-history' ? <FileHistoryView /> : null}
-          {view === 'settings' ? <SettingsView session={session} /> : null}
+          {settingsOpen ? (
+            <div className=" bounds-overlay absolute inset-0 z-30 bg-canvas">
+              <SettingsView session={session} onClose={closeSettings} />
+            </div>
+          ) : null}
         </main>
       </div>
 

@@ -8,11 +8,13 @@ import {
   FilePenLine,
   FilePlus2,
   FileQuestion,
+  FolderOpen,
   GitCompare,
   History,
   Minus,
   Plus,
   RotateCcw,
+  SquareTerminal,
   Trash2,
   Undo2,
 } from 'lucide-react';
@@ -22,7 +24,7 @@ import { useAction } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import { DiffViewer } from './DiffViewer';
-import { ConfirmDialog, EmptyState, ErrorState, LoadingState, Modal, Spinner } from './ui';
+import { ConfirmDialog, EmptyState, ErrorState, LoadingState, Modal, PathText, Spinner } from './ui';
 
 function fileIcon(file: FileStatus) {
   if (file.conflicted) return <AlertTriangle className="h-4 w-4 text-danger" />;
@@ -66,20 +68,7 @@ function FileRow({
         onClick={onSelect}
       >
         {fileIcon(file)}
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-xs text-ink" title={file.path}>
-            {file.path}
-          </span>
-          {file.origPath ? (
-            <span className="block truncate font-mono text-[10px] text-faint">
-              from {file.origPath}
-            </span>
-          ) : null}
-        </span>
-        <span className="shrink-0 font-mono text-[10px] text-faint">
-          {file.index}
-          {file.worktree}
-        </span>
+        <PathText text={file.path} className="min-w-0 flex-1 text-xs text-ink" />
       </button>
       <div className="flex shrink-0 items-center opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
         {file.staged ? (
@@ -376,9 +365,10 @@ export function ChangesView() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-edge bg-panel px-3 py-1.5">
-          <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted">
-            {file?.path ?? 'Select a file'}
-          </span>
+          <PathText
+            text={file?.path ?? 'Select a file'}
+            className="min-w-0 flex-1 font-mono text-xs text-muted"
+          />
           {file && file.staged && file.unstaged ? (
             <div className="flex rounded-md border border-edge p-0.5">
               <button
@@ -399,6 +389,22 @@ export function ChangesView() {
           ) : null}
           {file ? (
             <>
+              <button
+                type="button"
+                className="btn-icon"
+                title="Open in Editor"
+                onClick={() => void api.openInEditor(file.path)}
+              >
+                <SquareTerminal className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className="btn-icon"
+                title="Reveal in Finder"
+                onClick={() => void api.revealInFinder(file.path)}
+              >
+                <FolderOpen className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 className="btn-icon"
@@ -451,6 +457,11 @@ export function ChangesView() {
               patch={diff.data.patch}
               binary={diff.data.binary}
               tooLarge={diff.data.tooLarge}
+              files={diff.data.files}
+              stageMode={file.untracked ? null : stagedView ? 'staged' : 'unstaged'}
+              onApplyPatch={({ patch, cached, reverse, label }) => {
+                void run(() => api.applyPatch({ patch, cached, reverse }), label);
+              }}
               emptyLabel="No diff for this view."
             />
           ) : null}

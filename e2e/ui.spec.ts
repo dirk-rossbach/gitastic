@@ -28,14 +28,14 @@ test('opens a repo, commits staged changes and browses sections', async ({ page 
   });
 
   await page.goto('/');
-  await page.getByText('Open repository').first().waitFor();
+  await page.getByText('Open from local').first().click();
   const pathInput = page.locator('input[placeholder="/Users/you/project"]');
   await pathInput.fill(repo);
   await pathInput.press('Enter');
 
   await page.getByRole('button', { name: 'Timeline' }).waitFor();
   await page.getByText('Initial commit').first().waitFor();
-  await page.getByText('Open repository').first().waitFor({ state: 'hidden' });
+  await page.getByText('Open from local').first().waitFor({ state: 'hidden' });
 
   await page.getByRole('button', { name: /Changes/ }).click();
   await page.getByText('README.md').first().waitFor();
@@ -102,7 +102,7 @@ test('resolves a merge conflict and continues the merge', async ({ page }) => {
     headers: { 'x-gitastic-request': '1' },
   });
   await page.goto('/');
-  await page.getByText('Open repository').first().waitFor();
+  await page.getByText('Open from local').first().click();
   const pathInput = page.locator('input[placeholder="/Users/you/project"]');
   await pathInput.fill(repo);
   await pathInput.press('Enter');
@@ -137,7 +137,7 @@ test('creates a branch, creates a tag and stashes changes', async ({ page }) => 
     headers: { 'x-gitastic-request': '1' },
   });
   await page.goto('/');
-  await page.getByText('Open repository').first().waitFor();
+  await page.getByText('Open from local').first().click();
   const pathInput = page.locator('input[placeholder="/Users/you/project"]');
   await pathInput.fill(repo);
   await pathInput.press('Enter');
@@ -191,8 +191,7 @@ test('clones a repository through the UI job', async ({ page }) => {
     headers: { 'x-gitastic-request': '1' },
   });
   await page.goto('/');
-  await page.getByText('Open repository').first().waitFor();
-  await page.getByRole('button', { name: 'Clone', exact: true }).click();
+  await page.getByText('Clone from remote').first().click();
   await page.locator('input[placeholder="https://github.com/owner/repo.git"]').fill(source);
   const cloneInputs = page.locator('label').filter({ hasText: 'Clone into' }).locator('input');
   await cloneInputs.fill(target);

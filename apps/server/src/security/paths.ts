@@ -45,11 +45,7 @@ export async function assertRepoPath(input: string, roots: string[], home: strin
   );
 
   if (!realRoots.some((root) => isPathInside(root, resolved))) {
-    throw new AppError(
-      403,
-      'PATH_OUTSIDE_HOME',
-      'Gitastic only opens repositories under your home directory.',
-    );
+    throw new AppError(403, 'PATH_NOT_ALLOWED', 'Path is outside the allowed filesystem root.');
   }
 
   const dotGit = path.join(resolved, '.git');
@@ -77,7 +73,7 @@ async function realpathLoose(target: string): Promise<string> {
   }
 }
 
-export async function assertInsideHome(input: string, roots: string[], home: string): Promise<string> {
+export async function assertInsideRoots(input: string, roots: string[], home: string): Promise<string> {
   const requested = resolveUserPath(input, home);
   const resolved = await realpathLoose(requested);
   const realRoots = await Promise.all(
@@ -90,7 +86,7 @@ export async function assertInsideHome(input: string, roots: string[], home: str
     }),
   );
   if (!realRoots.some((root) => isPathInside(root, resolved))) {
-    throw new AppError(403, 'PATH_OUTSIDE_HOME', 'Path must be inside your home directory.');
+    throw new AppError(403, 'PATH_NOT_ALLOWED', 'Path is outside the allowed filesystem root.');
   }
   return resolved;
 }
@@ -116,7 +112,7 @@ export async function listDirectories(
   roots: string[],
   home: string,
 ): Promise<DirectoryListing> {
-  const current = await assertInsideHome(input ?? home, roots, home);
+  const current = await assertInsideRoots(input ?? home, roots, home);
   const stat = await fs.stat(current).catch(() => null);
   if (!stat || !stat.isDirectory()) {
     throw new AppError(400, 'NOT_A_DIRECTORY', `Not a directory: ${current}`);
@@ -143,6 +139,6 @@ export async function listDirectories(
 
   entries.sort((a, b) => Number(b.isRepo) - Number(a.isRepo) || a.name.localeCompare(b.name));
 
-  const parent = isPathInside(home, current) && current !== home ? path.dirname(current) : null;
+  const parent = current !== path.parse(current).root ? path.dirname(current) : null;
   return { path: current, parent, entries };
 }

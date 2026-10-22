@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -79,6 +80,31 @@ describe('API security and health', () => {
     expect(response.json().error.code).toBe('MISSING_REQUEST_HEADER');
   });
 
+  it('lists the filesystem root', async () => {
+    const root = path.parse(homeDir).root;
+    const listing = await json(
+      await request('GET', `/api/fs/list?path=${encodeURIComponent(root)}`),
+    );
+    expect(listing.path).toBe(fs.realpathSync(root));
+    expect(listing.parent).toBeNull();
+  });
+
+  it('opens a repository outside GITASTIC_HOME', async () => {
+    const external = fs.mkdtempSync(path.join(os.tmpdir(), 'gitastic-external-'));
+    try {
+      git(external, 'init', '-q', '-b', 'main');
+      git(external, 'config', 'user.name', 'Test User');
+      git(external, 'config', 'user.email', 'test@example.com');
+      writeFile(external, 'file.txt', 'outside\n');
+      commitAll(external, 'External commit');
+
+      const opened = await json(await request('POST', '/api/repos/open', { path: external }));
+      expect(opened.path).toBe(fs.realpathSync(external));
+    } finally {
+      fs.rmSync(external, { recursive: true, force: true });
+    }
+  });
+
   it('rejects foreign origins', async () => {
     const response = await app.inject({
       method: 'POST',
@@ -107,7 +133,16 @@ describe('staging and commits', () => {
     await json(await request('POST', '/api/repo/commit', { message: 'Add change' }));
     const history = await json(await request('GET', '/api/repo/history?limit=5'));
     expect(history.commits[0].subject).toBe('Add change');
+    expect(history.commits[0].laneBranches).toContainEqual({
+      lane: history.commits[0].lane,
+      labels: ['main'],
+    });
     expect(git(repoPath, 'log', '-1', '--pretty=%s')).toBe('Add change');
+
+    const cleared = await json(await request('POST', '/api/cache/clear', {}));
+    expect(cleared.ok).toBe(true);
+    const afterClear = await json(await request('GET', '/api/repo/history?limit=5'));
+    expect(afterClear.commits[0].subject).toBe('Add change');
   });
 });
 
@@ -233,6 +268,39 @@ describe('remotes and jobs', () => {
     await waitForJob(pull.job.id);
     expect(readFile(repoPath, 'file.txt')).toBe('from remote\n');
   });
+
+  it('checks out a remote branch as a local tracking branch', async () => {
+    const origin = path.join(homeDir, `tracking-origin-${process.pid}-${Date.now()}.git`);
+    execFileSync('git', ['init', '-q', '--bare', origin]);
+    await json(
+      await request('POST', '/api/repo/remote', { name: 'origin', url: origin }),
+    );
+    const push = await json(
+      await request('POST', '/api/repo/push', {
+        remote: 'origin',
+        branch: 'main',
+        setUpstream: true,
+      }),
+    );
+    await waitForJob(push.job.id);
+
+    git(repoPath, 'checkout', '-q', '-b', 'feature/helm-charts');
+    writeFile(repoPath, 'chart.txt', 'chart\n');
+    commitAll(repoPath, 'Helm chart');
+    git(repoPath, 'push', '-q', '-u', 'origin', 'feature/helm-charts');
+    git(repoPath, 'checkout', '-q', 'main');
+
+    const fetch = await json(await request('POST', '/api/repo/fetch', {}));
+    await waitForJob(fetch.job.id);
+
+    await json(
+      await request('POST', '/api/repo/checkout', { ref: 'origin/feature/helm-charts' }),
+    );
+    expect(git(repoPath, 'branch', '--show-current')).toBe('feature/helm-charts');
+    expect(git(repoPath, 'rev-parse', '--abbrev-ref', '@{upstream}')).toBe(
+      'origin/feature/helm-charts',
+    );
+  });
 });
 
 describe('branches, tags, stashes and rebase', () => {
@@ -288,5 +356,158 @@ describe('clone jobs', () => {
     expect(fs.existsSync(path.join(target, '.git'))).toBe(true);
     const session = await json(await request('GET', '/api/session'));
     expect(session.repo.path).toBe(fs.realpathSync(target));
+  });
+});
+
+describe('GitHub, GitLab and SSH provider integration', () => {
+  it('parses GitHub and GitLab remotes for deep-links and PR/MR shortcuts', async () => {
+    await json(
+      await request('POST', '/api/repo/remote', {
+        name: 'origin',
+        url: 'git@github.com:octocat/hello-world.git',
+      }),
+    );
+    const ghProvider = await json(await request('GET', '/api/repo/provider'));
+    expect(ghProvider.remote).toMatchObject({
+      remoteName: 'origin',
+      provider: 'github',
+      host: 'github.com',
+      owner: 'octocat',
+      repo: 'hello-world',
+      fullName: 'octocat/hello-world',
+      webUrl: 'https://github.com/octocat/hello-world',
+      pullsUrl: 'https://github.com/octocat/hello-world/pulls',
+    });
+
+    await json(
+      await request('POST', '/api/repo/remote/url', {
+        name: 'origin',
+        url: 'https://gitlab.example.org/platform/core/service.git',
+      }),
+    );
+    const glProvider = await json(await request('GET', '/api/repo/provider'));
+    expect(glProvider.remote).toMatchObject({
+      remoteName: 'origin',
+      provider: 'gitlab',
+      host: 'gitlab.example.org',
+      owner: 'platform/core',
+      repo: 'service',
+      fullName: 'platform/core/service',
+      webUrl: 'https://gitlab.example.org/platform/core/service',
+      pullsUrl: 'https://gitlab.example.org/platform/core/service/-/merge_requests',
+    });
+  });
+
+  it('generates an SSH key in ~/.ssh and reports provider status', async () => {
+    const generated = await json(
+      await request('POST', '/api/providers/ssh/generate', { label: 'test@gitastic' }),
+    );
+    expect(generated.name).toContain('id_ed25519');
+    expect(generated.publicKey).toContain('ssh-ed25519');
+
+    const status = await json(await request('GET', '/api/providers/status'));
+    expect(status.sshKeys.some((key: any) => key.name === generated.name)).toBe(true);
+    expect(status.accounts.map((acc: any) => acc.provider)).toEqual(
+      expect.arrayContaining(['github', 'gitlab']),
+    );
+
+    const removed = await json(
+      await request('POST', '/api/providers/ssh/remove', {
+        path: generated.path,
+        deleteFiles: true,
+      }),
+    );
+    expect(removed.ok).toBe(true);
+    const statusAfter = await json(await request('GET', '/api/providers/status'));
+    expect(statusAfter.sshKeys.some((key: any) => key.name === generated.name)).toBe(false);
+
+    const updatedIdentity = await json(
+      await request('PUT', '/api/git-identity', {
+        name: 'Gitastic Tester',
+        email: 'tester@gitastic.local',
+      }),
+    );
+    expect(updatedIdentity).toEqual({
+      name: 'Gitastic Tester',
+      email: 'tester@gitastic.local',
+    });
+    const fetchedIdentity = await json(await request('GET', '/api/git-identity'));
+    expect(fetchedIdentity).toEqual({
+      name: 'Gitastic Tester',
+      email: 'tester@gitastic.local',
+    });
+  });
+
+  it('checks out a Pull Request branch from a remote', async () => {
+    const origin = path.join(homeDir, `pr-origin-${process.pid}-${Date.now()}.git`);
+    execFileSync('git', ['init', '-q', '--bare', origin]);
+    await json(
+      await request('POST', '/api/repo/remote', { name: 'origin', url: origin }),
+    );
+    git(repoPath, 'checkout', '-q', '-b', 'pr-feature');
+    writeFile(repoPath, 'pr.txt', 'from pr\n');
+    commitAll(repoPath, 'PR commit');
+    git(repoPath, 'push', '-q', 'origin', 'pr-feature');
+    git(repoPath, 'checkout', '-q', 'main');
+    git(repoPath, 'branch', '-D', 'pr-feature');
+
+    await json(
+      await request('POST', '/api/repo/pulls/checkout', {
+        number: 42,
+        sourceBranch: 'pr-feature',
+        remote: 'origin',
+      }),
+    );
+    expect(git(repoPath, 'branch', '--show-current')).toBe('pr-feature');
+    expect(readFile(repoPath, 'pr.txt')).toBe('from pr\n');
+  });
+
+  it('stages a single line via apply-patch and manages worktrees', async () => {
+    writeFile(repoPath, 'file.txt', 'base\nline-one\nline-two\n');
+    const singleLinePatch = [
+      'diff --git a/file.txt b/file.txt',
+      '--- a/file.txt',
+      '+++ b/file.txt',
+      '@@ -1,1 +1,2 @@',
+      ' base',
+      '+line-one',
+      '',
+    ].join('\n');
+
+    await json(
+      await request('POST', '/api/repo/apply-patch', {
+        patch: singleLinePatch,
+        cached: true,
+        reverse: false,
+      }),
+    );
+
+    const stagedDiff = await json(await request('GET', '/api/repo/diff?staged=true'));
+    expect(stagedDiff.patch).toContain('+line-one');
+    expect(stagedDiff.patch).not.toContain('+line-two');
+
+    const unstagedDiff = await json(await request('GET', '/api/repo/diff?staged=false'));
+    expect(unstagedDiff.patch).toContain('+line-two');
+
+    const wtTarget = path.join(homeDir, `wt-${process.pid}-${Date.now()}`);
+    await json(
+      await request('POST', '/api/repo/worktrees/add', {
+        path: wtTarget,
+        branch: 'wt-branch',
+        createBranch: true,
+      }),
+    );
+
+    const worktrees = await json(await request('GET', '/api/repo/worktrees'));
+    expect(worktrees.some((wt: any) => wt.branch === 'wt-branch')).toBe(true);
+
+    await json(
+      await request('POST', '/api/repo/worktrees/remove', {
+        path: wtTarget,
+        force: true,
+      }),
+    );
+    const worktreesAfter = await json(await request('GET', '/api/repo/worktrees'));
+    expect(worktreesAfter.some((wt: any) => wt.branch === 'wt-branch')).toBe(false);
   });
 });

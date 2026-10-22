@@ -5,6 +5,8 @@ export type View =
   | 'history'
   | 'changes'
   | 'branches'
+  | 'pulls'
+  | 'worktrees'
   | 'tags'
   | 'remotes'
   | 'stashes'
@@ -25,6 +27,13 @@ export interface Toast {
 interface Store {
   view: View;
   setView: (view: View) => void;
+  settingsOpen: boolean;
+  openSettings: () => void;
+  closeSettings: () => void;
+  commandPaletteOpen: boolean;
+  openCommandPalette: () => void;
+  closeCommandPalette: () => void;
+  toggleCommandPalette: () => void;
   selectedCommit: string | null;
   setSelectedCommit: (hash: string | null) => void;
   selectedFile: string | null;
@@ -44,11 +53,24 @@ interface Store {
   toasts: Toast[];
   notify: (kind: ToastKind, message: string, details?: string) => void;
   dismissToast: (id: string) => void;
+  resetRepoState: () => void;
 }
 
 export const useStore = create<Store>((set, get) => ({
   view: 'history',
-  setView: (view) => set({ view }),
+  setView: (view) =>
+    set(() =>
+      view === 'settings'
+        ? { settingsOpen: true }
+        : { view, settingsOpen: false },
+    ),
+  settingsOpen: false,
+  openSettings: () => set({ settingsOpen: true }),
+  closeSettings: () => set({ settingsOpen: false }),
+  commandPaletteOpen: false,
+  openCommandPalette: () => set({ commandPaletteOpen: true }),
+  closeCommandPalette: () => set({ commandPaletteOpen: false }),
+  toggleCommandPalette: () => set({ commandPaletteOpen: !get().commandPaletteOpen }),
   selectedCommit: null,
   setSelectedCommit: (selectedCommit) => set({ selectedCommit }),
   selectedFile: null,
@@ -75,4 +97,16 @@ export const useStore = create<Store>((set, get) => ({
   },
   dismissToast: (id) =>
     set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),
+  resetRepoState: () =>
+    set({
+      view: 'history',
+      settingsOpen: false,
+      commandPaletteOpen: false,
+      selectedCommit: null,
+      selectedFile: null,
+      blamePath: null,
+      fileHistoryPath: null,
+      historyQuery: '',
+      refFilter: null,
+    }),
 }));

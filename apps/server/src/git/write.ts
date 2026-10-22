@@ -42,6 +42,45 @@ export async function unstage(
   return runner.run(repoPath, ['rm', '--cached', '-r', '--ignore-unmatch', '.']);
 }
 
+export async function applyPatch(
+  runner: GitRunner,
+  repoPath: string,
+  options: { patch: string; cached?: boolean; reverse?: boolean },
+): Promise<GitResult> {
+  const args = ['apply', '--unidiff-zero', '--recount', '--whitespace=nowarn'];
+  if (options.cached) args.push('--cached');
+  if (options.reverse) args.push('--reverse');
+  const input = options.patch.endsWith('\n') ? options.patch : `${options.patch}\n`;
+  return runner.run(repoPath, args, { input });
+}
+
+export async function addWorktree(
+  runner: GitRunner,
+  repoPath: string,
+  options: { path: string; branch: string; createBranch?: boolean; startPoint?: string },
+): Promise<GitResult> {
+  const args = ['worktree', 'add'];
+  if (options.createBranch) {
+    args.push('-b', options.branch, options.path);
+    if (options.startPoint) args.push(options.startPoint);
+  } else {
+    args.push(options.path, options.branch);
+  }
+  return runner.run(repoPath, args);
+}
+
+export async function removeWorktree(
+  runner: GitRunner,
+  repoPath: string,
+  targetPath: string,
+  force = false,
+): Promise<GitResult> {
+  const args = ['worktree', 'remove'];
+  if (force) args.push('--force');
+  args.push(targetPath);
+  return runner.run(repoPath, args);
+}
+
 export async function commit(
   runner: GitRunner,
   repoPath: string,
@@ -71,6 +110,29 @@ export async function checkout(
 ): Promise<GitResult> {
   const result = await runner.run(repoPath, ['switch', ref], { allowFail: true });
   if (result.exitCode === 0) return result;
+
+  const remoteRef = ref.startsWith('refs/remotes/') ? ref : `refs/remotes/${ref}`;
+  const remote = await runner.run(
+    repoPath,
+    ['rev-parse', '--verify', '--quiet', remoteRef],
+    { allowFail: true },
+  );
+  if (remote.exitCode === 0) {
+    const shortRef = ref.startsWith('refs/remotes/')
+      ? ref.slice('refs/remotes/'.length)
+      : ref;
+    const localName = shortRef.slice(shortRef.indexOf('/') + 1);
+    const existing = await runner.run(
+      repoPath,
+      ['rev-parse', '--verify', '--quiet', `refs/heads/${localName}`],
+      { allowFail: true },
+    );
+    if (existing.exitCode === 0) {
+      return runner.run(repoPath, ['switch', localName]);
+    }
+    return runner.run(repoPath, ['switch', '--track', shortRef]);
+  }
+
   if (/^[0-9a-f]{4,40}$/i.test(ref)) {
     return runner.run(repoPath, ['switch', '--detach', ref]);
   }

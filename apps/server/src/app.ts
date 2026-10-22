@@ -8,6 +8,7 @@ import { z } from 'zod';
 import {
   API_REQUEST_HEADER,
   MIN_GIT_VERSION,
+  ApplyPatchSchema,
   BranchCreateSchema,
   BranchDeleteSchema,
   BranchRenameSchema,
@@ -19,10 +20,15 @@ import {
   ConflictBinarySchema,
   ConflictResolveSchema,
   FetchSchema,
+  GitIdentitySchema,
   MergeSchema,
   OpenRepoSchema,
   OperationActionSchema,
   OperationKindSchema,
+  ProviderConnectSchema,
+  ProviderDisconnectSchema,
+  ProviderKindSchema,
+  PullRequestCheckoutSchema,
   PullSchema,
   PushSchema,
   RebaseSchema,
@@ -32,20 +38,41 @@ import {
   ResetSchema,
   RestoreSchema,
   SettingsPatchSchema,
+  SshAddKeySchema,
+  SshGenerateKeySchema,
+  SshRemoveKeySchema,
   StageSchema,
   StashPushSchema,
   StashRefSchema,
+  SystemPathActionSchema,
   TagCreateSchema,
   TagDeleteSchema,
   TagPushSchema,
   UpstreamSchema,
+  WorktreeAddSchema,
+  WorktreeRemoveSchema,
   type OperationKind,
+  type ProviderKind,
   type UndoEntry,
 } from '@gitastic/shared';
 import { dataDir, homeDir } from './config';
 import { AppError, errorMessage } from './errors';
 import { getConflicts, resolveBinaryConflict, resolveConflictFile } from './git/conflict';
 import { getBlame, getFileHistory } from './git/history';
+import {
+  addSshKeyToAgent,
+  checkoutPullRequest,
+  connectProviderAccount,
+  disconnectProviderAccount,
+  generateSshKey,
+  getGitIdentity,
+  getProvidersStatus,
+  listProviderRepos,
+  listRepoPullRequests,
+  removeSshKey,
+  selectPrimaryRemoteInfo,
+  setGitIdentity,
+} from './git/providers';
 import {
   getCommitDetail,
   getDiff,
@@ -54,6 +81,7 @@ import {
   listRemotes,
   listStashes,
   listTags,
+  listWorktrees,
 } from './git/repo';
 import {
   backupWorkingTree,
@@ -62,7 +90,7 @@ import {
   saveBranchToTrash,
 } from './git/safety';
 import * as write from './git/write';
-import { assertRepoFile, assertInsideHome, listDirectories, toPosix } from './security/paths';
+import { assertRepoFile, assertInsideRoots, listDirectories, toPosix } from './security/paths';
 import type { AppState, OpenRepo } from './state';
 
 export interface BuildAppOptions {
@@ -227,7 +255,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
 
   app.get('/api/health', async () => ({
     ok: true,
-    version: '0.1.0',
+    version: '1.0.0',
     gitVersion: await state.runner.version(),
     minGitVersion: MIN_GIT_VERSION,
   }));
@@ -240,11 +268,76 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     return state.updateSettings(patch);
   });
 
+  app.post('/api/cache/clear', async () => {
+    await state.clearCache();
+    return { ok: true };
+  });
+
   app.get('/api/fs/list', async (request) =>
     listDirectories(queryValue(request, 'path'), state.config.repoRoots, homeDir),
   );
 
   app.get('/api/repos/recent', async () => state.config.recentRepos);
+
+  app.get('/api/providers/status', async () => {
+    const extraHosts: Array<{ provider: ProviderKind; host: string }> = [];
+    try {
+      const current = state.getRepo();
+      const remotes = await listRemotes(state.runner, current.path);
+      const info = selectPrimaryRemoteInfo(remotes);
+      if (info) {
+        extraHosts.push({ provider: info.provider, host: info.host });
+      }
+    } catch {
+      // No open repo
+    }
+    return getProvidersStatus(state.runner, extraHosts);
+  });
+
+  app.post('/api/providers/connect', async (request) => {
+    const body = parseBody(ProviderConnectSchema, request.body);
+    return connectProviderAccount(state.runner, body);
+  });
+
+  app.post('/api/providers/disconnect', async (request) => {
+    const body = parseBody(ProviderDisconnectSchema, request.body);
+    return disconnectProviderAccount(state.runner, body);
+  });
+
+  app.get('/api/providers/repos', async (request) => {
+    const providerRaw = queryValue(request, 'provider') ?? 'github';
+    const parsedProvider = ProviderKindSchema.safeParse(providerRaw);
+    if (!parsedProvider.success) {
+      throw new AppError(400, 'INVALID_PROVIDER', 'Provider must be github or gitlab.');
+    }
+    return listProviderRepos(state.runner, {
+      provider: parsedProvider.data,
+      host: queryValue(request, 'host'),
+      query: queryValue(request, 'q'),
+    });
+  });
+
+  app.post('/api/providers/ssh/add', async (request) => {
+    const body = parseBody(SshAddKeySchema, request.body);
+    return addSshKeyToAgent(body.path, body.passphrase);
+  });
+
+  app.post('/api/providers/ssh/generate', async (request) => {
+    const body = parseBody(SshGenerateKeySchema, request.body ?? {});
+    return generateSshKey(body.label);
+  });
+
+  app.post('/api/providers/ssh/remove', async (request) => {
+    const body = parseBody(SshRemoveKeySchema, request.body);
+    return removeSshKey(body.path, body.deleteFiles);
+  });
+
+  app.get('/api/git-identity', async () => getGitIdentity(state.runner));
+
+  app.put('/api/git-identity', async (request) => {
+    const body = parseBody(GitIdentitySchema, request.body);
+    return setGitIdentity(state.runner, body);
+  });
 
   app.post('/api/repos/open', async (request) => {
     const body = parseBody(OpenRepoSchema, request.body);
@@ -258,7 +351,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
 
   app.post('/api/repos/clone', async (request, reply) => {
     const body = parseBody(CloneRepoSchema, request.body);
-    const target = await assertInsideHome(body.path, state.config.repoRoots, homeDir);
+    const target = await assertInsideRoots(body.path, state.config.repoRoots, homeDir);
     const parent = path.dirname(target);
     const parentStat = await fsp.stat(parent).catch(() => null);
     if (!parentStat || !parentStat.isDirectory()) {
@@ -333,9 +426,99 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     return listRemotes(state.runner, repo.path);
   });
 
+  app.get('/api/repo/provider', async (request) => {
+    const repo = repoFor(state, request);
+    const remotes = await listRemotes(state.runner, repo.path);
+    return { remote: selectPrimaryRemoteInfo(remotes) };
+  });
+
+  app.get('/api/repo/pulls', async (request) => {
+    const repo = repoFor(state, request);
+    return listRepoPullRequests(state.runner, repo.path);
+  });
+
+  app.post('/api/repo/pulls/checkout', async (request) => {
+    const repo = repoFor(state, request);
+    const body = parseBody(PullRequestCheckoutSchema, request.body);
+    await checkoutPullRequest(state.runner, repo.path, body);
+    state.invalidate(repo.id);
+    return state.summary(repo.id);
+  });
+
   app.get('/api/repo/stashes', async (request) => {
     const repo = repoFor(state, request);
     return listStashes(state.runner, repo.path);
+  });
+
+  app.get('/api/repo/worktrees', async (request) => {
+    const repo = repoFor(state, request);
+    return listWorktrees(state.runner, repo.path);
+  });
+
+  app.post('/api/repo/worktrees/add', async (request) => {
+    const repo = repoFor(state, request);
+    const body = parseBody(WorktreeAddSchema, request.body);
+    const target = await assertInsideRoots(body.path, state.config.repoRoots, homeDir);
+    await write.addWorktree(state.runner, repo.path, {
+      path: target,
+      branch: body.branch,
+      createBranch: body.createBranch,
+      startPoint: body.startPoint,
+    });
+    state.invalidate(repo.id);
+    return { ok: true };
+  });
+
+  app.post('/api/repo/worktrees/remove', async (request) => {
+    const repo = repoFor(state, request);
+    const body = parseBody(WorktreeRemoveSchema, request.body);
+    await write.removeWorktree(state.runner, repo.path, body.path, body.force);
+    state.invalidate(repo.id);
+    return { ok: true };
+  });
+
+  app.post('/api/repo/apply-patch', async (request) => {
+    const repo = repoFor(state, request);
+    const body = parseBody(ApplyPatchSchema, request.body);
+    const result = await write.applyPatch(state.runner, repo.path, body);
+    state.invalidate(repo.id);
+    return { ok: true, output: outputOf(result) };
+  });
+
+  app.post('/api/system/reveal', async (request) => {
+    const repo = repoFor(state, request);
+    const body = parseBody(SystemPathActionSchema, request.body ?? {});
+    const target = body.path ? await assertRepoFile(repo.path, body.path) : repo.path;
+    const { execa } = await import('execa');
+    await execa('open', ['-R', target], { reject: false });
+    return { ok: true };
+  });
+
+  app.post('/api/system/terminal', async (request) => {
+    const repo = repoFor(state, request);
+    const { execa } = await import('execa');
+    await execa('open', ['-a', 'Terminal', repo.path], { reject: false });
+    return { ok: true };
+  });
+
+  app.post('/api/system/editor', async (request) => {
+    const repo = repoFor(state, request);
+    const body = parseBody(SystemPathActionSchema, request.body ?? {});
+    const target = body.path ? await assertRepoFile(repo.path, body.path) : repo.path;
+    const { execa } = await import('execa');
+    const candidates = ['cursor', 'zed', 'code'];
+    let opened = false;
+    for (const bin of candidates) {
+      const res = await execa(bin, [target], { reject: false });
+      if (res.exitCode === 0) {
+        opened = true;
+        break;
+      }
+    }
+    if (!opened) {
+      await execa('open', [target], { reject: false });
+    }
+    return { ok: true };
   });
 
   app.get('/api/repo/blame', async (request) => {

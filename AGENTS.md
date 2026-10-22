@@ -29,7 +29,7 @@ If Playwright cannot find its managed browser, either run `npx playwright instal
 - `apps/server/src/git/history.ts` — graph lane layout, pagination, blame and file history.
 - `apps/server/src/git/conflict.ts` — conflict parsing and block resolution.
 - `apps/server/src/git/safety.ts` — backup refs, trash and restore helpers.
-- `apps/server/src/security/paths.ts` — repository boundary checks. Uses a loose realpath so nonexistent clone targets under symlinked roots still resolve correctly.
+- `apps/server/src/security/paths.ts` — path, repository and file-boundary checks. Uses a loose realpath so nonexistent clone targets under symlinked roots still resolve correctly.
 - `apps/web/src/App.tsx` — session gate, theme and shell bootstrap.
 - `apps/web/src/api.ts` — typed API client and job EventSource helper.
 - `apps/web/src/store.ts` — Zustand view, job, dialog and toast state.
@@ -38,7 +38,8 @@ If Playwright cannot find its managed browser, either run `npx playwright instal
 ## Invariants
 
 - Every mutation is sent with `x-gitastic-request: 1` and passes loopback/origin checks.
-- Repositories and repository files must remain inside `GITASTIC_HOME` / the user's home.
+- Full local filesystem browsing is intentional. Do not reintroduce home-only checks without product approval.
+- Repository file operations must remain inside the selected repository; `.git` paths are rejected where the API accepts file paths.
 - Never pass `--no-verify`. Never store Git credentials or provider tokens.
 - Force push only with `--force-with-lease`.
 - Destructive operations must create a backup ref or trash entry and a matching undo entry where the UI exposes undo.
@@ -49,7 +50,7 @@ If Playwright cannot find its managed browser, either run `npx playwright instal
 
 ## Gotchas
 
-- `apps/server/src/config.ts` resolves `GITASTIC_HOME`, `GITASTIC_CONFIG_DIR` and `GITASTIC_DATA_DIR` at module load. Tests set them in `apps/server/test/setup.ts` before importing app modules.
+- `apps/server/src/config.ts` resolves `GITASTIC_HOME`, `GITASTIC_CONFIG_DIR` and `GITASTIC_DATA_DIR` at module load. `rootDir` is derived from `GITASTIC_HOME`; tests set these variables in `apps/server/test/setup.ts` before importing app modules.
 - The server serves `apps/web/dist` when present. Run the web build before testing the production server or the Playwright suite.
 - Tailwind CSS 4 is configured through `@tailwindcss/vite` and `@import "tailwindcss"` in `apps/web/src/styles.css`. There is intentionally no `tailwind.config.ts` or `postcss.config.js`.
 - Keep Vite and Vitest versions aligned across workspaces. A stale nested `apps/web/node_modules/vite` once caused conflicting TypeScript Vite types; a clean reinstall fixed it.

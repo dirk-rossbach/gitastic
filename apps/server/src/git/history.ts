@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import type {
   BlameResponse,
   CommitBase,
@@ -5,6 +7,8 @@ import type {
   FileHistoryResponse,
   HistoryPage,
 } from '@gitastic/shared';
+import { dataDir } from '../config';
+import { repoIdForPath } from '../security/paths';
 import type { GitRunner } from './runner';
 import { parseBlamePorcelain, parseCommitLog, COMMIT_LOG_FORMAT } from './parse';
 
@@ -13,10 +17,27 @@ export interface LayoutRow {
   activeLanes: number[];
   nextActiveLanes: number[];
   parentLanes: number[];
+  laneBranches: Array<{ lane: number; labels: string[] }>;
+}
+
+function branchLabels(refs: string[]): string[] {
+  const labels = refs
+    .filter((ref) => !ref.startsWith('tag: '))
+    .map((ref) => {
+      const arrow = ref.lastIndexOf(' -> ');
+      return arrow >= 0 ? ref.slice(arrow + 4) : ref;
+    })
+    .filter((ref) => ref && ref !== 'HEAD' && !ref.endsWith('/HEAD'));
+  return [...new Set(labels)];
+}
+
+function mergeLabels(current: string[], incoming: string[]): string[] {
+  return [...new Set([...current, ...incoming])];
 }
 
 export interface HistoryCache {
   loaded: boolean;
+  fingerprint: string;
   commits: CommitBase[];
   layout: LayoutRow[];
   maxLanes: number;
@@ -26,6 +47,7 @@ export interface HistoryCache {
 export function createHistoryCache(): HistoryCache {
   return {
     loaded: false,
+    fingerprint: '',
     commits: [],
     layout: [],
     maxLanes: 1,
@@ -33,8 +55,14 @@ export function createHistoryCache(): HistoryCache {
   };
 }
 
+async function historyFingerprint(runner: GitRunner, repoPath: string): Promise<string> {
+  const refs = await runner.run(repoPath, ['show-ref', '--head'], { allowFail: true });
+  return refs.stdout.trim();
+}
+
 export function computeLayout(commits: CommitBase[]): { rows: LayoutRow[]; maxLanes: number } {
   const lanes: Array<string | null> = [];
+  const labels: string[][] = [];
   const rows: LayoutRow[] = [];
   let maxLanes = 1;
 
@@ -45,17 +73,26 @@ export function computeLayout(commits: CommitBase[]): { rows: LayoutRow[]; maxLa
       if (free === -1) {
         lane = lanes.length;
         lanes.push(commit.hash);
+        labels.push([]);
       } else {
         lane = free;
         lanes[free] = commit.hash;
+        labels[free] = [];
       }
     }
+
+    labels[lane] = mergeLabels(labels[lane] ?? [], branchLabels(commit.refs));
 
     const activeLanes = lanes
       .map((value, index) => (value ? index : -1))
       .filter((index) => index >= 0);
+    const laneBranches = activeLanes
+      .map((activeLane) => ({ lane: activeLane, labels: [...(labels[activeLane] ?? [])] }))
+      .filter((entry) => entry.labels.length > 0);
 
     lanes[lane] = null;
+    const currentLabels = labels[lane] ?? [];
+    labels[lane] = [];
     const parentLanes: number[] = [];
 
     for (let parentIndex = 0; parentIndex < commit.parents.length; parentIndex += 1) {
@@ -71,15 +108,22 @@ export function computeLayout(commits: CommitBase[]): { rows: LayoutRow[]; maxLa
         if (target === -1) {
           target = lanes.length;
           lanes.push(parent);
+          labels.push([]);
         } else {
           lanes[target] = parent;
         }
         parentLane = target;
       }
+      if (parentIndex === 0) {
+        labels[parentLane] = mergeLabels(labels[parentLane] ?? [], currentLabels);
+      }
       parentLanes.push(parentLane);
     }
 
-    while (lanes.length > 0 && lanes[lanes.length - 1] === null) lanes.pop();
+    while (lanes.length > 0 && lanes[lanes.length - 1] === null) {
+      lanes.pop();
+      labels.pop();
+    }
 
     const nextActiveLanes = lanes
       .map((value, index) => (value ? index : -1))
@@ -93,7 +137,7 @@ export function computeLayout(commits: CommitBase[]): { rows: LayoutRow[]; maxLa
       ...parentLanes.map((value) => value + 1),
     );
 
-    rows.push({ lane, activeLanes, nextActiveLanes, parentLanes });
+    rows.push({ lane, activeLanes, nextActiveLanes, parentLanes, laneBranches });
   }
 
   return { rows, maxLanes };
@@ -104,7 +148,29 @@ export async function ensureHistory(
   repoPath: string,
   cache: HistoryCache,
 ): Promise<void> {
-  if (cache.loaded) return;
+  const fingerprint = await historyFingerprint(runner, repoPath);
+  if (cache.loaded && cache.fingerprint === fingerprint) return;
+
+  const cacheFile = path.join(dataDir, 'cache', `${repoIdForPath(repoPath)}.json`);
+  try {
+    const raw = JSON.parse(await fs.readFile(cacheFile, 'utf8')) as {
+      fingerprint?: string;
+      commits?: CommitBase[];
+      layout?: LayoutRow[];
+      maxLanes?: number;
+    };
+    if (raw.fingerprint === fingerprint && Array.isArray(raw.commits) && Array.isArray(raw.layout)) {
+      cache.commits = raw.commits;
+      cache.layout = raw.layout;
+      cache.maxLanes = raw.maxLanes ?? 1;
+      cache.reachable.clear();
+      cache.fingerprint = fingerprint;
+      cache.loaded = true;
+      return;
+    }
+  } catch {
+    // Disk cache miss
+  }
 
   const result = await runner.run(
     repoPath,
@@ -124,7 +190,25 @@ export async function ensureHistory(
   const layout = computeLayout(cache.commits);
   cache.layout = layout.rows;
   cache.maxLanes = layout.maxLanes;
+  cache.reachable.clear();
+  cache.fingerprint = fingerprint;
   cache.loaded = true;
+
+  try {
+    await fs.mkdir(path.dirname(cacheFile), { recursive: true });
+    await fs.writeFile(
+      cacheFile,
+      JSON.stringify({
+        fingerprint,
+        commits: cache.commits,
+        layout: cache.layout,
+        maxLanes: cache.maxLanes,
+      }),
+      'utf8',
+    );
+  } catch {
+    // Ignore disk cache write errors
+  }
 }
 
 export async function getHistoryPage(
@@ -175,6 +259,7 @@ export async function getHistoryPage(
       activeLanes: [0],
       nextActiveLanes: [],
       parentLanes: [],
+      laneBranches: [],
     };
     return { ...commit, ...row, maxLanes };
   });
