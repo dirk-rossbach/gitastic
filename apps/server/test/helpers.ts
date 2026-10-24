@@ -15,6 +15,7 @@ export function createRepo(prefix = 'repo'): string {
   git(repoPath, 'init', '-q', '-b', 'main');
   git(repoPath, 'config', 'user.name', 'Test User');
   git(repoPath, 'config', 'user.email', 'test@example.com');
+  git(repoPath, 'config', 'core.autocrlf', 'false');
   return repoPath;
 }
 

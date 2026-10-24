@@ -90,11 +90,14 @@ describe('API security and health', () => {
   });
 
   it('opens a repository outside GITASTIC_HOME', async () => {
-    const external = fs.mkdtempSync(path.join(os.tmpdir(), 'gitastic-external-'));
+    const external = fs.realpathSync.native(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'gitastic-external-')),
+    );
     try {
       git(external, 'init', '-q', '-b', 'main');
       git(external, 'config', 'user.name', 'Test User');
       git(external, 'config', 'user.email', 'test@example.com');
+      git(external, 'config', 'core.autocrlf', 'false');
       writeFile(external, 'file.txt', 'outside\n');
       commitAll(external, 'External commit');
 
@@ -267,6 +270,7 @@ describe('remotes and jobs', () => {
     execFileSync('git', ['clone', '-q', origin, other]);
     git(other, 'config', 'user.name', 'Other User');
     git(other, 'config', 'user.email', 'other@example.com');
+    git(other, 'config', 'core.autocrlf', 'false');
     writeFile(other, 'file.txt', 'from remote\n');
     commitAll(other, 'Remote change');
     git(other, 'push', '-q', 'origin', 'main');

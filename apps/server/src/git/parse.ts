@@ -437,7 +437,7 @@ export function parseBlamePorcelain(output: string): BlameLine[] {
 }
 
 export function parseConflictMarkers(content: string, path = ''): ConflictBlock[] {
-  const lines = content.split('\n');
+  const lines = content.split(/\r?\n/);
   const blocks: ConflictBlock[] = [];
   let index = 0;
 
