@@ -1,8 +1,8 @@
-# Gitastic 1.0
+# Gitastic 1.1
 
 **Gitastic** is a fast, native local Git client for macOS (powered by **Tauri v2 + Rust**) that also runs as a local loopback web app. It combines a high-contrast, modern developer UI with deep Git power features — without cloud accounts, telemetry, or storing plaintext tokens.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-38bdf8?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.1.0-38bdf8?style=flat-square)](#)
 [![Built with Tauri](https://img.shields.io/badge/Tauri_v2-Rust-ff2a85?style=flat-square)](#)
 [![React 19](https://img.shields.io/badge/React_19-Tailwind_CSS_4-a78bfa?style=flat-square)](#)
 [![Sponsor](https://img.shields.io/badge/%E2%99%A5_Sponsor-dirk--rossbach-fb7185?style=flat-square)](https://github.com/sponsors/dirk-rossbach)
@@ -16,11 +16,12 @@
 - Uses Tauri IPC (`#[tauri::command]`) directly — zero Node.js runtime or open network ports required in the desktop app.
 - Also includes a standalone local loopback server (`npm start` on `127.0.0.1:8787`) for browser or headless workflows.
 
-### 2. Three Visual Styles × Dark & Light Modes
-- **Gorgeous (Default):** Aurora gradients, neon accents, glowing commit dots, and fluid timeline flow animations.
-- **Synthwave / Cyberpunk:** Deep midnight indigo (`#0b0316`), hot-magenta (`#ff2a85`), cyber-cyan (`#00f0ff`), laser-yellow (`#ffe600`), and an outrun neon grid.
-- **Focus:** Minimalist, distraction-free flat palette with zero animations, zero gradients, and muted colors.
-- Every style supports **Dark**, **Light**, and **System** modes.
+### 2. Ten Visual Styles, Grouped by Dark & Light
+- **Dark:** **Gorgeous (Default)** aurora gradients and neon glow; **Synthwave** outrun magenta and cyber-cyan; **Transilvania** blood-black gothic crimson; **Ubernerd** phosphor terminal green with CRT scanlines; **8-Bit** PICO-8 pixels, chunky arcade borders, and chiptune typography.
+- **Light:** **Daybreak** porcelain surfaces with cobalt and apricot; **Vellum** parchment, sepia ink, and wax-seal red; **Blueprint** drafting paper, navy grid, and cyan ink; **Lemon Baby** lemon yellow, tangerine orange, and lime green.
+- **Focus** appears in both libraries and strips out gradients, animations, and effects.
+- Styles set their own dark or light mode, so there is no separate theme switch.
+- Typography follows the theme: gothic serif for Transilvania, literary serif for Vellum, rounded Fredoka for Lemon Baby, pixel fonts for 8-Bit, and terminal mono for Ubernerd and Blueprint.
 
 ### 3. Pro Diff Viewer & Partial Staging
 - **Unified & Side-by-Side (Split) Diff:** Switch between unified and split views at any time.
@@ -54,7 +55,7 @@
 
 | Shortcut | Action |
 | :--- | :--- |
-| **`Ctrl + P`** / **`⌘P`** / **`⌘K`** | Open **Command Palette** (run Git actions, switch branches, switch repos, change style/theme) |
+| **`Ctrl + P`** / **`⌘P`** / **`⌘K`** | Open **Command Palette** (Git actions, branches, repos, and styles) |
 | **`⌘,`** / **`Ctrl + ,`** | Open **Settings** overlay |
 | **`⌘ + Enter`** / **`Ctrl + Enter`** | Commit staged changes (in Changes view) |
 | **`Esc`** | Close active modal, Command Palette, or Settings overlay |
@@ -124,6 +125,6 @@ If you enjoy using **Gitastic**, consider supporting its development via GitHub 
 | :---: | :---: |
 | ![Split Diff in Synthwave Style](docs/screenshots/diff-split-synthwave.png) | ![Merge Conflict Resolver](docs/screenshots/conflicts.png) |
 
-| Command Palette (`Ctrl + P` / `⌘P`) | Settings Overlay (Styles, Modes, Identity & SSH) |
+| Command Palette (`Ctrl + P` / `⌘P`) | Settings Overlay (Styles, Identity & SSH) |
 | :---: | :---: |
 | ![Command Palette](docs/screenshots/command-palette.png) | ![Settings](docs/screenshots/settings.png) |

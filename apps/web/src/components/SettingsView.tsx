@@ -3,18 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CheckCircle2,
-  Eye,
   Heart,
   Info,
-  Monitor,
-  Moon,
   Save,
-  Sparkles,
-  Sun,
   Trash2,
   UserCheck,
   X,
-  Zap,
 } from 'lucide-react';
 import type { Session, SettingsPatch, UiStyle } from '@gitastic/shared';
 import { api } from '../api';
@@ -22,7 +16,9 @@ import { applyAppearance } from '../App';
 import { useAction } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
+import { resolvedThemeMode, styleForTheme, type StyleMode } from '../ui-styles';
 import { ProviderAuthAssistant } from './ProvidersPanel';
+import { StylePicker } from './StylePicker';
 import { Spinner } from './ui';
 
 export function SettingsView({
@@ -62,17 +58,15 @@ export function SettingsView({
     setForm((current) => ({ ...current, [key]: value }));
   };
 
-  const applyAndSaveAppearance = async (
-    nextTheme: 'dark' | 'light' | 'system',
-    nextStyle: UiStyle,
-  ) => {
-    update('theme', nextTheme);
-    update('uiStyle', nextStyle);
-    applyAppearance(nextTheme, nextStyle);
+  const applyAndSaveAppearance = async (nextMode: StyleMode, nextStyle: UiStyle) => {
+    const effectiveStyle = styleForTheme(nextMode, nextStyle);
+    update('theme', nextMode);
+    update('uiStyle', effectiveStyle);
+    applyAppearance(nextMode, effectiveStyle);
     const saved = await api.updateSettings({
       ...form,
-      theme: nextTheme,
-      uiStyle: nextStyle,
+      theme: nextMode,
+      uiStyle: effectiveStyle,
     });
     await queryClient.invalidateQueries({ queryKey: ['session'] });
     return saved;
@@ -87,7 +81,12 @@ export function SettingsView({
             email: gitEmail.trim(),
           });
         }
-        const saved = await api.updateSettings(form);
+        const mode = resolvedThemeMode(form.theme ?? 'dark');
+        const saved = await api.updateSettings({
+          ...form,
+          theme: mode,
+          uiStyle: styleForTheme(mode, form.uiStyle ?? 'gorgeous'),
+        });
         await queryClient.invalidateQueries();
         applyAppearance(saved.theme, saved.uiStyle ?? 'gorgeous');
         return saved;
@@ -107,8 +106,8 @@ export function SettingsView({
     }
   };
 
-  const currentTheme = form.theme ?? 'dark';
-  const currentStyle = form.uiStyle ?? 'gorgeous';
+  const currentMode = resolvedThemeMode(form.theme ?? 'dark');
+  const currentStyle = styleForTheme(currentMode, form.uiStyle ?? 'gorgeous');
   const gitVersion = session.onboarding.gitVersion;
 
   return (
@@ -118,7 +117,7 @@ export function SettingsView({
           <div>
             <h1 className="gradient-text text-xl font-semibold">Settings</h1>
             <p className="text-sm text-muted">
-              Styles, modes, GitHub/GitLab tokens, SSH keys, and Git preferences.
+              Styles, GitHub/GitLab tokens, SSH keys, and Git preferences.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -146,9 +145,8 @@ export function SettingsView({
           <div>
             <h2 className="panel-title">Appearance</h2>
             <p className="mt-1 text-xs text-muted">
-              Choose between the vibrant <strong className="text-ink">Gorgeous</strong> style and
-              the distraction-free <strong className="text-ink">Focus</strong> style, each available
-              in Dark and Light mode.
+              Pick from the dark and light style libraries. Hover a style to preview it; selecting
+              one applies the look and its matching mode. Focus is available in both groups.
             </p>
           </div>
 
@@ -156,151 +154,26 @@ export function SettingsView({
             <span className="text-xs font-medium uppercase tracking-wide text-faint">
               UI Style
             </span>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                onClick={() => void applyAndSaveAppearance(currentTheme, 'gorgeous')}
-                className={cn(
-                  'flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition',
-                  currentStyle === 'gorgeous'
-                    ? 'border-accent bg-accent/10 shadow-[0_0_28px_color-mix(in_srgb,var(--accent)_18%,transparent)]'
-                    : 'border-edge bg-raised/40 hover:border-accent/40',
-                )}
-              >
-                <div className="flex w-full items-center justify-between">
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                    <Sparkles className="h-4 w-4 text-accent" />
-                    Gorgeous
-                  </span>
-                  <span className="badge badge-accent">Default</span>
-                </div>
-                <p className="text-xs text-muted">
-                  Rich gradients, neon glows, aurora backdrop, and fluid timeline animations.
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => void applyAndSaveAppearance(currentTheme, 'synthwave')}
-                className={cn(
-                  'flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition',
-                  currentStyle === 'synthwave'
-                    ? 'border-accent bg-accent/15 shadow-[0_0_32px_color-mix(in_srgb,var(--accent)_28%,transparent)]'
-                    : 'border-edge bg-raised/40 hover:border-accent/40',
-                )}
-              >
-                <div className="flex w-full items-center justify-between">
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                    <Zap className="h-4 w-4 text-accent" />
-                    Synthwave
-                  </span>
-                  <span className="badge badge-accent">Cyberpunk</span>
-                </div>
-                <p className="text-xs text-muted">
-                  Hot-magenta, cyber-cyan & laser-yellow outrun grid with intense neon glow.
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => void applyAndSaveAppearance(currentTheme, 'focus')}
-                className={cn(
-                  'flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition',
-                  currentStyle === 'focus'
-                    ? 'border-accent bg-accent/10'
-                    : 'border-edge bg-raised/40 hover:border-accent/40',
-                )}
-              >
-                <div className="flex w-full items-center justify-between">
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                    <Eye className="h-4 w-4 text-accent" />
-                    Focus
-                  </span>
-                  <span className="badge">Minimal</span>
-                </div>
-                <p className="text-xs text-muted">
-                  Fewer colors, flat surfaces, and zero animations, gradients, or neon effects.
-                </p>
-              </button>
-            </div>
+            <StylePicker
+              current={currentStyle}
+              currentMode={currentMode}
+              onSelect={(style, mode) => void applyAndSaveAppearance(mode, style)}
+            />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <span className="text-xs font-medium uppercase tracking-wide text-faint">
-                Color Mode (
-                {currentStyle === 'gorgeous'
-                  ? 'Gorgeous'
-                  : currentStyle === 'synthwave'
-                    ? 'Synthwave'
-                    : 'Focus'}
-                )
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => void applyAndSaveAppearance('dark', currentStyle)}
-                  className={cn(
-                    'btn h-9 justify-center text-xs',
-                    currentTheme === 'dark' && 'btn-primary',
-                  )}
-                >
-                  <Moon className="h-3.5 w-3.5" />
-                  Dark
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void applyAndSaveAppearance('light', currentStyle)}
-                  className={cn(
-                    'btn h-9 justify-center text-xs',
-                    currentTheme === 'light' && 'btn-primary',
-                  )}
-                >
-                  <Sun className="h-3.5 w-3.5" />
-                  Light
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void applyAndSaveAppearance('system', currentStyle)}
-                  className={cn(
-                    'btn h-9 justify-center text-xs',
-                    currentTheme === 'system' && 'btn-primary',
-                  )}
-                >
-                  <Monitor className="h-3.5 w-3.5" />
-                  System
-                </button>
-              </div>
-              {/* Keep a hidden/accessible select for compatibility with existing tests */}
-              <select
-                aria-label="Theme"
-                className="sr-only"
-                value={currentTheme}
-                onChange={(event) => {
-                  const next = event.target.value as 'dark' | 'light' | 'system';
-                  void applyAndSaveAppearance(next, currentStyle);
-                }}
-              >
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
-                <option value="system">System</option>
-              </select>
-            </div>
-
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium uppercase tracking-wide text-faint">
-                Diff context lines
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={20}
-                className="input h-9"
-                value={form.diffContext ?? 3}
-                onChange={(event) => update('diffContext', Number(event.target.value))}
-              />
-            </label>
-          </div>
+          <label className="block max-w-xs space-y-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-faint">
+              Diff context lines
+            </span>
+            <input
+              type="number"
+              min={0}
+              max={20}
+              className="input h-9"
+              value={form.diffContext ?? 3}
+              onChange={(event) => update('diffContext', Number(event.target.value))}
+            />
+          </label>
         </section>
 
         <section className="card p-5">

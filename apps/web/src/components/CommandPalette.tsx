@@ -7,7 +7,6 @@ import {
   CornerDownLeft,
   Download,
   ExternalLink,
-  Eye,
   FileDiff,
   FolderGit2,
   FolderOpen,
@@ -17,20 +16,15 @@ import {
   Heart,
   History,
   Minus,
-  Monitor,
-  Moon,
   Plus,
   RefreshCw,
   Search,
   Settings,
-  Sparkles,
   SquareTerminal,
-  Sun,
   Tags,
   Trash2,
   Upload,
   X,
-  Zap,
 } from 'lucide-react';
 import {
   buildCreatePullUrl,
@@ -43,6 +37,7 @@ import { applyAppearance } from '../App';
 import { useAction, useStartJob } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
+import { DARK_STYLES, LIGHT_STYLES, styleForTheme, type StyleMode } from '../ui-styles';
 
 interface CommandItem {
   id: string;
@@ -93,8 +88,6 @@ export function CommandPalette({ session }: { session: Session }) {
 
   const commands = useMemo<CommandItem[]>(() => {
     const items: CommandItem[] = [];
-    const currentTheme = session.config.theme;
-    const currentStyle: UiStyle = session.config.uiStyle ?? 'gorgeous';
 
     if (repo) {
       items.push(
@@ -403,12 +396,10 @@ export function CommandPalette({ session }: { session: Session }) {
       });
     }
 
-    const saveAppearance = async (
-      nextTheme: 'dark' | 'light' | 'system',
-      nextStyle: UiStyle,
-    ) => {
-      applyAppearance(nextTheme, nextStyle);
-      await api.updateSettings({ theme: nextTheme, uiStyle: nextStyle });
+    const saveAppearance = async (nextMode: StyleMode, nextStyle: UiStyle) => {
+      const effectiveStyle = styleForTheme(nextMode, nextStyle);
+      applyAppearance(nextMode, effectiveStyle);
+      await api.updateSettings({ theme: nextMode, uiStyle: effectiveStyle });
       await queryClient.invalidateQueries({ queryKey: ['session'] });
     };
 
@@ -417,62 +408,11 @@ export function CommandPalette({ session }: { session: Session }) {
         id: 'app-settings',
         group: 'Appearance & System',
         label: 'Open Settings',
-        subtitle: 'Styles, modes, GitHub/GitLab tokens, SSH keys & cache',
+        subtitle: 'Styles, GitHub/GitLab tokens, SSH keys & cache',
         keywords: 'settings preferences tokens ssh keys appearance',
         shortcut: '⌘,',
         icon: Settings,
         action: () => openSettings(),
-      },
-      {
-        id: 'style-gorgeous',
-        group: 'Appearance & System',
-        label: 'Style: Switch to Gorgeous',
-        subtitle: 'Vibrant gradients, neon glows & animations',
-        keywords: 'style gorgeous neon gradients animations',
-        icon: Sparkles,
-        action: () => saveAppearance(currentTheme, 'gorgeous'),
-      },
-      {
-        id: 'style-synthwave',
-        group: 'Appearance & System',
-        label: 'Style: Switch to Synthwave / Cyberpunk',
-        subtitle: 'Hot-magenta, cyber-cyan & outrun neon grid',
-        keywords: 'style synthwave cyberpunk outrun retro neon pink cyan',
-        icon: Zap,
-        action: () => saveAppearance(currentTheme, 'synthwave'),
-      },
-      {
-        id: 'style-focus',
-        group: 'Appearance & System',
-        label: 'Style: Switch to Focus',
-        subtitle: 'Minimal palette, flat surfaces & no animations',
-        keywords: 'style focus minimal flat calm',
-        icon: Eye,
-        action: () => saveAppearance(currentTheme, 'focus'),
-      },
-      {
-        id: 'theme-dark',
-        group: 'Appearance & System',
-        label: 'Mode: Switch to Dark Mode',
-        keywords: 'theme mode dark',
-        icon: Moon,
-        action: () => saveAppearance('dark', currentStyle),
-      },
-      {
-        id: 'theme-light',
-        group: 'Appearance & System',
-        label: 'Mode: Switch to Light Mode',
-        keywords: 'theme mode light',
-        icon: Sun,
-        action: () => saveAppearance('light', currentStyle),
-      },
-      {
-        id: 'theme-system',
-        group: 'Appearance & System',
-        label: 'Mode: Switch to System Mode',
-        keywords: 'theme mode system auto',
-        icon: Monitor,
-        action: () => saveAppearance('system', currentStyle),
       },
       {
         id: 'cache-clear',
@@ -503,6 +443,19 @@ export function CommandPalette({ session }: { session: Session }) {
       },
     );
 
+    const styleItems = (styles: typeof DARK_STYLES, mode: StyleMode) =>
+      styles.map((style) => ({
+        id: `style-${mode}-${style.id}`,
+        group: mode === 'dark' ? 'Dark styles' : 'Light styles',
+        label: `Switch to ${style.name}`,
+        subtitle: `${mode === 'dark' ? 'Dark' : 'Light'} · ${style.tagline}`,
+        keywords: `style ${mode} ${style.keywords}`,
+        icon: style.icon,
+        action: () => saveAppearance(mode, style.id),
+      }));
+
+    items.push(...styleItems(DARK_STYLES, 'dark'), ...styleItems(LIGHT_STYLES, 'light'));
+
     return items;
   }, [
     branches.data,
@@ -514,8 +467,6 @@ export function CommandPalette({ session }: { session: Session }) {
     run,
     session.config.pullStrategy,
     session.config.recentRepos,
-    session.config.theme,
-    session.config.uiStyle,
     setView,
     startJob,
   ]);

@@ -1,37 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { GitBranch, Hash, RefreshCw, Search, Tag, User } from 'lucide-react';
+import { GitBranch, RefreshCw, Search, Tag, User, X } from 'lucide-react';
 import type { CommitSummary } from '@gitastic/shared';
 import { api } from '../api';
 import { useDebouncedValue } from '../lib/hooks';
-import { cn, errorMessage, formatDate } from '../lib/utils';
+import { cn, errorMessage, formatDateShort } from '../lib/utils';
 import { useStore } from '../store';
+import { laneColorFor } from '../ui-styles';
 import { CommitDetail } from './CommitDetail';
 import { EmptyState, Spinner } from './ui';
-
-const gorgeousLaneColors = [
-  '#38bdf8',
-  '#2dd4bf',
-  '#fbbf24',
-  '#f472b6',
-  '#a78bfa',
-  '#fb923c',
-  '#22d3ee',
-  '#a3e635',
-];
-
-const focusLaneColors = ['#6893b8', '#7d8a9a', '#86a397', '#9b8ca6'];
-
-const synthwaveLaneColors = [
-  '#ff2a85',
-  '#00f0ff',
-  '#ffe600',
-  '#00ff9f',
-  '#b829ff',
-  '#ff6b00',
-  '#ff0055',
-  '#00ffcc',
-];
 
 function currentUiStyle(): string {
   return typeof document !== 'undefined'
@@ -44,17 +21,20 @@ function isFocusStyle(): boolean {
 }
 
 function laneColor(lane: number): string {
-  const style = currentUiStyle();
-  const palette =
-    style === 'focus'
-      ? focusLaneColors
-      : style === 'synthwave'
-        ? synthwaveLaneColors
-        : gorgeousLaneColors;
-  return palette[lane % palette.length] ?? palette[0];
+  return laneColorFor(currentUiStyle(), lane);
 }
 
-function GraphCell({ commit, maxLanes }: { commit: CommitSummary; maxLanes: number }) {
+function GraphCell({
+  commit,
+  maxLanes,
+  currentBranch,
+  head,
+}: {
+  commit: CommitSummary;
+  maxLanes: number;
+  currentBranch: string | null;
+  head: string | null;
+}) {
   const spacing = 12;
   const width = Math.max(1, maxLanes) * spacing + 10;
   const x = (lane: number) => 8 + lane * spacing;
@@ -62,6 +42,7 @@ function GraphCell({ commit, maxLanes }: { commit: CommitSummary; maxLanes: numb
   const color = laneColor(commit.lane);
   const active = commit.activeLanes.filter((lane) => lane !== commit.lane);
   const labelsByLane = new Map((commit.laneBranches ?? []).map((entry) => [entry.lane, entry.labels]));
+  const isHead = Boolean(head) && commit.hash === head;
 
   return (
     <div className="relative shrink-0 self-stretch" style={{ width }} aria-hidden>
@@ -146,6 +127,7 @@ function GraphCell({ commit, maxLanes }: { commit: CommitSummary; maxLanes: numb
       {commit.activeLanes.map((lane) => {
         const labels = labelsByLane.get(lane);
         if (!labels?.length) return null;
+        const isCurrentLane = Boolean(currentBranch) && labels.includes(currentBranch as string);
         return (
           <div
             key={`lane-${lane}`}
@@ -153,15 +135,33 @@ function GraphCell({ commit, maxLanes }: { commit: CommitSummary; maxLanes: numb
             style={{ left: x(lane) - spacing / 2, width: spacing }}
             title={labels.join(' · ')}
           >
-            <span className="lane-label">
+            <span className={cn('lane-label', isCurrentLane && 'lane-label-current')}>
+              {isCurrentLane ? (
+                <span className="mr-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent align-middle" />
+              ) : null}
               {labels.slice(0, 3).join(' · ')}
               {labels.length > 3 ? ` +${labels.length - 3}` : ''}
             </span>
           </div>
         );
       })}
+      {isHead ? (
+        <span
+          className="pointer-events-none absolute rounded-full border-2"
+          style={{
+            left: center - 7,
+            top: 'calc(50% - 7px)',
+            width: 14,
+            height: 14,
+            borderColor: 'var(--accent)',
+            boxShadow: isFocusStyle() ? 'none' : '0 0 10px var(--accent)',
+          }}
+          title="HEAD"
+        />
+      ) : null}
       <span
         className="pointer-events-none absolute rounded-full"
+        title={isHead ? 'HEAD' : undefined}
         style={{
           left: center - 4,
           top: 'calc(50% - 4px)',
@@ -196,6 +196,15 @@ function refClass(ref: string): string {
 
 function refLabel(ref: string): string {
   return ref.replace(/^HEAD -> /, '').replace(/^tag: /, '');
+}
+
+function isHeadRef(ref: string): boolean {
+  return ref.startsWith('HEAD ->');
+}
+
+function sortRefs(refs: string[]): string[] {
+  const rank = (ref: string) => (isHeadRef(ref) ? 0 : ref.startsWith('tag: ') ? 2 : 1);
+  return [...refs].sort((a, b) => rank(a) - rank(b));
 }
 
 export function HistoryView() {
@@ -233,13 +242,45 @@ export function HistoryView() {
   );
   const total = history.data?.pages[0]?.total ?? 0;
   const maxLanes = history.data?.pages[0]?.maxLanes ?? 1;
+  const [closingDetail, setClosingDetail] = useState(false);
+
+  const closeDetail = useCallback(() => {
+    setClosingDetail(true);
+  }, []);
 
   useEffect(() => {
-    if (commits.length === 0) return;
-    if (!selectedCommit || !commits.some((commit) => commit.hash === selectedCommit)) {
-      setSelectedCommit(commits[0].hash);
+    if (!closingDetail) return;
+    const timeout = window.setTimeout(() => {
+      setSelectedCommit(null);
+      setClosingDetail(false);
+    }, 220);
+    return () => window.clearTimeout(timeout);
+  }, [closingDetail, setSelectedCommit]);
+
+  useEffect(() => {
+    setClosingDetail(false);
+  }, [selectedCommit]);
+
+  useEffect(() => {
+    if (!selectedCommit) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDetail();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedCommit, closeDetail]);
+
+  const selectCommit = (hash: string) => {
+    if (selectedCommit === hash && !closingDetail) {
+      closeDetail();
+      return;
     }
-  }, [commits, selectedCommit, setSelectedCommit]);
+    setClosingDetail(false);
+    setSelectedCommit(hash);
+  };
 
   const reload = () => {
     void history.refetch();
@@ -297,117 +338,149 @@ export function HistoryView() {
         </button>
       </div>
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <div className="min-h-0 overflow-hidden">
-          <div className="scrollbar-thin h-full overflow-y-auto">
-            {history.isLoading ? (
-              <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted">
-                <Spinner /> Loading history...
-              </div>
-            ) : history.isError ? (
-              <p className="p-6 text-sm text-danger">{errorMessage(history.error)}</p>
-            ) : commits.length === 0 ? (
-              <EmptyState
-                icon={<GitBranch className="h-8 w-8" />}
-                title="No commits match"
-                description="Try a different search or ref filter."
-              />
-            ) : (
-              <>
-                {commits.map((commit) => (
-                  <button
-                    key={commit.hash}
-                    type="button"
-                    className={cn(
-                      'history-row relative flex h-12 w-full items-stretch gap-2 overflow-hidden pl-1 pr-0 text-left',
-                      selectedCommit === commit.hash && 'history-row-selected',
-                    )}
-                    onClick={() => setSelectedCommit(commit.hash)}
-                  >
-                    <span className="pointer-events-none absolute inset-x-0 bottom-0 border-b border-edge/60" />
-                    <GraphCell commit={commit} maxLanes={maxLanes} />
-                    <div className="min-w-0 flex-1 py-1 pr-3">
-                      <div className="flex items-center gap-1.5">
-                        <p className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
-                          {commit.subject || '(no subject)'}
-                        </p>
-                        <div className="flex max-w-[45%] shrink-0 flex-nowrap justify-end gap-1 overflow-hidden">
-                          {commit.refs.slice(0, 3).map((ref) => (
-                            <span key={ref} className={refClass(ref)} title={ref}>
-                              {ref.startsWith('HEAD ->') ? (
-                                <GitBranch className="h-3 w-3" />
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div className="scrollbar-thin h-full overflow-y-auto">
+          {history.isLoading ? (
+            <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted">
+              <Spinner /> Loading history...
+            </div>
+          ) : history.isError ? (
+            <p className="p-6 text-sm text-danger">{errorMessage(history.error)}</p>
+          ) : commits.length === 0 ? (
+            <EmptyState
+              icon={<GitBranch className="h-8 w-8" />}
+              title="No commits match"
+              description="Try a different search or ref filter."
+            />
+          ) : (
+            <>
+              {commits.map((commit) => (
+                <button
+                  key={commit.hash}
+                  type="button"
+                  className={cn(
+                    'history-row relative flex h-11 w-full items-stretch gap-2 overflow-hidden pl-1 pr-0 text-left',
+                    selectedCommit === commit.hash && 'history-row-selected',
+                  )}
+                  onClick={() => selectCommit(commit.hash)}
+                >
+                  <span className="pointer-events-none absolute inset-x-0 bottom-0 border-b border-edge/60" />
+                  <GraphCell
+                    commit={commit}
+                    maxLanes={maxLanes}
+                    currentBranch={repo.data?.branch ?? null}
+                    head={repo.data?.head ?? null}
+                  />
+                  <div className="min-w-0 flex-1 py-1.5 pr-3">
+                    <div className="flex items-center gap-2">
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
+                        {commit.subject || '(no subject)'}
+                      </p>
+                      <div className="flex max-w-[48%] shrink-0 flex-nowrap items-center justify-end gap-1 overflow-hidden">
+                        {sortRefs(commit.refs)
+                          .slice(0, 3)
+                          .map((ref) => (
+                            <span
+                              key={ref}
+                              className={refClass(ref)}
+                              title={isHeadRef(ref) ? `${refLabel(ref)} (HEAD, checked out)` : ref}
+                            >
+                              {isHeadRef(ref) ? (
+                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
                               ) : ref.startsWith('tag: ') ? (
                                 <Tag className="h-3 w-3" />
                               ) : null}
-                              <span className="max-w-[9rem] truncate">{refLabel(ref)}</span>
+                              <span
+                                className={cn(
+                                  'max-w-[12rem] truncate',
+                                  isHeadRef(ref) && 'max-w-[14rem]',
+                                )}
+                              >
+                                {refLabel(ref)}
+                              </span>
                             </span>
                           ))}
-                        </div>
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-x-3 overflow-hidden whitespace-nowrap text-[11px] text-faint">
-                        <span className="inline-flex min-w-0 items-center gap-1">
-                          <User className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{commit.authorName}</span>
-                        </span>
-                        {(commit.laneBranches ?? [])
-                          .find((entry) => entry.lane === commit.lane)
-                          ?.labels.filter(
-                            (label) => !commit.refs.some((ref) => refLabel(ref) === label),
-                          )
-                          .slice(0, 2)
-                          .map((label) => (
-                            <span
-                              key={label}
-                              className="inline-flex min-w-0 shrink-0 items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0 text-[10px] font-medium text-accent"
-                              title={label}
-                            >
-                              <GitBranch className="h-3 w-3 shrink-0" />
-                              <span className="max-w-[9rem] truncate">{label}</span>
-                            </span>
-                          ))}
-                        <span className="hidden shrink-0 lg:inline">
-                          {formatDate(commit.authorDate)}
-                        </span>
-                        <span className="inline-flex shrink-0 items-center gap-1 font-mono">
-                          <Hash className="h-3 w-3" />
-                          {commit.shortHash}
-                        </span>
-                        {commit.parents.length > 1 ? (
-                          <span className="badge badge-accent px-1.5 py-0">merge</span>
+                        {commit.refs.length > 3 ? (
+                          <span
+                            className="badge"
+                            title={sortRefs(commit.refs)
+                              .slice(3)
+                              .map(refLabel)
+                              .join(' · ')}
+                          >
+                            +{commit.refs.length - 3}
+                          </span>
                         ) : null}
                       </div>
                     </div>
-                  </button>
-                ))}
-                {history.hasNextPage ? (
-                  <div className="p-3">
-                    <button
-                      type="button"
-                      className="btn w-full text-xs"
-                      disabled={history.isFetchingNextPage}
-                      onClick={() => void history.fetchNextPage()}
-                    >
-                      {history.isFetchingNextPage ? <Spinner /> : null}
-                      Load more commits
-                    </button>
+                    <div className="mt-0.5 flex items-center gap-2 overflow-hidden whitespace-nowrap text-[11px] text-faint">
+                      <span className="inline-flex min-w-0 items-center gap-1">
+                        <User className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{commit.authorName}</span>
+                      </span>
+                      <span className="shrink-0">{formatDateShort(commit.authorDate)}</span>
+                      {commit.parents.length > 1 ? (
+                        <span className="shrink-0 text-accent">merge</span>
+                      ) : null}
+                    </div>
                   </div>
-                ) : null}
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="hidden min-h-0 border-l border-edge/80 bg-panel/30 lg:block">
-          {selectedCommit ? (
-            <CommitDetail hash={selectedCommit} />
-          ) : (
-            <EmptyState
-              icon={<GitBranch className="h-8 w-8" />}
-              title="Select a commit"
-              description="Choose a commit from the timeline to inspect its changes."
-            />
+                </button>
+              ))}
+              {history.hasNextPage ? (
+                <div className="p-3">
+                  <button
+                    type="button"
+                    className="btn w-full text-xs"
+                    disabled={history.isFetchingNextPage}
+                    onClick={() => void history.fetchNextPage()}
+                  >
+                    {history.isFetchingNextPage ? <Spinner /> : null}
+                    Load more commits
+                  </button>
+                </div>
+              ) : null}
+            </>
           )}
         </div>
+
+        {selectedCommit ? (
+          <>
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label="Close commit details"
+              className={cn(
+                'detail-backdrop absolute inset-0 z-20 cursor-default bg-canvas/55 backdrop-blur-[1px]',
+                closingDetail && 'detail-backdrop-closing pointer-events-none',
+              )}
+              onClick={closeDetail}
+            />
+            <aside
+              role="dialog"
+              aria-modal="true"
+              aria-label="Commit details"
+              className={cn(
+                'detail-drawer absolute inset-y-0 right-0 z-30 flex w-full flex-col border-l border-edge bg-panel md:w-[85%]',
+                closingDetail && 'detail-drawer-closing pointer-events-none',
+              )}
+            >
+              <div className="flex h-10 shrink-0 items-center justify-between border-b border-edge/80 px-4">
+                <span className="panel-title">Commit</span>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  title="Close details (Esc)"
+                  onClick={closeDetail}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <CommitDetail hash={selectedCommit} />
+              </div>
+            </aside>
+          </>
+        ) : null}
       </div>
     </div>
   );

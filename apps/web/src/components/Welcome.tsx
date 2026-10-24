@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Circle,
   CloudDownload,
-  Eye,
   Folder,
   FolderOpen,
   GitBranch,
@@ -15,12 +14,8 @@ import {
   HardDrive,
   Home,
   Info,
-  Moon,
   RefreshCw,
   Settings,
-  Sparkles,
-  Sun,
-  Zap,
 } from 'lucide-react';
 import type { OnboardingCheck, Session, UiStyle } from '@gitastic/shared';
 import { api } from '../api';
@@ -28,7 +23,9 @@ import { applyAppearance } from '../App';
 import { useAction, useStartJob } from '../lib/hooks';
 import { cn, formatDate, errorMessage } from '../lib/utils';
 import { useStore } from '../store';
+import { resolvedThemeMode, styleForTheme, type StyleMode } from '../ui-styles';
 import { ProviderRepoBrowser } from './ProvidersPanel';
+import { StyleMenu } from './StyleMenu';
 import { PathText, Spinner } from './ui';
 
 function CheckRow({ check }: { check: OnboardingCheck }) {
@@ -68,7 +65,11 @@ export function Welcome({ session }: { session: Session }) {
   const startJob = useStartJob();
 
   const currentTheme = session.config.theme;
-  const currentStyle: UiStyle = session.config.uiStyle ?? 'gorgeous';
+  const currentMode = resolvedThemeMode(currentTheme);
+  const currentStyle: UiStyle = styleForTheme(
+    currentTheme,
+    session.config.uiStyle ?? 'gorgeous',
+  );
 
   const recents = useQuery({ queryKey: ['recent-repos'], queryFn: api.recentRepos });
   const listing = useQuery({
@@ -99,12 +100,10 @@ export function Welcome({ session }: { session: Session }) {
     );
   };
 
-  const quickAppearance = async (
-    nextTheme: 'dark' | 'light' | 'system',
-    nextStyle: UiStyle,
-  ) => {
-    applyAppearance(nextTheme, nextStyle);
-    await api.updateSettings({ theme: nextTheme, uiStyle: nextStyle });
+  const quickAppearance = async (nextMode: StyleMode, nextStyle: UiStyle) => {
+    const effectiveStyle = styleForTheme(nextMode, nextStyle);
+    applyAppearance(nextMode, effectiveStyle);
+    await api.updateSettings({ theme: nextMode, uiStyle: effectiveStyle });
     await queryClient.invalidateQueries({ queryKey: ['session'] });
   };
 
@@ -125,70 +124,11 @@ export function Welcome({ session }: { session: Session }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-lg border border-edge bg-panel/80 p-0.5 text-xs">
-              <button
-                type="button"
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition',
-                  currentStyle === 'gorgeous' ? 'bg-accent/20 text-accent' : 'text-muted hover:text-ink',
-                )}
-                onClick={() => void quickAppearance(currentTheme, 'gorgeous')}
-                title="Gorgeous style"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                Gorgeous
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition',
-                  currentStyle === 'synthwave' ? 'bg-accent/20 text-accent' : 'text-muted hover:text-ink',
-                )}
-                onClick={() => void quickAppearance(currentTheme, 'synthwave')}
-                title="Cyberpunk / Synthwave style"
-              >
-                <Zap className="h-3.5 w-3.5" />
-                Synthwave
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition',
-                  currentStyle === 'focus' ? 'bg-accent/20 text-accent' : 'text-muted hover:text-ink',
-                )}
-                onClick={() => void quickAppearance(currentTheme, 'focus')}
-                title="Focus style"
-              >
-                <Eye className="h-3.5 w-3.5" />
-                Focus
-              </button>
-            </div>
-
-            <div className="flex items-center rounded-lg border border-edge bg-panel/80 p-0.5 text-xs">
-              <button
-                type="button"
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition',
-                  currentTheme === 'dark' ? 'bg-raised text-ink' : 'text-muted hover:text-ink',
-                )}
-                onClick={() => void quickAppearance('dark', currentStyle)}
-                title="Dark mode"
-              >
-                <Moon className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition',
-                  currentTheme === 'light' ? 'bg-raised text-ink' : 'text-muted hover:text-ink',
-                )}
-                onClick={() => void quickAppearance('light', currentStyle)}
-                title="Light mode"
-              >
-                <Sun className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
+            <StyleMenu
+              current={currentStyle}
+              currentMode={currentMode}
+              onSelect={(style, mode) => void quickAppearance(mode, style)}
+            />
             <button
               type="button"
               className="btn h-8 text-xs"

@@ -115,6 +115,15 @@ describe('API security and health', () => {
     expect(response.statusCode).toBe(403);
     expect(response.json().error.code).toBe('ORIGIN_NOT_ALLOWED');
   });
+
+  it('allows loopback origins on alternate dev ports', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/session',
+      headers: { origin: 'http://localhost:5174' },
+    });
+    expect(response.statusCode).toBe(200);
+  });
 });
 
 describe('staging and commits', () => {

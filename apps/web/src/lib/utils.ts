@@ -24,6 +24,17 @@ export function formatDate(input: string | null | undefined): string {
   });
 }
 
+export function formatDateShort(input: string | null | undefined): string {
+  if (!input) return '';
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return input;
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 export function fileName(path: string): string {
   const parts = path.split('/');
   return parts[parts.length - 1] ?? path;

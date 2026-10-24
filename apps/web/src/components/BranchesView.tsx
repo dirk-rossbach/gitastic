@@ -26,6 +26,18 @@ import { ConfirmDialog, EmptyState, ErrorState, LoadingState, Modal, Spinner } f
 
 type FormMode = 'create' | 'rename' | null;
 
+function BranchName({ branch }: { branch: Branch }) {
+  const split = branch.name.lastIndexOf('/');
+  const prefix = split > 0 ? branch.name.slice(0, split + 1) : '';
+  const leaf = split > 0 ? branch.name.slice(split + 1) : branch.name;
+  return (
+    <span className="min-w-0 flex-1 break-all text-sm" title={branch.name}>
+      {prefix ? <span className="text-faint">{prefix}</span> : null}
+      <span className={cn('font-medium', branch.current ? 'text-accent' : 'text-ink')}>{leaf}</span>
+    </span>
+  );
+}
+
 export function BranchesView() {
   const branches = useQuery({ queryKey: ['branches'], queryFn: api.branches });
   const repo = useQuery({ queryKey: ['repo'], queryFn: api.repo });
@@ -94,16 +106,26 @@ export function BranchesView() {
     <div
       key={branch.ref}
       className={cn(
-        'group flex items-center gap-2 border-b border-edge/60 px-3 py-2 last:border-0 hover:bg-raised/50',
-        branch.current && 'bg-raised',
+        'group flex items-center gap-2 border-b border-edge/60 border-l-2 border-l-transparent px-3 py-2 last:border-0 hover:bg-raised/50',
+        branch.current && 'border-l-accent bg-raised',
       )}
     >
       <GitBranch className={cn('h-4 w-4 shrink-0', branch.current ? 'text-accent' : 'text-muted')} />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-medium text-ink">{branch.name}</span>
-          {branch.current ? <span className="badge badge-accent">current</span> : null}
-          {branch.remote ? <span className="badge">remote</span> : null}
+        <div className="flex min-w-0 items-start gap-1.5">
+          {branch.current ? (
+            <span
+              className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+              title="Checked out (HEAD)"
+            />
+          ) : null}
+          <BranchName branch={branch} />
+          {branch.current ? (
+            <span className="badge badge-accent shrink-0" title="Currently checked out (HEAD)">
+              HEAD
+            </span>
+          ) : null}
+          {branch.remote ? <span className="badge shrink-0">remote</span> : null}
         </div>
         <p className="truncate text-[11px] text-faint">
           {branch.upstream ? `${branch.upstream} · ` : ''}

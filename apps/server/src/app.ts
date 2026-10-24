@@ -209,8 +209,20 @@ async function applyUndo(state: AppState, repo: OpenRepo, entry: UndoEntry): Pro
   }
 }
 
+function isLoopbackOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    return (
+      (url.protocol === 'http:' || url.protocol === 'https:') &&
+      ['localhost', '127.0.0.1', '::1', '[::1]'].includes(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
-  const { state, webDist } = options;
+  const { state, webDist, dev } = options;
   const app = Fastify({ logger: false, bodyLimit: 20 * 1024 * 1024 });
 
   const allowedOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173']);
@@ -228,7 +240,8 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     if (origin) {
       const host = request.headers.host;
       const sameOrigin = host ? origin === `http://${host}` || origin === `https://${host}` : false;
-      if (!sameOrigin && !allowedOrigins.has(origin)) {
+      const devOrigin = Boolean(dev) && isLoopbackOrigin(origin);
+      if (!sameOrigin && !allowedOrigins.has(origin) && !devOrigin) {
         throw new AppError(403, 'ORIGIN_NOT_ALLOWED', 'Request origin is not allowed.');
       }
     }

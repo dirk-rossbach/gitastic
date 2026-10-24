@@ -1,6 +1,6 @@
 {
   "name": "@gitastic/web",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/cinzel-decorative": "^5.3.0",
+    "@fontsource/fredoka": "^5.3.0",
+    "@fontsource/im-fell-english": "^5.3.0",
+    "@fontsource/orbitron": "^5.3.0",
+    "@fontsource/press-start-2p": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
+    "@fontsource/vt323": "^5.3.0",
     "@gitastic/shared": "*",
     "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-dropdown-menu": "^2.1.4",
@@ -25,8 +32,8 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.6.3",
     "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",

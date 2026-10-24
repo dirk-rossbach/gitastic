@@ -35,6 +35,10 @@
   color-scheme: light;
 }
 
+[data-style='gorgeous'] {
+  --font-display: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
 [data-style='focus'][data-theme='dark'] {
   --canvas: #111318;
   --panel: #171a21;
@@ -70,6 +74,7 @@
 }
 
 [data-style='synthwave'][data-theme='dark'] {
+  --font-display: Orbitron, 'Avenir Next Condensed', ui-sans-serif, sans-serif;
   --canvas: #0b0316;
   --panel: #140729;
   --raised: #230d45;
@@ -86,20 +91,133 @@
   color-scheme: dark;
 }
 
-[data-style='synthwave'][data-theme='light'] {
-  --canvas: #fff2fb;
+[data-style='transilvania'][data-theme='dark'] {
+  --font-display: 'Cinzel Decorative', 'Iowan Old Style', Palatino, Georgia, serif;
+  --canvas: #070304;
+  --panel: #100609;
+  --raised: #1c0a10;
+  --edge: #4a1620;
+  --ink: #f4e9df;
+  --muted: #c9a9a3;
+  --faint: #8c6c6a;
+  --accent: #c81d3a;
+  --accent-2: #7f0d20;
+  --accent-3: #aebfd9;
+  --success: #7fb58a;
+  --warning: #d99a3e;
+  --danger: #ff3b4f;
+  color-scheme: dark;
+}
+
+[data-style='ubernerd'][data-theme='dark'] {
+  --font-display: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
+  --canvas: #020604;
+  --panel: #06100a;
+  --raised: #0a1a11;
+  --edge: #174a2a;
+  --ink: #d8ffe4;
+  --muted: #7dbb8f;
+  --faint: #4c7a5a;
+  --accent: #39ff14;
+  --accent-2: #ffb000;
+  --accent-3: #00e5ff;
+  --success: #39ff14;
+  --warning: #ffb000;
+  --danger: #ff3b30;
+  color-scheme: dark;
+}
+
+[data-style='8bit'] {
+  --font-display: 'Press Start 2P', 'JetBrains Mono', monospace;
+  --canvas: #0b0c1e;
+  --panel: #17183b;
+  --raised: #24265a;
+  --edge: #4b4d9a;
+  --ink: #fff1e8;
+  --muted: #c2c8ff;
+  --faint: #858bd0;
+  --accent: #ff004d;
+  --accent-2: #00e436;
+  --accent-3: #ffec27;
+  --success: #00e436;
+  --warning: #ffa300;
+  --danger: #ff004d;
+  color-scheme: dark;
+}
+
+[data-style='transilvania'] body {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+}
+
+[data-style='ubernerd'] body,
+[data-style='blueprint'] body {
+  font-family: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
+}
+
+[data-style='vellum'] body {
+  font-family: 'IM Fell English', 'Iowan Old Style', Palatino, Georgia, serif;
+}
+
+[data-style='lemon-baby'] body {
+  font-family: Fredoka, 'Arial Rounded MT Bold', 'Trebuchet MS', ui-sans-serif, sans-serif;
+}
+
+[data-style='8bit'] body {
+  font-family: 'VT323', 'JetBrains Mono', monospace;
+  letter-spacing: 0.015em;
+}
+
+[data-style='daybreak'] {
+  --font-display: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+  --canvas: #f7faff;
   --panel: #ffffff;
-  --raised: #fde2f6;
-  --edge: #f0aae0;
-  --ink: #26053d;
-  --muted: #752396;
-  --faint: #a75cc7;
-  --accent: #e6007a;
-  --accent-2: #00a8cc;
-  --accent-3: #ff6b00;
-  --success: #009e6c;
-  --warning: #d96b00;
-  --danger: #e1004b;
+  --raised: #eaf2fc;
+  --edge: #cbd9ea;
+  --ink: #0a1a2f;
+  --muted: #526980;
+  --faint: #8195ab;
+  --accent: #2563eb;
+  --accent-2: #0d9488;
+  --accent-3: #f59e0b;
+  --success: #0f9f6e;
+  --warning: #b45309;
+  --danger: #dc2626;
+  color-scheme: light;
+}
+
+[data-style='vellum'] {
+  --font-display: 'IM Fell English', 'Iowan Old Style', Palatino, Georgia, serif;
+  --canvas: #f4ecdf;
+  --panel: #fbf6ec;
+  --raised: #eadfce;
+  --edge: #d5c2a8;
+  --ink: #2a1e16;
+  --muted: #6d5a48;
+  --faint: #94806a;
+  --accent: #9f1239;
+  --accent-2: #6b4f2a;
+  --accent-3: #6b7280;
+  --success: #3f6b4a;
+  --warning: #9a5b00;
+  --danger: #b91c1c;
+  color-scheme: light;
+}
+
+[data-style='blueprint'] {
+  --font-display: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
+  --canvas: #eef4fb;
+  --panel: #ffffff;
+  --raised: #e4edf8;
+  --edge: #b9cde2;
+  --ink: #0b2545;
+  --muted: #476a8c;
+  --faint: #7a97b3;
+  --accent: #1d4ed8;
+  --accent-2: #0891b2;
+  --accent-3: #f59e0b;
+  --success: #0e8f6e;
+  --warning: #b45309;
+  --danger: #dc2626;
   color-scheme: light;
 }
 
@@ -119,6 +237,7 @@
   --color-danger: var(--danger);
   --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
+  --font-display: Inter, ui-sans-serif, system-ui, sans-serif;
   --shadow-panel: 0 24px 70px rgb(0 0 0 / 0.38);
 }
 
@@ -151,6 +270,42 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes detail-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes detail-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes detail-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes detail-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
@@ -234,6 +389,7 @@
 
 .gradient-text,
 .brand-title {
+  font-family: var(--font-display);
   background: linear-gradient(100deg, var(--ink) 10%, var(--accent) 48%, var(--accent-2) 80%);
   background-size: 180% 100%;
   -webkit-background-clip: text;
@@ -681,6 +837,7 @@
 
   .panel-title {
     @apply text-xs font-semibold uppercase tracking-wider;
+    font-family: var(--font-display);
     color: color-mix(in srgb, var(--faint) 85%, var(--accent));
   }
 
@@ -718,7 +875,7 @@
   }
 
   .lane-label {
-    @apply pointer-events-none absolute top-1 left-3 z-20 hidden max-w-56 truncate rounded-md border border-edge px-1.5 py-0.5 text-[10px] font-medium text-ink;
+    @apply pointer-events-none absolute top-1 left-3 z-20 hidden w-max max-w-[20rem] whitespace-normal rounded-md border border-edge px-1.5 py-0.5 text-[10px] font-medium leading-snug break-all text-ink;
     background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--panel)), color-mix(in srgb, var(--accent-2) 12%, var(--panel)));
     box-shadow:
       0 10px 28px rgb(0 0 0 / 0.35),
@@ -729,6 +886,37 @@
   .lane-hover:hover .lane-label {
     display: block;
     animation: pop-in 0.16s ease both;
+  }
+
+  .lane-label-current {
+    border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  }
+
+  .detail-drawer {
+    animation: detail-slide-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+    box-shadow:
+      -30px 0 80px -20px rgb(0 0 0 / 0.9),
+      -8px 0 30px rgb(0 0 0 / 0.42),
+      0 0 48px color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+
+  [data-theme='light'] .detail-drawer {
+    box-shadow:
+      -24px 0 60px -24px rgb(15 23 42 / 0.22),
+      -6px 0 20px rgb(15 23 42 / 0.08),
+      0 0 36px color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+
+  .detail-drawer-closing {
+    animation: detail-slide-out 0.2s ease-in both;
+  }
+
+  .detail-backdrop {
+    animation: detail-backdrop-in 0.2s ease both;
+  }
+
+  .detail-backdrop-closing {
+    animation: detail-backdrop-out 0.16s ease both;
   }
 }
 
@@ -769,7 +957,11 @@
   .repo-card::after,
   .view-enter,
   .diff-file-card,
-  .lane-hover:hover .lane-label {
+  .lane-hover:hover .lane-label,
+  .detail-drawer,
+  .detail-drawer-closing,
+  .detail-backdrop,
+  .detail-backdrop-closing {
     animation: none;
   }
 
@@ -949,6 +1141,10 @@
   backdrop-filter: none !important;
 }
 
+[data-style='focus'] .detail-drawer {
+  box-shadow: none !important;
+}
+
 [data-style='focus'] .scrollbar-thin::-webkit-scrollbar-thumb {
   background: var(--edge) !important;
 }
@@ -1020,4 +1216,680 @@
     0 0 24px color-mix(in srgb, var(--accent) 52%, transparent),
     0 0 36px color-mix(in srgb, var(--accent-2) 26%, transparent),
     inset 0 1px 0 rgb(255 255 255 / 0.4);
+}
+
+[data-style='transilvania'] body {
+  background:
+    radial-gradient(70rem 45rem at 15% -12%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 60%),
+    radial-gradient(55rem 36rem at 88% -4%, color-mix(in srgb, var(--accent-2) 30%, transparent), transparent 64%),
+    radial-gradient(40rem 30rem at 50% 118%, color-mix(in srgb, var(--accent-3) 9%, transparent), transparent 66%),
+    var(--canvas) !important;
+}
+
+[data-style='transilvania'] body::before {
+  background-image:
+    radial-gradient(38rem 22rem at 18% 8%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 68%),
+    radial-gradient(32rem 20rem at 82% 22%, color-mix(in srgb, var(--accent-2) 20%, transparent), transparent 70%),
+    radial-gradient(24rem 16rem at 55% 78%, color-mix(in srgb, #5c0a18 18%, transparent), transparent 72%);
+  background-size: 100% 100%;
+  mask-image: radial-gradient(ellipse at 50% 40%, black 0%, transparent 78%);
+  opacity: 0.9;
+}
+
+[data-style='transilvania'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 38%, rgb(0 0 0 / 0.58) 100%);
+}
+
+[data-style='transilvania'] .gradient-text,
+[data-style='transilvania'] .brand-title {
+  background: linear-gradient(100deg, #f4e9df 6%, #d92b47 45%, #7f0d20 86%);
+  background-size: 190% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 34%, transparent));
+}
+
+[data-style='transilvania'] .brand-mark {
+  background: linear-gradient(145deg, #1a0508 0%, #7f0d20 48%, #c81d3a 100%);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: #f4e9df;
+  box-shadow:
+    0 0 28px color-mix(in srgb, var(--accent) 40%, transparent),
+    0 0 44px color-mix(in srgb, var(--accent-2) 24%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+
+[data-style='transilvania'] .card,
+[data-style='transilvania'] .repo-card,
+[data-style='transilvania'] .diff-file-card {
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--edge));
+  box-shadow:
+    0 0 30px color-mix(in srgb, var(--accent) 10%, transparent),
+    0 20px 60px rgb(0 0 0 / 0.55);
+}
+
+[data-style='transilvania'] .nav-item-active,
+[data-style='transilvania'] .history-row-selected {
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 26%, transparent),
+    color-mix(in srgb, var(--accent-2) 18%, transparent) 55%,
+    transparent 95%
+  );
+  box-shadow:
+    inset 3px 0 0 #ff3b4f,
+    0 0 34px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+[data-style='transilvania'] .btn-primary {
+  border-color: color-mix(in srgb, #ff3b4f 55%, transparent);
+  background: linear-gradient(135deg, #4a0612 0%, #8f0f26 52%, #c81d3a 100%);
+  background-size: 200% 200%;
+  color: #f4e9df;
+  box-shadow:
+    0 0 26px color-mix(in srgb, var(--accent) 38%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+[data-style='transilvania'] .lane-label {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--edge));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 14%, var(--panel)),
+    color-mix(in srgb, var(--accent-2) 10%, var(--panel))
+  );
+}
+
+[data-style='transilvania'] .detail-drawer {
+  box-shadow:
+    -44px 0 100px -24px rgb(0 0 0 / 0.96),
+    -2px 0 0 color-mix(in srgb, var(--accent) 30%, transparent),
+    -18px 0 55px rgb(0 0 0 / 0.65);
+}
+
+[data-style='ubernerd'] body {
+  background:
+    radial-gradient(58rem 34rem at 50% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
+    radial-gradient(40rem 30rem at 92% 106%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 64%),
+    var(--canvas) !important;
+}
+
+[data-style='ubernerd'] body::before {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgb(0 0 0 / 0.28) 0,
+    rgb(0 0 0 / 0.28) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  background-size: 100% 3px;
+  mask-image: none;
+  opacity: 0.5;
+}
+
+[data-style='ubernerd'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.42) 100%);
+}
+
+[data-style='ubernerd'] .gradient-text,
+[data-style='ubernerd'] .brand-title {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--accent);
+  -webkit-text-fill-color: var(--accent);
+  filter: none;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 0 12px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 28px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+[data-style='ubernerd'] .brand-mark {
+  border-color: var(--accent);
+  background: #020805;
+  color: var(--accent);
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--accent) 35%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+[data-style='ubernerd'] .card,
+[data-style='ubernerd'] .repo-card,
+[data-style='ubernerd'] .diff-file-card {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--edge));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent),
+    0 16px 40px rgb(0 0 0 / 0.5);
+}
+
+[data-style='ubernerd'] .nav-item-active,
+[data-style='ubernerd'] .history-row-selected {
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    transparent 90%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 0 26px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+[data-style='ubernerd'] .btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #031007;
+  font-family: var(--font-mono);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+[data-style='ubernerd'] .panel-title,
+[data-style='ubernerd'] .badge,
+[data-style='ubernerd'] .btn {
+  font-family: var(--font-mono);
+}
+
+[data-style='ubernerd'] .lane-label {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--edge));
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}
+
+[data-style='ubernerd'] .detail-drawer {
+  box-shadow:
+    -6px 0 0 color-mix(in srgb, var(--accent) 16%, transparent),
+    -32px 0 80px -20px rgb(0 0 0 / 0.92);
+}
+
+[data-style='daybreak'] body {
+  background:
+    radial-gradient(62rem 38rem at 8% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 62%),
+    radial-gradient(50rem 34rem at 96% 0%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 64%),
+    radial-gradient(44rem 30rem at 50% 116%, color-mix(in srgb, var(--accent-3) 15%, transparent), transparent 66%),
+    var(--canvas) !important;
+}
+
+[data-style='daybreak'] body::before {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--ink) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--ink) 3.5%, transparent) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 0%, transparent 72%);
+  opacity: 0.55;
+}
+
+[data-style='daybreak'] .gradient-text,
+[data-style='daybreak'] .brand-title {
+  background: linear-gradient(100deg, var(--ink) 6%, var(--accent) 48%, var(--accent-2) 86%);
+  background-size: 190% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 14px color-mix(in srgb, var(--accent) 16%, transparent));
+}
+
+[data-style='daybreak'] .brand-mark {
+  background: linear-gradient(140deg, #1e40af 0%, var(--accent) 46%, #0ea5e9 72%, var(--accent-2) 100%);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: #ffffff;
+  box-shadow:
+    0 14px 34px color-mix(in srgb, var(--accent) 24%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.45);
+}
+
+[data-style='daybreak'] .card,
+[data-style='daybreak'] .repo-card,
+[data-style='daybreak'] .diff-file-card {
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--edge));
+  box-shadow:
+    0 16px 42px color-mix(in srgb, #1e3a5f 12%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+[data-style='daybreak'] .nav-item-active,
+[data-style='daybreak'] .history-row-selected {
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 14%, transparent),
+    color-mix(in srgb, var(--accent-2) 8%, transparent) 55%,
+    transparent 95%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 10px 26px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+[data-style='daybreak'] .btn-primary {
+  border-color: color-mix(in srgb, var(--accent) 72%, transparent);
+  background: linear-gradient(135deg, #1e40af 0%, var(--accent) 52%, var(--accent-2) 100%);
+  background-size: 200% 200%;
+  color: #ffffff;
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--accent) 24%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+[data-style='daybreak'] .lane-label {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--edge));
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+}
+
+[data-style='vellum'] body {
+  background:
+    radial-gradient(60rem 38rem at 12% -10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 62%),
+    radial-gradient(52rem 34rem at 94% 4%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 64%),
+    radial-gradient(44rem 30rem at 50% 116%, color-mix(in srgb, #b08a55 12%, transparent), transparent 66%),
+    var(--canvas) !important;
+}
+
+[data-style='vellum'] body::before {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgb(90 60 30 / 0.025) 0,
+      rgb(90 60 30 / 0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgb(90 60 30 / 0.018) 0,
+      rgb(90 60 30 / 0.018) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  background-size:
+    100% 3px,
+    4px 100%;
+  mask-image: none;
+  opacity: 0.9;
+}
+
+[data-style='vellum'] .gradient-text,
+[data-style='vellum'] .brand-title {
+  background: linear-gradient(100deg, var(--ink) 8%, var(--accent) 52%, var(--accent-2) 90%);
+  background-size: 190% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 10px color-mix(in srgb, var(--accent) 12%, transparent));
+}
+
+[data-style='vellum'] .brand-mark {
+  background: linear-gradient(145deg, #2a1e16 0%, #6b4f2a 52%, var(--accent) 100%);
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  color: #f4ecdf;
+  box-shadow:
+    0 14px 32px color-mix(in srgb, #5a4024 26%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.2);
+}
+
+[data-style='vellum'] .card,
+[data-style='vellum'] .repo-card,
+[data-style='vellum'] .diff-file-card {
+  border-color: color-mix(in srgb, var(--accent-2) 18%, var(--edge));
+  box-shadow:
+    0 16px 40px color-mix(in srgb, #5a4024 14%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.55);
+}
+
+[data-style='vellum'] .nav-item-active,
+[data-style='vellum'] .history-row-selected {
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    color-mix(in srgb, var(--accent-2) 8%, transparent) 55%,
+    transparent 95%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 10px 24px color-mix(in srgb, #5a4024 10%, transparent);
+}
+
+[data-style='vellum'] .btn-primary {
+  border-color: color-mix(in srgb, var(--accent) 72%, transparent);
+  background: linear-gradient(135deg, #4c0a1c 0%, var(--accent) 58%, #b91c4b 100%);
+  background-size: 200% 200%;
+  color: #fbf6ec;
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--accent) 20%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+[data-style='vellum'] .lane-label {
+  border-color: color-mix(in srgb, var(--accent-2) 28%, var(--edge));
+  background: color-mix(in srgb, var(--accent-2) 7%, var(--panel));
+}
+
+[data-style='blueprint'] body {
+  background:
+    radial-gradient(58rem 36rem at 8% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 62%),
+    radial-gradient(50rem 34rem at 96% 4%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 64%),
+    var(--canvas) !important;
+}
+
+[data-style='blueprint'] body::before {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--accent) 16%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 16%, transparent) 1px, transparent 1px);
+  background-size:
+    32px 32px,
+    32px 32px,
+    160px 160px,
+    160px 160px;
+  mask-image: radial-gradient(ellipse at 50% 28%, black 0%, transparent 78%);
+  opacity: 0.75;
+}
+
+[data-style='blueprint'] .gradient-text,
+[data-style='blueprint'] .brand-title {
+  background: linear-gradient(100deg, var(--ink) 6%, var(--accent) 48%, var(--accent-2) 88%);
+  background-size: 190% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-family: var(--font-mono);
+  letter-spacing: 0.015em;
+  filter: drop-shadow(0 3px 10px color-mix(in srgb, var(--accent) 14%, transparent));
+}
+
+[data-style='blueprint'] .brand-mark {
+  background: linear-gradient(145deg, #0b2545 0%, var(--accent) 62%, var(--accent-2) 100%);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: #ffffff;
+  box-shadow:
+    0 14px 32px color-mix(in srgb, var(--accent) 18%, transparent),
+    inset 0 0 0 1px rgb(255 255 255 / 0.18);
+}
+
+[data-style='blueprint'] .card,
+[data-style='blueprint'] .repo-card,
+[data-style='blueprint'] .diff-file-card {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--edge));
+  box-shadow:
+    6px 6px 0 color-mix(in srgb, var(--accent) 6%, transparent),
+    0 16px 38px color-mix(in srgb, #0b2545 12%, transparent);
+}
+
+[data-style='blueprint'] .nav-item-active,
+[data-style='blueprint'] .history-row-selected {
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    color-mix(in srgb, var(--accent-2) 8%, transparent) 55%,
+    transparent 95%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 10px 24px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+[data-style='blueprint'] .btn-primary {
+  border-color: color-mix(in srgb, var(--accent) 72%, transparent);
+  background: linear-gradient(135deg, #0b2545 0%, var(--accent) 52%, var(--accent-2) 100%);
+  background-size: 200% 200%;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  box-shadow:
+    0 12px 26px color-mix(in srgb, var(--accent) 20%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.3);
+}
+
+[data-style='blueprint'] .panel-title,
+[data-style='blueprint'] .badge {
+  font-family: var(--font-mono);
+}
+
+[data-style='blueprint'] .lane-label {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--edge));
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+}
+
+[data-style='lemon-baby'] {
+  --font-display: Fredoka, 'Arial Rounded MT Bold', 'Trebuchet MS', ui-sans-serif, sans-serif;
+  --canvas: #fffbe8;
+  --panel: #fffdf3;
+  --raised: #fef2c7;
+  --edge: #f2d675;
+  --ink: #382a06;
+  --muted: #735a13;
+  --faint: #9a7d2a;
+  --accent: #eab308;
+  --accent-2: #f97316;
+  --accent-3: #65a30d;
+  --success: #4d7c0f;
+  --warning: #c2410c;
+  --danger: #dc2626;
+  color-scheme: light;
+}
+
+[data-style='lemon-baby'] body {
+  background:
+    radial-gradient(64rem 40rem at 6% -12%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%),
+    radial-gradient(54rem 36rem at 96% 2%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 64%),
+    radial-gradient(48rem 32rem at 48% 116%, color-mix(in srgb, var(--accent-3) 16%, transparent), transparent 66%),
+    var(--canvas) !important;
+}
+
+[data-style='lemon-baby'] body::before {
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, var(--accent) 26%, transparent) 0 2px, transparent 2.5px),
+    radial-gradient(circle, color-mix(in srgb, var(--accent-2) 20%, transparent) 0 1.5px, transparent 2px);
+  background-position:
+    0 0,
+    13px 13px;
+  background-size: 26px 26px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 78%);
+  opacity: 0.55;
+}
+
+[data-style='lemon-baby'] .gradient-text,
+[data-style='lemon-baby'] .brand-title {
+  background: linear-gradient(100deg, #3f2d06 0%, #ca8a04 32%, #ea580c 62%, #4d7c0f 92%);
+  background-size: 190% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--accent-2) 18%, transparent));
+}
+
+[data-style='lemon-baby'] .brand-mark {
+  background: linear-gradient(145deg, #facc15 0%, #f59e0b 42%, #fb923c 68%, #a3e635 100%);
+  border-color: color-mix(in srgb, var(--accent-2) 45%, transparent);
+  color: #2f2306;
+  box-shadow:
+    0 14px 34px color-mix(in srgb, var(--accent-2) 28%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.55);
+}
+
+[data-style='lemon-baby'] .card,
+[data-style='lemon-baby'] .repo-card,
+[data-style='lemon-baby'] .diff-file-card {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--edge));
+  box-shadow:
+    5px 5px 0 color-mix(in srgb, var(--accent) 16%, transparent),
+    0 16px 38px color-mix(in srgb, #b45309 12%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.65);
+}
+
+[data-style='lemon-baby'] .nav-item-active,
+[data-style='lemon-baby'] .history-row-selected {
+  border-left-color: var(--accent-2);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    color-mix(in srgb, var(--accent-2) 13%, transparent) 46%,
+    color-mix(in srgb, var(--accent-3) 12%, transparent) 72%,
+    transparent 96%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent-2),
+    0 10px 24px color-mix(in srgb, var(--accent-2) 12%, transparent);
+}
+
+[data-style='lemon-baby'] .btn-primary {
+  border-color: color-mix(in srgb, var(--accent-2) 62%, transparent);
+  background: linear-gradient(135deg, #facc15 0%, #fb923c 54%, #a3e635 100%);
+  background-size: 200% 200%;
+  color: #2f2306;
+  box-shadow:
+    0 12px 26px color-mix(in srgb, var(--accent-2) 26%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.55);
+}
+
+[data-style='lemon-baby'] .lane-label {
+  border-color: color-mix(in srgb, var(--accent-2) 34%, var(--edge));
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+}
+
+[data-style='8bit'] body {
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--accent-3) 14%, transparent) 0 1.5px, transparent 2px),
+    var(--canvas) !important;
+  background-size: 32px 32px, auto;
+}
+
+[data-style='8bit'] body::before {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--accent) 10%, transparent) 2px, transparent 2px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-2) 10%, transparent) 2px, transparent 2px);
+  background-size: 32px 32px;
+  mask-image: none;
+  opacity: 0.45;
+}
+
+[data-style='8bit'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.24) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 58%, rgb(0 0 0 / 0.42) 100%);
+}
+
+[data-style='8bit'] .gradient-text,
+[data-style='8bit'] .brand-title {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--accent-3);
+  text-shadow: 3px 3px 0 var(--accent);
+  letter-spacing: 0;
+  animation: none;
+  filter: none;
+}
+
+[data-style='8bit'] .brand-mark {
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0 25%,
+    var(--warning) 25% 50%,
+    var(--accent-3) 50% 75%,
+    var(--accent-2) 75% 100%
+  );
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  color: var(--canvas);
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 0.7);
+}
+
+[data-style='8bit'] .card,
+[data-style='8bit'] .repo-card,
+[data-style='8bit'] .diff-file-card,
+[data-style='8bit'] .detail-drawer {
+  border: 2px solid var(--edge);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 0.55);
+}
+
+[data-style='8bit'] .nav-item-active,
+[data-style='8bit'] .history-row-selected {
+  background: var(--accent-3);
+  border-left-color: var(--accent);
+  color: var(--canvas);
+  box-shadow:
+    inset 4px 0 0 var(--accent),
+    3px 3px 0 rgb(0 0 0 / 0.65);
+}
+
+[data-style='8bit'] .nav-item-active svg,
+[data-style='8bit'] .nav-item-active * {
+  color: var(--canvas);
+}
+
+[data-style='8bit'] .btn {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--ink);
+  font-family: 'VT323', 'JetBrains Mono', monospace;
+  font-size: 15px;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 rgb(0 0 0 / 0.75);
+}
+
+[data-style='8bit'] .btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 0.85);
+}
+
+[data-style='8bit'] .btn-primary {
+  border-color: var(--ink);
+  background: var(--accent);
+  color: var(--ink);
+  box-shadow:
+    3px 3px 0 rgb(0 0 0 / 0.8),
+    inset 0 0 0 1px color-mix(in srgb, var(--ink) 28%, transparent);
+}
+
+[data-style='8bit'] .badge {
+  border-width: 2px;
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-size: 8px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+[data-style='8bit'] .panel-title {
+  color: var(--accent-3);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+[data-style='8bit'] .input,
+[data-style='8bit'] .select {
+  border-width: 2px;
+  border-radius: 0;
+  font-family: 'VT323', 'JetBrains Mono', monospace;
+  font-size: 15px;
+}
+
+[data-style='8bit'] .lane-label {
+  border: 2px solid var(--accent);
+  border-radius: 0;
+  background: var(--panel);
+  box-shadow: 3px 3px 0 rgb(0 0 0 / 0.65);
+  font-family: 'VT323', 'JetBrains Mono', monospace;
 }

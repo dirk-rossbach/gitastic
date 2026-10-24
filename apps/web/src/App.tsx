@@ -4,6 +4,7 @@ import { GitBranch, Heart, ServerCrash } from 'lucide-react';
 import type { UiStyle } from '@gitastic/shared';
 import { api } from './api';
 import { errorMessage } from './lib/utils';
+import { rememberStyleForMode, resolvedThemeMode, styleForTheme } from './ui-styles';
 import { JobHost } from './components/JobHost';
 import { CommandPalette } from './components/CommandPalette';
 import { SettingsView } from './components/SettingsView';
@@ -17,19 +18,17 @@ export function applyAppearance(
   theme: 'dark' | 'light' | 'system',
   uiStyle: UiStyle = 'gorgeous',
 ) {
-  const resolve = () =>
-    theme === 'system'
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-      : theme;
-  document.documentElement.dataset.theme = resolve();
-  document.documentElement.dataset.style = uiStyle;
+  const apply = () => {
+    const mode = resolvedThemeMode(theme);
+    const style = styleForTheme(theme, uiStyle);
+    document.documentElement.dataset.theme = mode;
+    document.documentElement.dataset.style = style;
+    rememberStyleForMode(mode, style);
+  };
+  apply();
   if (theme === 'system') {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const listener = () => {
-      document.documentElement.dataset.theme = resolve();
-    };
+    const listener = () => apply();
     media.addEventListener('change', listener);
     return () => media.removeEventListener('change', listener);
   }

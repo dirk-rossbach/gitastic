@@ -249,7 +249,19 @@ export const UndoEntrySchema = z.object({
 });
 export type UndoEntry = z.infer<typeof UndoEntrySchema>;
 
-export const UiStyleSchema = z.enum(['gorgeous', 'focus', 'synthwave']);
+export const UI_STYLE_IDS = [
+  'gorgeous',
+  'focus',
+  'synthwave',
+  'transilvania',
+  'ubernerd',
+  'daybreak',
+  'vellum',
+  'blueprint',
+  'lemon-baby',
+  '8bit',
+] as const;
+export const UiStyleSchema = z.enum(UI_STYLE_IDS);
 export type UiStyle = z.infer<typeof UiStyleSchema>;
 
 export const SettingsSchema = z.object({
