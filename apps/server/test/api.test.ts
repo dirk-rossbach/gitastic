@@ -248,7 +248,7 @@ describe('undoable write operations', () => {
 describe('remotes and jobs', () => {
   it('pushes, fetches and pulls through a local bare remote', async () => {
     const origin = path.join(homeDir, `origin-${process.pid}-${Date.now()}.git`);
-    execFileSync('git', ['init', '-q', '--bare', origin]);
+    execFileSync('git', ['init', '-q', '--bare', '-b', 'main', origin]);
     await json(
       await request('POST', '/api/repo/remote', { name: 'origin', url: origin }),
     );
@@ -280,7 +280,7 @@ describe('remotes and jobs', () => {
 
   it('checks out a remote branch as a local tracking branch', async () => {
     const origin = path.join(homeDir, `tracking-origin-${process.pid}-${Date.now()}.git`);
-    execFileSync('git', ['init', '-q', '--bare', origin]);
+    execFileSync('git', ['init', '-q', '--bare', '-b', 'main', origin]);
     await json(
       await request('POST', '/api/repo/remote', { name: 'origin', url: origin }),
     );
@@ -449,7 +449,7 @@ describe('GitHub, GitLab and SSH provider integration', () => {
 
   it('checks out a Pull Request branch from a remote', async () => {
     const origin = path.join(homeDir, `pr-origin-${process.pid}-${Date.now()}.git`);
-    execFileSync('git', ['init', '-q', '--bare', origin]);
+    execFileSync('git', ['init', '-q', '--bare', '-b', 'main', origin]);
     await json(
       await request('POST', '/api/repo/remote', { name: 'origin', url: origin }),
     );
