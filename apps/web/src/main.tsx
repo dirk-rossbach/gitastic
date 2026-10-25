@@ -9,6 +9,7 @@ import '@fontsource/cinzel-decorative/latin-700.css';
 import '@fontsource/im-fell-english/latin-400.css';
 import '@fontsource/fredoka/latin-500.css';
 import '@fontsource/space-grotesk/latin-600.css';
+import '@fontsource/special-elite/latin-400.css';
 import './styles.css';
 
 const queryClient = new QueryClient({

@@ -63,6 +63,8 @@ test('opens a repo, commits staged changes and browses sections', async ({ page 
 
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByText('Appearance').waitFor();
+  await page.getByRole('radio', { name: /Smelly Socks/ }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-style', 'smelly-socks');
 
   for (const name of ['Timeline', 'Tags', 'Remotes', 'Stashes', 'Conflicts', 'Blame', 'File history']) {
     await nav.getByRole('button', { name, exact: true }).click();
