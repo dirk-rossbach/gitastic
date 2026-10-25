@@ -82,6 +82,15 @@ Windows output: `src-tauri/target/release/bundle/msi/*.msi` and `.../bundle/nsis
 
 CI builds the Windows installers on `windows-latest` and uploads them as the `gitastic-windows` artifact.
 
+### Unsigned Builds
+
+> **Warning:** Release binaries are currently **not code-signed or notarized**. macOS Gatekeeper and Windows SmartScreen will show warnings on first launch. Only download from the official GitHub Releases page and verify the published `SHA256SUMS.txt`.
+
+- **macOS:** Right-click **Gitastic.app** and choose **Open**, or allow it under **System Settings → Privacy & Security**. The app is distributed as a universal DMG for Apple Silicon and Intel.
+- **Windows:** In the SmartScreen dialog, choose **More info → Run anyway**. The release includes both an NSIS installer (`.exe`) and an MSI package.
+
+Code signing and Apple notarization are planned; signed assets will replace these builds under the same release.
+
 ### Run Local Web / Loopback Server Mode
 ```bash
 npm run build
