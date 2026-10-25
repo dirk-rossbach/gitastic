@@ -39,7 +39,6 @@ export function ProviderAuthAssistant() {
     host: string;
   } | null>(null);
   const [hostInput, setHostInput] = useState('');
-  const [usernameInput, setUsernameInput] = useState('');
   const [tokenInput, setTokenInput] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [passphraseKey, setPassphraseKey] = useState<SshKeyEntry | null>(null);
@@ -71,7 +70,6 @@ export function ProviderAuthAssistant() {
   const openConnect = (provider: ProviderKind, defaultHost: string) => {
     setConnectModal({ provider, host: defaultHost });
     setHostInput(defaultHost);
-    setUsernameInput('');
     setTokenInput('');
   };
 
@@ -82,7 +80,6 @@ export function ProviderAuthAssistant() {
         const res = await api.connectProvider({
           provider: connectModal.provider,
           host: hostInput.trim() || connectModal.host,
-          username: usernameInput.trim() || undefined,
           token: tokenInput.trim(),
         });
         await queryClient.invalidateQueries({ queryKey: ['providers-status'] });

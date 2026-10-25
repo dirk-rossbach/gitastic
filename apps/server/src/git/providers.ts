@@ -177,12 +177,14 @@ async function storeGitCredential(
 }
 
 async function eraseGitCredential(runner: GitRunner, host: string): Promise<void> {
+  const credential = await readGitCredential(runner, host);
+  const username = credential?.username ? `username=${credential.username}\n` : '';
   await execa(
     runner.gitPath,
     ['credential', 'reject'],
     {
       cwd: homeDir,
-      input: `protocol=https\nhost=${host}\n\n`,
+      input: `protocol=https\nhost=${host}\n${username}\n`,
       reject: false,
       timeout: 4000,
       env: {
@@ -720,9 +722,13 @@ export async function disconnectProviderAccount(
   const host = options.host.trim();
   await eraseGitCredential(runner, host);
   if (options.provider === 'github' && (await hasCommand('gh'))) {
-    await execa('gh', ['auth', 'logout', '--hostname', host, '--yes'], {
+    await execa('gh', ['auth', 'logout', '--hostname', host], {
       reject: false,
       timeout: 4000,
+      env: {
+        ...process.env,
+        GH_PROMPT_DISABLED: '1',
+      },
     });
   }
   return { ok: true };
