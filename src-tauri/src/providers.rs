@@ -1,3 +1,4 @@
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::Stdio;
@@ -6,6 +7,7 @@ use serde::Deserialize;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
+#[cfg(unix)]
 use uuid::Uuid;
 
 use crate::error::{ApiError, ApiResult};
@@ -405,30 +407,49 @@ pub async fn add_ssh_key_to_agent(
 
     let pass_clean = passphrase.map(|s| s.trim()).filter(|s| !s.is_empty());
     if pass_clean.is_none() {
-        let from_keychain = Command::new("ssh-add")
-            .args(["--apple-load-keychain", key_path])
-            .env("PATH", enriched_path())
-            .env("SSH_ASKPASS", "/usr/bin/false")
-            .env("SSH_ASKPASS_REQUIRE", "force")
-            .env("DISPLAY", ":0")
-            .output()
-            .await
-            .ok();
-        if from_keychain.as_ref().is_some_and(|o| o.status.success()) {
-            return Ok((true, "Loaded SSH key from macOS Keychain".to_string()));
+        #[cfg(target_os = "macos")]
+        {
+            let from_keychain = Command::new("ssh-add")
+                .args(["--apple-load-keychain", key_path])
+                .env("PATH", enriched_path())
+                .env("SSH_ASKPASS", "/usr/bin/false")
+                .env("SSH_ASKPASS_REQUIRE", "force")
+                .env("DISPLAY", ":0")
+                .output()
+                .await
+                .ok();
+            if from_keychain.as_ref().is_some_and(|o| o.status.success()) {
+                return Ok((true, "Loaded SSH key from macOS Keychain".to_string()));
+            }
+
+            let unencrypted = Command::new("ssh-add")
+                .args(["--apple-use-keychain", key_path])
+                .env("PATH", enriched_path())
+                .env("SSH_ASKPASS", "/usr/bin/false")
+                .env("SSH_ASKPASS_REQUIRE", "force")
+                .env("DISPLAY", ":0")
+                .output()
+                .await
+                .ok();
+            if unencrypted.as_ref().is_some_and(|o| o.status.success()) {
+                return Ok((true, "Added SSH key to ssh-agent".to_string()));
+            }
         }
 
-        let unencrypted = Command::new("ssh-add")
-            .args(["--apple-use-keychain", key_path])
-            .env("PATH", enriched_path())
-            .env("SSH_ASKPASS", "/usr/bin/false")
-            .env("SSH_ASKPASS_REQUIRE", "force")
-            .env("DISPLAY", ":0")
-            .output()
-            .await
-            .ok();
-        if unencrypted.as_ref().is_some_and(|o| o.status.success()) {
-            return Ok((true, "Added SSH key to ssh-agent".to_string()));
+        #[cfg(not(target_os = "macos"))]
+        {
+            let unencrypted = Command::new("ssh-add")
+                .arg(key_path)
+                .env("PATH", enriched_path())
+                .env("SSH_ASKPASS", "/usr/bin/false")
+                .env("SSH_ASKPASS_REQUIRE", "force")
+                .env("DISPLAY", ":0")
+                .output()
+                .await
+                .ok();
+            if unencrypted.as_ref().is_some_and(|o| o.status.success()) {
+                return Ok((true, "Added SSH key to ssh-agent".to_string()));
+            }
         }
 
         return Err(ApiError::new(
@@ -439,54 +460,68 @@ pub async fn add_ssh_key_to_agent(
     }
 
     let pass = pass_clean.unwrap();
-    let askpass_path = std::env::temp_dir().join(format!("gitastic-askpass-{}.sh", Uuid::new_v4()));
-    fs::write(
-        &askpass_path,
-        "#!/bin/sh\nprintf \"%s\\n\" \"$GITASTIC_SSH_PASS\"\n",
-    )
-    .await
-    .map_err(|e| ApiError::new(500, "SSH_ASKPASS_ERROR", e.to_string()))?;
-    let _ = fs::set_permissions(&askpass_path, std::fs::Permissions::from_mode(0o700)).await;
-    let askpass_str = askpass_path.to_string_lossy().to_string();
 
-    let apple = Command::new("ssh-add")
-        .args(["--apple-use-keychain", key_path])
-        .env("PATH", enriched_path())
-        .env("SSH_ASKPASS", &askpass_str)
-        .env("SSH_ASKPASS_REQUIRE", "force")
-        .env("DISPLAY", ":0")
-        .env("GITASTIC_SSH_PASS", pass)
-        .output()
+    #[cfg(unix)]
+    {
+        let askpass_path = std::env::temp_dir().join(format!("gitastic-askpass-{}.sh", Uuid::new_v4()));
+        fs::write(
+            &askpass_path,
+            "#!/bin/sh\nprintf \"%s\\n\" \"$GITASTIC_SSH_PASS\"\n",
+        )
         .await
-        .ok();
+        .map_err(|e| ApiError::new(500, "SSH_ASKPASS_ERROR", e.to_string()))?;
+        let _ = fs::set_permissions(&askpass_path, std::fs::Permissions::from_mode(0o700)).await;
+        let askpass_str = askpass_path.to_string_lossy().to_string();
 
-    if apple.as_ref().is_some_and(|o| o.status.success()) {
-        let _ = fs::remove_file(&askpass_path).await;
-        return Ok((true, "Unlocked SSH key and saved to Keychain".to_string()));
-    }
+        let apple = Command::new("ssh-add")
+            .args(["--apple-use-keychain", key_path])
+            .env("PATH", enriched_path())
+            .env("SSH_ASKPASS", &askpass_str)
+            .env("SSH_ASKPASS_REQUIRE", "force")
+            .env("DISPLAY", ":0")
+            .env("GITASTIC_SSH_PASS", pass)
+            .output()
+            .await
+            .ok();
 
-    let fallback = Command::new("ssh-add")
-        .arg(key_path)
-        .env("PATH", enriched_path())
-        .env("SSH_ASKPASS", &askpass_str)
-        .env("SSH_ASKPASS_REQUIRE", "force")
-        .env("DISPLAY", ":0")
-        .env("GITASTIC_SSH_PASS", pass)
-        .output()
-        .await;
-    let _ = fs::remove_file(&askpass_path).await;
-
-    if let Ok(out) = fallback {
-        if out.status.success() {
-            return Ok((true, "Unlocked SSH key in ssh-agent".to_string()));
+        if apple.as_ref().is_some_and(|o| o.status.success()) {
+            let _ = fs::remove_file(&askpass_path).await;
+            return Ok((true, "Unlocked SSH key and saved to Keychain".to_string()));
         }
+
+        let fallback = Command::new("ssh-add")
+            .arg(key_path)
+            .env("PATH", enriched_path())
+            .env("SSH_ASKPASS", &askpass_str)
+            .env("SSH_ASKPASS_REQUIRE", "force")
+            .env("DISPLAY", ":0")
+            .env("GITASTIC_SSH_PASS", pass)
+            .output()
+            .await;
+        let _ = fs::remove_file(&askpass_path).await;
+
+        if let Ok(out) = fallback {
+            if out.status.success() {
+                return Ok((true, "Unlocked SSH key in ssh-agent".to_string()));
+            }
+        }
+
+        return Err(ApiError::new(
+            422,
+            "SSH_ADD_FAILED",
+            "Invalid passphrase or could not unlock SSH key.",
+        ));
     }
 
-    Err(ApiError::new(
-        422,
-        "SSH_ADD_FAILED",
-        "Invalid passphrase or could not unlock SSH key.",
-    ))
+    #[cfg(not(unix))]
+    {
+        let _ = pass;
+        Err(ApiError::new(
+            422,
+            "SSH_PASSPHRASE_UNSUPPORTED",
+            "Passphrase-protected SSH keys must be added with ssh-add in a terminal on Windows.",
+        ))
+    }
 }
 
 pub async fn generate_ssh_key(home: &str, label: Option<&str>) -> ApiResult<SshKeyEntry> {

@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::process::Stdio;
 use serde_json::json;
 use tokio::io::AsyncWriteExt;
@@ -6,13 +7,42 @@ use tokio::process::Command;
 use crate::error::{ApiError, ApiResult};
 
 pub fn enriched_path() -> String {
-    let existing = std::env::var("PATH").unwrap_or_default();
-    let extra = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
-    if existing.is_empty() {
-        extra.to_string()
-    } else {
-        format!("{extra}:{existing}")
+    let existing = std::env::var_os("PATH").unwrap_or_default();
+    let mut paths: Vec<PathBuf> = Vec::new();
+
+    #[cfg(windows)]
+    {
+        for path in [
+            r"C:\Program Files\Git\cmd",
+            r"C:\Program Files\Git\bin",
+            r"C:\Program Files\OpenSSH",
+            r"C:\Windows\System32\OpenSSH",
+        ] {
+            paths.push(PathBuf::from(path));
+        }
+        if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
+            paths.push(PathBuf::from(local_app_data).join("Programs").join("Git").join("cmd"));
+        }
     }
+
+    #[cfg(not(windows))]
+    {
+        for path in [
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+            "/usr/sbin",
+            "/sbin",
+        ] {
+            paths.push(PathBuf::from(path));
+        }
+    }
+
+    paths.extend(std::env::split_paths(&existing));
+    std::env::join_paths(paths)
+        .map(|joined| joined.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| existing.to_string_lossy().into_owned())
 }
 
 #[derive(Debug, Clone)]

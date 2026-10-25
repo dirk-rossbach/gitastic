@@ -1,6 +1,6 @@
 # Gitastic 1.1
 
-**Gitastic** is a fast, native local Git client for macOS (powered by **Tauri v2 + Rust**) that also runs as a local loopback web app. It combines a high-contrast, modern developer UI with deep Git power features — without cloud accounts, telemetry, or storing plaintext tokens.
+**Gitastic** is a fast, native local Git client for macOS and Windows (powered by **Tauri v2 + Rust**) that also runs as a local loopback web app. It combines a high-contrast, modern developer UI with deep Git power features — without cloud accounts, telemetry, or storing plaintext tokens.
 
 [![Version](https://img.shields.io/badge/version-1.1.0-38bdf8?style=flat-square)](#)
 [![Built with Tauri](https://img.shields.io/badge/Tauri_v2-Rust-ff2a85?style=flat-square)](#)
@@ -12,16 +12,16 @@
 ## Highlights & Features
 
 ### 1. Native Rust Desktop App + Local Web Mode
-- **15 MB native macOS `.app` bundle** built with **Tauri v2** and a 100% native **Rust backend** (`src-tauri/src/`).
+- **Native desktop bundles** for macOS (`.app`, `.dmg`) and Windows (`.msi`, NSIS `.exe`) built with **Tauri v2** and a 100% native **Rust backend** (`src-tauri/src/`).
 - Uses Tauri IPC (`#[tauri::command]`) directly — zero Node.js runtime or open network ports required in the desktop app.
 - Also includes a standalone local loopback server (`npm start` on `127.0.0.1:8787`) for browser or headless workflows.
 
-### 2. Ten Visual Styles, Grouped by Dark & Light
-- **Dark:** **Gorgeous (Default)** aurora gradients and neon glow; **Synthwave** outrun magenta and cyber-cyan; **Transilvania** blood-black gothic crimson; **Ubernerd** phosphor terminal green with CRT scanlines; **8-Bit** PICO-8 pixels, chunky arcade borders, and chiptune typography.
+### 2. Eleven Visual Styles, Grouped by Dark & Light
+- **Dark:** **Gorgeous (Default)** aurora gradients and neon glow; **Synthwave** outrun magenta and cyber-cyan; **Transilvania** blood-black gothic crimson; **Ubernerd** phosphor terminal green with CRT scanlines; **8-Bit** PICO-8 pixels, chunky arcade borders, and chiptune typography; **Smelly Socks** moldy lime, unwashed linen, and typewriter grit.
 - **Light:** **Daybreak** porcelain surfaces with cobalt and apricot; **Vellum** parchment, sepia ink, and wax-seal red; **Blueprint** drafting paper, navy grid, and cyan ink; **Lemon Baby** lemon yellow, tangerine orange, and lime green.
 - **Focus** appears in both libraries and strips out gradients, animations, and effects.
 - Styles set their own dark or light mode, so there is no separate theme switch.
-- Typography follows the theme: gothic serif for Transilvania, literary serif for Vellum, rounded Fredoka for Lemon Baby, pixel fonts for 8-Bit, and terminal mono for Ubernerd and Blueprint.
+- Typography follows the theme: gothic serif for Transilvania, literary serif for Vellum, rounded Fredoka for Lemon Baby, pixel fonts for 8-Bit, distressed typewriter for Smelly Socks, and terminal mono for Ubernerd and Blueprint.
 
 ### 3. Pro Diff Viewer & Partial Staging
 - **Unified & Side-by-Side (Split) Diff:** Switch between unified and split views at any time.
@@ -40,14 +40,14 @@
 - **Zero-Token-Storage Security:** Gitastic never stores tokens in its own files — tokens are verified and stored exclusively in your OS credential helper (`osxkeychain` / `git credential`) or `gh` / `glab` keyring.
 
 ### 6. SSH Key & Git Identity Manager
-- **SSH Key Management:** List keys in `~/.ssh`, generate new `ed25519` keys, copy `.pub` keys, load passphrase-protected keys into `ssh-agent` + macOS Keychain via an interactive passphrase modal, unload keys from `ssh-agent`, or delete keys.
+- **SSH Key Management:** List keys in `~/.ssh`, generate new `ed25519` keys, copy `.pub` keys, load keys into `ssh-agent` via an interactive passphrase modal, unload keys from `ssh-agent`, or delete keys. macOS also persists unlocked keys in the Keychain; on Windows, add passphrase-protected keys with `ssh-add` in a terminal.
 - **Git User Identity:** View and update global `user.name` and `user.email` directly in Settings.
 
 ### 7. Merge Conflicts, Worktrees, Stashes & Undo Safety Net
 - **Interactive Conflict Resolver:** Resolve merge, rebase, and cherry-pick conflicts block-by-block (`Ours`, `Theirs`, `Both`, or manual edit) with a live resolved preview.
 - **Git Worktrees:** List, create, switch to, and remove linked Git worktrees (`git worktree`) for parallel branch workflows.
 - **Undo Time Machine:** Destructive actions (`reset --hard`, `clean`, `restore`, branch deletion, pull/merge/rebase) automatically create backup refs (`refs/gitastic/backup/...`) and trash snapshots that can be undone with one click.
-- **IDE & OS Integration:** Open the repository or any changed file directly in **Cursor**, **Zed**, **VS Code**, **Terminal**, or **Finder**.
+- **IDE & OS Integration:** Open the repository or any changed file directly in **Cursor**, **Zed**, **VS Code**, **Terminal**, or **Finder/Explorer**.
 
 ---
 
@@ -68,15 +68,19 @@
 - **Node.js** >= 22
 - **Git** >= 2.38.0
 - **Rust & Cargo** (for building the native Tauri desktop app)
+- **Windows:** Rust MSVC toolchain, Visual Studio C++ Build Tools, Git for Windows and WebView2. Tauri downloads WiX/NSIS automatically; WebView2 is installed by the bootstrapper if missing.
 
 ### Install & Run Native Desktop App (Tauri)
 ```bash
 npm install
-npm run tauri:dev      # Run native macOS desktop app in development mode
-npm run tauri:build    # Build optimized production Gitastic.app / .dmg bundle
+npm run tauri:dev      # Run native desktop app in development mode
+npm run tauri:build    # Build installers for the current platform
 ```
-The compiled macOS app bundle is output to:
-`src-tauri/target/release/bundle/macos/Gitastic.app`
+macOS output: `src-tauri/target/release/bundle/macos/Gitastic.app` and `.../bundle/dmg/`
+
+Windows output: `src-tauri/target/release/bundle/msi/*.msi` and `.../bundle/nsis/*.exe`
+
+CI builds the Windows installers on `windows-latest` and uploads them as the `gitastic-windows` artifact.
 
 ### Run Local Web / Loopback Server Mode
 ```bash
@@ -88,7 +92,7 @@ npm start              # Starts local server on http://127.0.0.1:8787
 ```bash
 npm run lint           # ESLint
 npm run typecheck      # TypeScript (server & web)
-npm test               # Vitest integration suite (20 tests)
+npm test               # Vitest integration suite (22 tests)
 npm run e2e            # Playwright end-to-end UI suite
 ```
 

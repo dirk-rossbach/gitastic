@@ -9,7 +9,8 @@ mod providers;
 mod runner;
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::{Command as ProcessCommand, Stdio};
 use std::sync::Arc;
 use chrono::Utc;
 use serde_json::{json, Value};
@@ -40,6 +41,173 @@ use crate::providers::{
 };
 use crate::runner::GitRunner;
 
+fn home_directory() -> PathBuf {
+    for key in ["GITASTIC_HOME", "HOME", "USERPROFILE"] {
+        if let Ok(value) = std::env::var(key) {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                return PathBuf::from(trimmed);
+            }
+        }
+    }
+    std::env::temp_dir()
+}
+
+fn config_directory(home: &Path) -> PathBuf {
+    #[cfg(windows)]
+    {
+        if let Some(app_data) = std::env::var_os("APPDATA") {
+            return PathBuf::from(app_data).join("gitastic");
+        }
+        return home.join("AppData").join("Roaming").join("gitastic");
+    }
+    #[cfg(not(windows))]
+    {
+        home.join(".config").join("gitastic")
+    }
+}
+
+fn data_directory(home: &Path) -> PathBuf {
+    #[cfg(windows)]
+    {
+        if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+            return PathBuf::from(local_app_data).join("gitastic");
+        }
+        return home.join("AppData").join("Local").join("gitastic");
+    }
+    #[cfg(not(windows))]
+    {
+        home.join(".local").join("share").join("gitastic")
+    }
+}
+
+fn spawn_detached(program: &str, args: &[&str]) -> bool {
+    ProcessCommand::new(program)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .is_ok()
+}
+
+#[cfg(target_os = "macos")]
+fn open_external(target: &str) -> bool {
+    spawn_detached("open", &[target])
+}
+
+#[cfg(target_os = "windows")]
+fn open_external(target: &str) -> bool {
+    spawn_detached("rundll32", &["url.dll,FileProtocolHandler", target])
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_external(target: &str) -> bool {
+    spawn_detached("xdg-open", &[target])
+}
+
+#[cfg(target_os = "macos")]
+fn reveal_path(target: &str) -> bool {
+    spawn_detached("open", &["-R", target])
+}
+
+#[cfg(target_os = "windows")]
+fn reveal_path(target: &str) -> bool {
+    let select = format!("/select,{target}");
+    spawn_detached("explorer", &[&select])
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn reveal_path(target: &str) -> bool {
+    match Path::new(target).parent() {
+        Some(parent) => spawn_detached("xdg-open", &[&parent.to_string_lossy()]),
+        None => false,
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn open_terminal(repo: &str) -> bool {
+    spawn_detached("open", &["-a", "Terminal", repo])
+}
+
+#[cfg(target_os = "windows")]
+fn open_terminal(repo: &str) -> bool {
+    ProcessCommand::new("cmd")
+        .current_dir(repo)
+        .args(["/C", "start", "cmd"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .is_ok()
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_terminal(repo: &str) -> bool {
+    ProcessCommand::new("x-terminal-emulator")
+        .current_dir(repo)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .is_ok()
+}
+
+#[cfg(target_os = "macos")]
+fn open_in_editor(target: &str) -> bool {
+    for bin in [
+        "/opt/homebrew/bin/cursor",
+        "/usr/local/bin/cursor",
+        "/opt/homebrew/bin/zed",
+        "/usr/local/bin/zed",
+        "/opt/homebrew/bin/code",
+        "/usr/local/bin/code",
+    ] {
+        if Path::new(bin).exists() && spawn_detached(bin, &[target]) {
+            return true;
+        }
+    }
+    open_external(target)
+}
+
+#[cfg(target_os = "windows")]
+fn open_in_editor(target: &str) -> bool {
+    for bin in ["cursor", "code", "zed"] {
+        let output = ProcessCommand::new("where")
+            .arg(bin)
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .output()
+            .ok();
+        let Some(output) = output.filter(|out| out.status.success()) else {
+            continue;
+        };
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let Some(bin_path) = stdout
+            .lines()
+            .map(str::trim)
+            .find(|line| !line.is_empty())
+        else {
+            continue;
+        };
+        let command = format!("start \"\" \"{bin_path}\" \"{target}\"");
+        if spawn_detached("cmd", &["/C", &command]) {
+            return true;
+        }
+    }
+    open_external(target)
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_in_editor(target: &str) -> bool {
+    for bin in ["cursor", "zed", "code"] {
+        if spawn_detached(bin, &[target]) {
+            return true;
+        }
+    }
+    open_external(target)
+}
+
 pub struct InnerState {
     pub config: AppConfig,
     pub runner: GitRunner,
@@ -59,20 +227,14 @@ pub struct AppState {
 
 impl AppState {
     pub async fn init() -> Self {
-        let home_dir = std::env::var("GITASTIC_HOME")
-            .or_else(|_| std::env::var("HOME"))
-            .unwrap_or_else(|_| "/Users/Shared".to_string());
+        let home_path = home_directory();
+        let home_dir = home_path.to_string_lossy().to_string();
         let config_dir = std::env::var("GITASTIC_CONFIG_DIR")
             .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from(&home_dir).join(".config").join("gitastic"));
+            .unwrap_or_else(|_| config_directory(&home_path));
         let data_dir = std::env::var("GITASTIC_DATA_DIR")
             .map(PathBuf::from)
-            .unwrap_or_else(|_| {
-                PathBuf::from(&home_dir)
-                    .join(".local")
-                    .join("share")
-                    .join("gitastic")
-            });
+            .unwrap_or_else(|_| data_directory(&home_path));
 
         let _ = fs::create_dir_all(&config_dir).await;
         let _ = fs::create_dir_all(data_dir.join("trash")).await;
@@ -86,6 +248,9 @@ impl AppState {
             pull_strategy: "ff-only".to_string(),
             diff_context: 3,
             confirm_destructive: true,
+            #[cfg(windows)]
+            repo_roots: vec![home_dir.clone()],
+            #[cfg(not(windows))]
             repo_roots: vec!["/".to_string()],
             recent_repos: Vec::new(),
         };
@@ -423,7 +588,7 @@ async fn dispatch(
             if !url.starts_with("https://") && !url.starts_with("http://") {
                 return Err(ApiError::new(400, "INVALID_URL", "Only http/https URLs are allowed"));
             }
-            let _ = tokio::process::Command::new("open").arg(&url).spawn();
+            let _ = open_external(&url);
             Ok(json!({ "ok": true }))
         }
 
@@ -763,17 +928,13 @@ async fn dispatch(
             } else {
                 rp
             };
-            let _ = tokio::process::Command::new("open")
-                .args(["-R", &target])
-                .spawn();
+            let _ = reveal_path(&target);
             Ok(json!({ "ok": true }))
         }
 
         ("POST", "/system/terminal") => {
             let (_, rp, _, _, _) = state.current_repo().await?;
-            let _ = tokio::process::Command::new("open")
-                .args(["-a", "Terminal", &rp])
-                .spawn();
+            let _ = open_terminal(&rp);
             Ok(json!({ "ok": true }))
         }
 
@@ -785,18 +946,7 @@ async fn dispatch(
             } else {
                 rp
             };
-            let mut opened = false;
-            for bin in ["/opt/homebrew/bin/cursor", "/usr/local/bin/cursor", "/opt/homebrew/bin/zed", "/usr/local/bin/zed", "/opt/homebrew/bin/code", "/usr/local/bin/code"] {
-                if std::path::Path::new(bin).exists() {
-                    if tokio::process::Command::new(bin).arg(&target).spawn().is_ok() {
-                        opened = true;
-                        break;
-                    }
-                }
-            }
-            if !opened {
-                let _ = tokio::process::Command::new("open").arg(&target).spawn();
-            }
+            let _ = open_in_editor(&target);
             Ok(json!({ "ok": true }))
         }
 
@@ -1573,9 +1723,7 @@ fn main() {
                     );
                 }
             } else if event.id() == "sponsor_gitastic" {
-                let _ = tokio::process::Command::new("open")
-                    .arg("https://github.com/sponsors/dirk-rossbach")
-                    .spawn();
+                let _ = open_external("https://github.com/sponsors/dirk-rossbach");
             }
         })
         .invoke_handler(tauri::generate_handler![gitastic_api])

@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   checks:
@@ -44,3 +45,60 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  tauri-windows:
+    name: tauri bundle (windows)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: npm ci
+      - run: npm run tauri:build
+      - name: Verify Windows installers
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Path src-tauri/target/release/bundle -Recurse -Include *.msi,*.exe
+          if (-not $files) { throw "No Windows installers were produced" }
+          $files | ForEach-Object { "{0} ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB) }
+      - name: Install and launch app
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          $setup = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
+          if (-not $setup) { throw "No NSIS installer was produced" }
+
+          $installer = Start-Process -FilePath $setup.FullName -ArgumentList "/S" -Wait -PassThru
+          if ($installer.ExitCode -ne 0) { throw "Installer exited with code $($installer.ExitCode)" }
+
+          $candidates = @(
+            (Join-Path $env:LOCALAPPDATA "Gitastic\gitastic.exe"),
+            (Join-Path $env:PROGRAMFILES "Gitastic\gitastic.exe"),
+            (Join-Path ${env:ProgramFiles(x86)} "Gitastic\gitastic.exe")
+          )
+          $app = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $app) { throw "Installed gitastic.exe was not found" }
+
+          $version = (Get-Item $app).VersionInfo.ProductVersion
+          "Installed $app ($version)"
+
+          $running = Start-Process -FilePath $app -PassThru
+          Start-Sleep -Seconds 10
+          if ($running.HasExited) { throw "Gitastic exited during startup with code $($running.ExitCode)" }
+          "Gitastic still running after 10 seconds"
+          Stop-Process -Id $running.Id -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gitastic-windows
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
