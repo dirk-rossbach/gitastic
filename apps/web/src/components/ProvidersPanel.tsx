@@ -16,14 +16,22 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  Trash2,
 } from 'lucide-react';
 import type { ProviderKind, ProviderRepo, SshKeyEntry } from '@gitastic/shared';
 import { ApiError, api } from '../api';
 import { useAction, useDebouncedValue, useStartJob } from '../lib/hooks';
 import { cn, errorMessage, formatDate } from '../lib/utils';
 import { useStore } from '../store';
-import { ConfirmDialog, Modal, PathText, Spinner } from './ui';
+import { Modal, Spinner } from './ui';
+
+const PROVIDER_SCOPES: Record<ProviderKind, string[]> = {
+  github: ['repo', 'read:org'],
+  gitlab: ['read_api', 'read_repository', 'write_repository'],
+};
+
+function providerScopes(provider: ProviderKind) {
+  return PROVIDER_SCOPES[provider].join(', ');
+}
 
 export function ProviderAuthAssistant() {
   const queryClient = useQueryClient();
@@ -44,7 +52,6 @@ export function ProviderAuthAssistant() {
   const [passphraseKey, setPassphraseKey] = useState<SshKeyEntry | null>(null);
   const [passphraseInput, setPassphraseInput] = useState('');
   const [unlocking, setUnlocking] = useState(false);
-  const [deleteKeyTarget, setDeleteKeyTarget] = useState<SshKeyEntry | null>(null);
 
   const handleLoadSshKey = async (key: SshKeyEntry, passphrase?: string) => {
     setUnlocking(true);
@@ -119,24 +126,14 @@ export function ProviderAuthAssistant() {
             Tokens are stored exclusively in your OS credential helper / CLI keyring — never in Gitastic files.
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            className="btn h-7 text-xs"
-            onClick={() => openConnect('gitlab', 'gitlab.com')}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add GitLab / Self-Hosted
-          </button>
-          <button
-            type="button"
-            className="btn-icon h-7 w-7"
-            title="Refresh auth status"
-            onClick={() => void status.refetch()}
-          >
-            <RefreshCw className={cn('h-3.5 w-3.5', status.isFetching && 'animate-spin')} />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn-icon h-7 w-7"
+          title="Refresh auth status"
+          onClick={() => void status.refetch()}
+        >
+          <RefreshCw className={cn('h-3.5 w-3.5', status.isFetching && 'animate-spin')} />
+        </button>
       </div>
 
       {status.isLoading ? (
@@ -164,7 +161,18 @@ export function ProviderAuthAssistant() {
                     </span>
                     <span className="badge font-mono text-[10px]">{account.host}</span>
                   </div>
-                  <p className="mt-1 text-xs text-muted">{account.detail}</p>
+                  <p className="mt-1 text-xs text-muted">
+                    {account.connected ? (
+                      account.detail
+                    ) : (
+                      <>
+                        Connect with a Personal Access Token. Required scopes:{' '}
+                        <code className="font-mono text-ink">
+                          {providerScopes(account.provider)}
+                        </code>
+                      </>
+                    )}
+                  </p>
                 </div>
                 {account.connected ? (
                   <span className="badge badge-success shrink-0">
@@ -217,54 +225,50 @@ export function ProviderAuthAssistant() {
           <div className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-accent" />
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-ink">
-                SSH Keys & Agent
-              </h4>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-ink">SSH Keys</h4>
               <p className="text-[11px] text-faint">
-                Load your local SSH keys into `ssh-agent` or copy your public key to GitHub/GitLab.
+                Keys in <code className="font-mono">~/.ssh</code>. Copy a public key to{' '}
+                <a
+                  href="https://github.com/settings/keys"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-accent hover:underline"
+                >
+                  GitHub
+                </a>{' '}
+                or{' '}
+                <a
+                  href="https://gitlab.com/-/user_settings/ssh_keys"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-accent hover:underline"
+                >
+                  GitLab
+                </a>
+                {', or load it into the agent.'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <a
-              href="https://github.com/settings/keys"
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn-ghost h-7 text-xs"
-            >
-              GitHub SSH Keys
-              <ExternalLink className="h-3 w-3" />
-            </a>
-            <a
-              href="https://gitlab.com/-/user_settings/ssh_keys"
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn-ghost h-7 text-xs"
-            >
-              GitLab SSH Keys
-              <ExternalLink className="h-3 w-3" />
-            </a>
-            <button
-              type="button"
-              className="btn h-7 text-xs"
-              disabled={busy}
-              onClick={() =>
-                void run(async () => {
-                  await api.generateSshKey();
-                  await queryClient.invalidateQueries({ queryKey: ['providers-status'] });
-                  await queryClient.invalidateQueries({ queryKey: ['session'] });
-                }, 'SSH key generated and loaded into ssh-agent.')
-              }
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Generate SSH key
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-ghost h-7 text-xs"
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                await api.generateSshKey();
+                await queryClient.invalidateQueries({ queryKey: ['providers-status'] });
+                await queryClient.invalidateQueries({ queryKey: ['session'] });
+              }, 'SSH key generated and loaded into ssh-agent.')
+            }
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Generate
+          </button>
         </div>
 
         {sshKeys.length === 0 ? (
           <p className="mt-2 text-xs text-muted">
-            No `.pub` SSH keys found in `~/.ssh`. Click "Generate SSH key" to create an `ed25519` key.
+            No SSH keys found in <code className="font-mono">~/.ssh</code>.
           </p>
         ) : (
           <div className="mt-2.5 space-y-1.5">
@@ -273,18 +277,40 @@ export function ProviderAuthAssistant() {
                 key={key.path}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-edge/70 bg-panel/70 px-2.5 py-1.5"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs font-medium text-ink">{key.name}</span>
-                    {key.loaded ? (
-                      <span className="badge badge-success">loaded in ssh-agent</span>
-                    ) : (
-                      <span className="badge">not loaded</span>
-                    )}
-                  </div>
-                  <PathText text={key.path} className="font-mono text-[10px] text-faint" />
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <span
+                    className="truncate font-mono text-xs font-medium text-ink"
+                    title={key.path}
+                  >
+                    {key.name}
+                  </span>
+                  {key.loaded ? (
+                    <span className="badge badge-success">loaded</span>
+                  ) : (
+                    <span className="badge">not loaded</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
+                  {key.publicKey ? (
+                    <button
+                      type="button"
+                      className="btn btn-ghost h-7 px-2 text-xs"
+                      title="Copy public key"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(key.publicKey!).then(() => {
+                          setCopiedKey(key.name);
+                          setTimeout(() => setCopiedKey(null), 1500);
+                        });
+                      }}
+                    >
+                      {copiedKey === key.name ? (
+                        <Check className="h-3.5 w-3.5 text-success" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                      {copiedKey === key.name ? 'Copied' : 'Copy'}
+                    </button>
+                  ) : null}
                   {!key.loaded ? (
                     <button
                       type="button"
@@ -292,7 +318,7 @@ export function ProviderAuthAssistant() {
                       disabled={busy || unlocking}
                       onClick={() => void handleLoadSshKey(key)}
                     >
-                      Load into agent
+                      Load
                     </button>
                   ) : (
                     <button
@@ -310,65 +336,12 @@ export function ProviderAuthAssistant() {
                       Unload
                     </button>
                   )}
-                  {key.publicKey ? (
-                    <button
-                      type="button"
-                      className="btn btn-ghost h-7 px-2 text-xs"
-                      onClick={() => {
-                        void navigator.clipboard.writeText(key.publicKey!).then(() => {
-                          setCopiedKey(key.name);
-                          setTimeout(() => setCopiedKey(null), 1500);
-                        });
-                      }}
-                    >
-                      {copiedKey === key.name ? (
-                        <Check className="h-3.5 w-3.5 text-success" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                      {copiedKey === key.name ? 'Copied' : 'Copy .pub'}
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="btn-icon h-7 w-7 text-muted hover:text-danger"
-                    title={`Delete ${key.name}`}
-                    disabled={busy || unlocking}
-                    onClick={() => setDeleteKeyTarget(key)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      <ConfirmDialog
-        open={deleteKeyTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteKeyTarget(null);
-        }}
-        title={deleteKeyTarget ? `Delete SSH Key (${deleteKeyTarget.name})` : 'Delete SSH Key'}
-        description={
-          deleteKeyTarget
-            ? `This will unload ${deleteKeyTarget.name} from ssh-agent and permanently delete ${deleteKeyTarget.path} and ${deleteKeyTarget.path}.pub.`
-            : ''
-        }
-        confirmLabel="Delete SSH Key"
-        danger
-        busy={busy}
-        onConfirm={() => {
-          if (!deleteKeyTarget) return;
-          void run(async () => {
-            await api.removeSshKey(deleteKeyTarget.path, true);
-            await queryClient.invalidateQueries({ queryKey: ['providers-status'] });
-            await queryClient.invalidateQueries({ queryKey: ['session'] });
-            setDeleteKeyTarget(null);
-          }, `Deleted SSH key ${deleteKeyTarget.name}.`);
-        }}
-      />
 
       <Modal
         open={connectModal !== null}
@@ -430,16 +403,14 @@ export function ProviderAuthAssistant() {
               <span>
                 Required scopes:{' '}
                 <code className="font-mono text-ink">
-                  {connectModal.provider === 'github'
-                    ? 'repo, read:org'
-                    : 'read_api, read_repository, write_repository'}
+                  {providerScopes(connectModal.provider)}
                 </code>
               </span>
               <a
                 href={
                   connectModal.provider === 'github'
-                    ? `https://${hostInput.trim() || 'github.com'}/settings/tokens/new?scopes=repo,read:org&description=Gitastic`
-                    : `https://${hostInput.trim() || 'gitlab.com'}/-/user_settings/personal_access_tokens?name=Gitastic&scopes=read_api,read_repository,write_repository`
+                    ? `https://${hostInput.trim() || 'github.com'}/settings/tokens/new?scopes=${providerScopes('github')}&description=Gitastic`
+                    : `https://${hostInput.trim() || 'gitlab.com'}/-/user_settings/personal_access_tokens?name=Gitastic&scopes=${providerScopes('gitlab')}`
                 }
                 target="_blank"
                 rel="noreferrer"

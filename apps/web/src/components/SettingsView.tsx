@@ -160,20 +160,6 @@ export function SettingsView({
               onSelect={(style, mode) => void applyAndSaveAppearance(mode, style)}
             />
           </div>
-
-          <label className="block max-w-xs space-y-1.5">
-            <span className="text-xs font-medium uppercase tracking-wide text-faint">
-              Diff context lines
-            </span>
-            <input
-              type="number"
-              min={0}
-              max={20}
-              className="input h-9"
-              value={form.diffContext ?? 3}
-              onChange={(event) => update('diffContext', Number(event.target.value))}
-            />
-          </label>
         </section>
 
         <section className="card p-5">
@@ -265,6 +251,22 @@ export function SettingsView({
                 <option value="merge">Merge</option>
                 <option value="rebase">Rebase</option>
               </select>
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wide text-faint">
+                Diff context lines
+              </span>
+              <input
+                type="number"
+                min={0}
+                max={20}
+                className="input h-9"
+                value={form.diffContext ?? 3}
+                onChange={(event) => update('diffContext', Number(event.target.value))}
+              />
+              <span className="text-[11px] text-faint">
+                Unchanged lines around each change (0–20).
+              </span>
             </label>
             <label className="mt-6 flex items-start gap-2 text-sm text-muted">
               <input
