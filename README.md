@@ -77,9 +77,9 @@ Choose a visual style that matches your environment — from expressive neon the
 | :---: | :---: |
 | ![Nightmare on Main Branch Halloween dark Git client theme](docs/screenshots/themes/nightmare-on-main-branch-dark.png) | ![Domino monochrome white-on-black Git client theme](docs/screenshots/themes/domino-dark.png) |
 
-| Focus (Dark) |
-| :---: |
-| ![Focus dark minimal Git client theme without animations or effects](docs/screenshots/themes/focus-dark.png) |
+| Focus (Dark) | |
+| :---: | :---: |
+| ![Focus dark minimal Git client theme without animations or effects](docs/screenshots/themes/focus-dark.png) | |
 
 #### Light Style Previews
 
@@ -95,9 +95,9 @@ Choose a visual style that matches your environment — from expressive neon the
 | :---: | :---: |
 | ![Cat's Cradle handmade light Git client theme](docs/screenshots/themes/cats-cradle-light.png) | ![Ink monochrome black-on-white Git client theme](docs/screenshots/themes/ink-light.png) |
 
-| Focus (Light) |
-| :---: |
-| ![Focus light minimal Git client theme without animations or effects](docs/screenshots/themes/focus-light.png) |
+| Focus (Light) | |
+| :---: | :---: |
+| ![Focus light minimal Git client theme without animations or effects](docs/screenshots/themes/focus-light.png) | |
 
 ### 3. Visual Diff Viewer & Precise Partial Staging
 - **Unified & Side-by-Side (Split) Diff:** Switch between unified and split views at any time.
