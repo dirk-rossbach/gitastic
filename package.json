@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "A local web-based Git client with history, branches, merges and remote management.",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "workspaces": [
     "apps/*",
     "packages/*"

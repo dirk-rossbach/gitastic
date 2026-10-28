@@ -3,9 +3,13 @@
 **Gitastic** is a fast, cross-platform local Git client for macOS, Windows and Linux (powered by **Tauri v2 + Rust**) that also runs as a local loopback web app. It combines a high-contrast, modern developer UI with deep Git power features — without cloud accounts, telemetry, or storing plaintext tokens.
 
 [![Version](https://img.shields.io/badge/version-1.2.0-38bdf8?style=flat-square)](#)
+[![Latest release](https://img.shields.io/github/v/release/dirk-rossbach/gitastic?style=flat-square)](https://github.com/dirk-rossbach/gitastic/releases/latest)
+[![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
 [![Built with Tauri](https://img.shields.io/badge/Tauri_v2-Rust-ff2a85?style=flat-square)](#)
 [![React 19](https://img.shields.io/badge/React_19-Tailwind_CSS_4-a78bfa?style=flat-square)](#)
 [![Sponsor](https://img.shields.io/badge/%E2%99%A5_Sponsor-dirk--rossbach-fb7185?style=flat-square)](https://github.com/sponsors/dirk-rossbach)
+
+**Download:** [Latest GitHub release](https://github.com/dirk-rossbach/gitastic/releases/latest) — macOS (universal), Windows and Linux builds.
 
 ---
 
@@ -107,7 +111,7 @@ npm start              # Starts local server on http://127.0.0.1:8787
 ```bash
 npm run lint           # ESLint
 npm run typecheck      # TypeScript (server & web)
-npm test               # Vitest integration suite (22 tests)
+npm test               # Vitest integration suite (26 tests)
 npm run e2e            # Playwright end-to-end UI suite
 ```
 
@@ -123,6 +127,12 @@ packages/shared/ Shared Zod schemas, API contracts & URL builders
 e2e/             Playwright end-to-end test suite
 docs/            Screenshots and documentation assets
 ```
+
+---
+
+## License
+
+Gitastic is licensed under the [Apache License 2.0](LICENSE).
 
 ---
 
