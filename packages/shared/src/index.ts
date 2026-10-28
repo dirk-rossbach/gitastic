@@ -273,8 +273,10 @@ export const UI_STYLE_IDS = [
   'vellum',
   'blueprint',
   'lemon-baby',
+  'cats-cradle',
   '8bit',
   'smelly-socks',
+  'nightmare-main-branch',
 ] as const;
 export const UiStyleSchema = z.enum(UI_STYLE_IDS);
 export type UiStyle = z.infer<typeof UiStyleSchema>;

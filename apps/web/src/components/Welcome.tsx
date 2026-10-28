@@ -118,7 +118,7 @@ export function Welcome({ session }: { session: Session }) {
             <div>
               <h1 className="gradient-text text-2xl font-semibold tracking-tight">Gitastic</h1>
               <p className="text-sm text-muted">
-                Native local Git client.
+                Cross-platform local Git client.
               </p>
             </div>
           </div>

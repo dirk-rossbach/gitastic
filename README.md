@@ -20,12 +20,12 @@
 - Uses Tauri IPC (`#[tauri::command]`) directly — zero Node.js runtime or open network ports required in the desktop app.
 - Also includes a standalone local loopback server (`npm start` on `127.0.0.1:8787`) for browser or headless workflows.
 
-### 2. Eleven Visual Styles, Grouped by Dark & Light
-- **Dark:** **Gorgeous (Default)** aurora gradients and neon glow; **Synthwave** outrun magenta and cyber-cyan; **Transilvania** blood-black gothic crimson; **Ubernerd** phosphor terminal green with CRT scanlines; **8-Bit** PICO-8 pixels, chunky arcade borders, and chiptune typography; **Smelly Socks** moldy lime, unwashed linen, and typewriter grit.
-- **Light:** **Daybreak** porcelain surfaces with cobalt and apricot; **Vellum** parchment, sepia ink, and wax-seal red; **Blueprint** drafting paper, navy grid, and cyan ink; **Lemon Baby** lemon yellow, tangerine orange, and lime green.
+### 2. Thirteen Visual Styles, Grouped by Dark & Light
+- **Dark:** **Gorgeous (Default)** aurora gradients and neon glow; **Synthwave** outrun magenta and cyber-cyan; **Transilvania** blood-black gothic crimson; **Ubernerd** phosphor terminal green with CRT scanlines; **8-Bit** PICO-8 pixels, chunky arcade borders, and chiptune typography; **Smelly Socks** moldy lime, unwashed linen, and typewriter grit; **Nightmare on Main Branch** pumpkin glow, toxic green, and slasher shadows.
+- **Light:** **Daybreak** porcelain surfaces with cobalt and apricot; **Vellum** parchment, sepia ink, and wax-seal red; **Blueprint** drafting paper, navy grid, and cyan ink; **Lemon Baby** lemon yellow, tangerine orange, and lime green; **Cat's Cradle** cream paper, indigo thread, and a vermilion knot.
 - **Focus** appears in both libraries and strips out gradients, animations, and effects.
 - Styles set their own dark or light mode, so there is no separate theme switch.
-- Typography follows the theme: gothic serif for Transilvania, literary serif for Vellum, rounded Fredoka for Lemon Baby, pixel fonts for 8-Bit, distressed typewriter for Smelly Socks, and terminal mono for Ubernerd and Blueprint.
+- Typography follows the theme: gothic serif for Transilvania, literary serif for Vellum, rounded Fredoka for Lemon Baby, pixel fonts for 8-Bit, distressed typewriter for Smelly Socks, terminal mono for Ubernerd and Blueprint, handwritten Caveat for Cat's Cradle, and horror-poster Creepster for Nightmare on Main Branch.
 
 ### 3. Pro Diff Viewer & Partial Staging
 - **Unified & Side-by-Side (Split) Diff:** Switch between unified and split views at any time.
@@ -157,3 +157,41 @@ If you enjoy using **Gitastic**, consider supporting its development via GitHub 
 | Command Palette (`Ctrl + P` / `⌘P`) | Settings Overlay (Styles, Identity & SSH) |
 | :---: | :---: |
 | ![Command Palette](docs/screenshots/command-palette.png) | ![Settings](docs/screenshots/settings.png) |
+
+---
+
+## Theme Previews
+
+These previews are captured directly from the **Settings → Appearance** style picker.
+
+### Dark Styles
+
+| Gorgeous (Default) | Synthwave |
+| :---: | :---: |
+| ![Gorgeous theme preview](docs/screenshots/themes/gorgeous-dark.png) | ![Synthwave theme preview](docs/screenshots/themes/synthwave-dark.png) |
+
+| Transilvania | Ubernerd |
+| :---: | :---: |
+| ![Transilvania theme preview](docs/screenshots/themes/transilvania-dark.png) | ![Ubernerd theme preview](docs/screenshots/themes/ubernerd-dark.png) |
+
+| 8-Bit | Smelly Socks |
+| :---: | :---: |
+| ![8-Bit theme preview](docs/screenshots/themes/8bit-dark.png) | ![Smelly Socks theme preview](docs/screenshots/themes/smelly-socks-dark.png) |
+
+| Nightmare on Main Branch | Focus (Dark) |
+| :---: | :---: |
+| ![Nightmare on Main Branch theme preview](docs/screenshots/themes/nightmare-on-main-branch-dark.png) | ![Focus dark theme preview](docs/screenshots/themes/focus-dark.png) |
+
+### Light Styles
+
+| Daybreak | Vellum |
+| :---: | :---: |
+| ![Daybreak theme preview](docs/screenshots/themes/daybreak-light.png) | ![Vellum theme preview](docs/screenshots/themes/vellum-light.png) |
+
+| Blueprint | Lemon Baby |
+| :---: | :---: |
+| ![Blueprint theme preview](docs/screenshots/themes/blueprint-light.png) | ![Lemon Baby theme preview](docs/screenshots/themes/lemon-baby-light.png) |
+
+| Cat's Cradle | Focus (Light) |
+| :---: | :---: |
+| ![Cat's Cradle theme preview](docs/screenshots/themes/cats-cradle-light.png) | ![Focus light theme preview](docs/screenshots/themes/focus-light.png) |

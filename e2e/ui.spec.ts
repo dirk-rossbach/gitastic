@@ -66,6 +66,14 @@ test('opens a repo, commits staged changes and browses sections', async ({ page 
   await page.getByRole('radio', { name: /Smelly Socks/ }).click();
   await expect(page.locator('html')).toHaveAttribute('data-style', 'smelly-socks');
 
+  await page.getByRole('radio', { name: /Cat's Cradle/ }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-style', 'cats-cradle');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+
+  await page.getByRole('radio', { name: /Nightmare on Main Branch/ }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-style', 'nightmare-main-branch');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
   for (const name of [
     'Timeline',
     'Tags',

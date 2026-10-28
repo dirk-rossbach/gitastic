@@ -1,10 +1,12 @@
 import type { UiStyle } from '@gitastic/shared';
 import {
   BookOpen,
+  Cat,
   Citrus,
   Eye,
   Footprints,
   Gamepad2,
+  MoonStar,
   Ruler,
   Skull,
   Sparkles,
@@ -133,6 +135,18 @@ export const UI_STYLES: Record<UiStyle, UiStyleMeta> = {
     swatches: ['#eab308', '#f97316', '#65a30d'],
     laneColors: ['#ca8a04', '#ea580c', '#4d7c0f', '#0891b2', '#db2777', '#7c3aed', '#0d9488', '#c2410c'],
   },
+  'cats-cradle': {
+    id: 'cats-cradle',
+    name: "Cat's Cradle",
+    tagline: 'Woven thread & paper daylight',
+    description: 'Cream paper, indigo thread, and a vermilion knot for a hand-woven workspace.',
+    keywords: 'cats cradle cat string yarn thread woven craft paper indigo light handmade',
+    badge: 'Handmade',
+    icon: Cat,
+    modes: ['light'],
+    swatches: ['#3b4fa3', '#d04f45', '#3f8f7f'],
+    laneColors: ['#3b4fa3', '#d04f45', '#3f8f7f', '#c9973f', '#7a5c8f', '#274060', '#e07a5f', '#708238'],
+  },
   '8bit': {
     id: '8bit',
     name: '8-Bit',
@@ -156,6 +170,19 @@ export const UI_STYLES: Record<UiStyle, UiStyleMeta> = {
     modes: ['dark'],
     swatches: ['#b8f34a', '#e8d8b7', '#6f8f5c'],
     laneColors: ['#b8f34a', '#e8d8b7', '#8fb573', '#7ec8c0', '#d8a657', '#c98b8b', '#9a8fc4', '#6f8f5c'],
+  },
+  'nightmare-main-branch': {
+    id: 'nightmare-main-branch',
+    name: 'Nightmare on Main Branch',
+    tagline: 'Pumpkin glow & slasher shadows',
+    description: 'Midnight violet, pumpkin glow, toxic green, and bone-white slasher details.',
+    keywords:
+      'nightmare main branch halloween pumpkin slasher horror orange toxic green blood moonlight',
+    badge: 'Halloween',
+    icon: MoonStar,
+    modes: ['dark'],
+    swatches: ['#ff7a18', '#b6ff4a', '#e5263f'],
+    laneColors: ['#ff7a18', '#b6ff4a', '#e5263f', '#f5ead7', '#9b6cff', '#45d6c8', '#ffb000', '#ff5d8f'],
   },
   focus: {
     id: 'focus',

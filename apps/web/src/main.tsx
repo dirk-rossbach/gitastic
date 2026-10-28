@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from './App';
+import '@fontsource/caveat/latin-700.css';
+import '@fontsource/creepster/latin-400.css';
 import '@fontsource/press-start-2p/latin-400.css';
 import '@fontsource/vt323/latin-400.css';
 import '@fontsource/orbitron/latin-600.css';
