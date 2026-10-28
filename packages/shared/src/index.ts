@@ -184,6 +184,20 @@ export const StashSchema = z.object({
 });
 export type Stash = z.infer<typeof StashSchema>;
 
+export const ReflogEntrySchema = z.object({
+  hash: z.string(),
+  shortHash: z.string(),
+  selector: z.string(),
+  message: z.string(),
+  date: z.string(),
+});
+export type ReflogEntry = z.infer<typeof ReflogEntrySchema>;
+
+export const ReflogCheckoutSchema = z.object({
+  selector: z.string().min(1),
+});
+export type ReflogCheckout = z.infer<typeof ReflogCheckoutSchema>;
+
 export const BlameLineSchema = z.object({
   line: z.number().int().positive(),
   hash: z.string(),
@@ -380,6 +394,7 @@ export const OperationActionSchema = z.object({ action: z.enum(['continue', 'abo
 export const StashPushSchema = z.object({
   message: z.string().optional(),
   includeUntracked: z.boolean().optional(),
+  paths: z.array(z.string().min(1)).optional(),
 });
 export const StashRefSchema = z.object({ ref: z.string().min(1) });
 export const TagCreateSchema = z.object({
@@ -494,6 +509,105 @@ export const PullRequestsResponseSchema = z.object({
   authHint: z.string().nullable(),
 });
 export type PullRequestsResponse = z.infer<typeof PullRequestsResponseSchema>;
+
+export const PullRequestFileStatusSchema = z.enum([
+  'added',
+  'modified',
+  'removed',
+  'renamed',
+  'copied',
+  'changed',
+  'unchanged',
+]);
+export type PullRequestFileStatus = z.infer<typeof PullRequestFileStatusSchema>;
+
+export const PullRequestFileSchema = z.object({
+  path: z.string(),
+  oldPath: z.string().nullable(),
+  status: PullRequestFileStatusSchema,
+  additions: z.number().int(),
+  deletions: z.number().int(),
+  patch: z.string().nullable(),
+  binary: z.boolean(),
+});
+export type PullRequestFile = z.infer<typeof PullRequestFileSchema>;
+
+export const PullRequestCommentSchema = z.object({
+  id: z.string(),
+  author: z.string(),
+  body: z.string(),
+  path: z.string().nullable(),
+  line: z.number().int().nullable(),
+  side: z.enum(['LEFT', 'RIGHT']).nullable(),
+  createdAt: z.string(),
+  webUrl: z.string().nullable(),
+});
+export type PullRequestComment = z.infer<typeof PullRequestCommentSchema>;
+
+export const PullRequestReviewStateSchema = z.enum([
+  'APPROVED',
+  'CHANGES_REQUESTED',
+  'COMMENTED',
+  'DISMISSED',
+  'PENDING',
+]);
+
+export const PullRequestReviewSchema = z.object({
+  id: z.string(),
+  author: z.string(),
+  state: PullRequestReviewStateSchema,
+  body: z.string(),
+  submittedAt: z.string().nullable(),
+  webUrl: z.string().nullable(),
+});
+export type PullRequestReview = z.infer<typeof PullRequestReviewSchema>;
+
+export const PullRequestDetailSchema = z.object({
+  number: z.number().int(),
+  title: z.string(),
+  body: z.string(),
+  state: z.enum(['open', 'closed', 'merged']),
+  draft: z.boolean(),
+  author: z.string(),
+  sourceBranch: z.string(),
+  targetBranch: z.string(),
+  headSha: z.string(),
+  baseSha: z.string(),
+  startSha: z.string(),
+  additions: z.number().int(),
+  deletions: z.number().int(),
+  changedFiles: z.number().int(),
+  mergeable: z.boolean().nullable(),
+  webUrl: z.string(),
+  viewer: z.string().nullable(),
+  approvedByViewer: z.boolean(),
+  reviewDecision: z.enum(['APPROVED', 'CHANGES_REQUESTED', 'REVIEW_REQUIRED']).nullable(),
+});
+export type PullRequestDetail = z.infer<typeof PullRequestDetailSchema>;
+
+export const PullRequestDetailResponseSchema = z.object({
+  remote: RemoteProviderInfoSchema.nullable(),
+  pull: PullRequestDetailSchema,
+  files: z.array(PullRequestFileSchema),
+  comments: z.array(PullRequestCommentSchema),
+  reviews: z.array(PullRequestReviewSchema),
+  authHint: z.string().nullable(),
+});
+export type PullRequestDetailResponse = z.infer<typeof PullRequestDetailResponseSchema>;
+
+export const PullRequestCommentCreateSchema = z.object({
+  body: z.string().trim().min(1),
+  path: z.string().min(1).optional(),
+  line: z.number().int().positive().optional(),
+  side: z.enum(['LEFT', 'RIGHT']).optional(),
+  commitId: z.string().min(1).optional(),
+});
+export type PullRequestCommentCreate = z.infer<typeof PullRequestCommentCreateSchema>;
+
+export const PullRequestApproveSchema = z.object({
+  body: z.string().max(10_000).optional(),
+});
+export type PullRequestApprove = z.infer<typeof PullRequestApproveSchema>;
 
 export const ProviderConnectSchema = z.object({
   provider: ProviderKindSchema,

@@ -5,6 +5,7 @@ import {
   Archive,
   ArrowDown,
   ArrowUp,
+  Clock,
   Cloud,
   Download,
   ExternalLink,
@@ -41,6 +42,7 @@ import { ConflictsView } from './ConflictsView';
 import { FileHistoryView } from './FileHistoryView';
 import { HistoryView } from './HistoryView';
 import { PullRequestsView } from './PullRequestsView';
+import { ReflogView } from './ReflogView';
 import { RemotesView } from './RemotesView';
 import { SettingsView } from './SettingsView';
 import { StashesView } from './StashesView';
@@ -226,6 +228,7 @@ export function Shell({ session }: { session: Session }) {
           <NavItem view="tags" label="Tags" icon={Tags} />
           <NavItem view="remotes" label="Remotes" icon={Cloud} />
           <NavItem view="stashes" label="Stashes" icon={Archive} />
+          <NavItem view="reflog" label="Reflog" icon={Clock} />
           <NavItem view="conflicts" label="Conflicts" icon={AlertTriangle} count={conflicts} danger />
           <div className="my-2 border-t border-edge" />
           <NavItem view="blame" label="Blame" icon={FileDiff} />
@@ -401,6 +404,7 @@ export function Shell({ session }: { session: Session }) {
           {view === 'tags' ? <TagsView /> : null}
           {view === 'remotes' ? <RemotesView /> : null}
           {view === 'stashes' ? <StashesView /> : null}
+          {view === 'reflog' ? <ReflogView /> : null}
           {view === 'conflicts' ? <ConflictsView /> : null}
           {view === 'blame' ? <BlameView /> : null}
           {view === 'file-history' ? <FileHistoryView /> : null}

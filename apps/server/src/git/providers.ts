@@ -8,6 +8,13 @@ import type {
   ProviderKind,
   ProviderRepo,
   ProvidersStatusResponse,
+  PullRequestComment,
+  PullRequestCommentCreate,
+  PullRequestDetail,
+  PullRequestDetailResponse,
+  PullRequestFile,
+  PullRequestFileStatus,
+  PullRequestReview,
   PullRequestsResponse,
   Remote,
   RemoteProviderInfo,
@@ -27,10 +34,7 @@ function detectProviderKind(host: string, fullName: string): ProviderKind {
   return 'gitlab';
 }
 
-export function parseRemoteUrl(
-  remoteName: string,
-  remoteUrl: string,
-): RemoteProviderInfo | null {
+export function parseRemoteUrl(remoteName: string, remoteUrl: string): RemoteProviderInfo | null {
   const trimmed = remoteUrl.trim();
   if (!trimmed) return null;
 
@@ -127,20 +131,16 @@ async function readGitCredential(
   }
 
   try {
-    const result = await execa(
-      runner.gitPath,
-      ['credential', 'fill'],
-      {
-        cwd: homeDir,
-        input: `protocol=https\nhost=${host}\n\n`,
-        reject: false,
-        timeout: 2500,
-        env: {
-          ...process.env,
-          GIT_TERMINAL_PROMPT: '0',
-        },
+    const result = await execa(runner.gitPath, ['credential', 'fill'], {
+      cwd: homeDir,
+      input: `protocol=https\nhost=${host}\n\n`,
+      reject: false,
+      timeout: 2500,
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: '0',
       },
-    );
+    });
     if (result.exitCode !== 0) return null;
     let username = '';
     let password = '';
@@ -160,39 +160,31 @@ async function storeGitCredential(
   username: string,
   token: string,
 ): Promise<void> {
-  await execa(
-    runner.gitPath,
-    ['credential', 'approve'],
-    {
-      cwd: homeDir,
-      input: `protocol=https\nhost=${host}\nusername=${username}\npassword=${token}\n\n`,
-      reject: false,
-      timeout: 4000,
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: '0',
-      },
+  await execa(runner.gitPath, ['credential', 'approve'], {
+    cwd: homeDir,
+    input: `protocol=https\nhost=${host}\nusername=${username}\npassword=${token}\n\n`,
+    reject: false,
+    timeout: 4000,
+    env: {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: '0',
     },
-  );
+  });
 }
 
 async function eraseGitCredential(runner: GitRunner, host: string): Promise<void> {
   const credential = await readGitCredential(runner, host);
   const username = credential?.username ? `username=${credential.username}\n` : '';
-  await execa(
-    runner.gitPath,
-    ['credential', 'reject'],
-    {
-      cwd: homeDir,
-      input: `protocol=https\nhost=${host}\n${username}\n`,
-      reject: false,
-      timeout: 4000,
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: '0',
-      },
+  await execa(runner.gitPath, ['credential', 'reject'], {
+    cwd: homeDir,
+    input: `protocol=https\nhost=${host}\n${username}\n`,
+    reject: false,
+    timeout: 4000,
+    env: {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: '0',
     },
-  );
+  });
 }
 
 async function getGithubToken(
@@ -206,11 +198,10 @@ async function getGithubToken(
     });
     const token = tokenRes.stdout.trim();
     if (tokenRes.exitCode === 0 && token) {
-      const userRes = await execa(
-        'gh',
-        ['api', '--hostname', host, 'user', '--jq', '.login'],
-        { reject: false, timeout: 4000 },
-      );
+      const userRes = await execa('gh', ['api', '--hostname', host, 'user', '--jq', '.login'], {
+        reject: false,
+        timeout: 4000,
+      });
       const username = userRes.exitCode === 0 ? userRes.stdout.trim() || null : null;
       return { token, method: 'gh-cli', username };
     }
@@ -231,7 +222,11 @@ async function getGithubToken(
 async function getGitlabToken(
   runner: GitRunner,
   host = 'gitlab.com',
-): Promise<{ token: string; method: 'glab-cli' | 'git-credential'; username: string | null } | null> {
+): Promise<{
+  token: string;
+  method: 'glab-cli' | 'git-credential';
+  username: string | null;
+} | null> {
   const cred = await readGitCredential(runner, host);
   if (cred?.password) {
     return {
@@ -261,63 +256,91 @@ async function getGitlabToken(
 }
 
 function githubApiBase(host: string): string {
-  return host.toLowerCase() === 'github.com'
-    ? 'https://api.github.com'
-    : `https://${host}/api/v3`;
+  return host.toLowerCase() === 'github.com' ? 'https://api.github.com' : `https://${host}/api/v3`;
 }
 
 function gitlabApiBase(host: string): string {
   return `https://${host}/api/v4`;
 }
 
+type ProviderRequestInit = {
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  body?: unknown;
+};
+
+async function readProviderError(response: Response): Promise<string> {
+  const text = await response.text().catch(() => '');
+  if (!text) return '';
+  try {
+    const parsed = JSON.parse(text) as { message?: unknown; error?: unknown };
+    if (typeof parsed.message === 'string') return parsed.message;
+    if (typeof parsed.error === 'string') return parsed.error;
+  } catch {
+    return text.slice(0, 300);
+  }
+  return text.slice(0, 300);
+}
+
 async function fetchGithubJson<T>(
   host: string,
   endpoint: string,
   token?: string | null,
+  init: ProviderRequestInit = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
     'User-Agent': 'Gitastic-Local-Client',
   };
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (init.body !== undefined) headers['Content-Type'] = 'application/json';
 
   const response = await fetch(`${githubApiBase(host)}${endpoint}`, {
+    method: init.method ?? 'GET',
     headers,
+    body: init.body === undefined ? undefined : JSON.stringify(init.body),
     signal: AbortSignal.timeout(8000),
   });
   if (!response.ok) {
+    const detail = await readProviderError(response);
     throw new AppError(
       response.status === 401 || response.status === 403 ? 401 : 422,
       'PROVIDER_API_FAILED',
-      `GitHub API request failed (${response.status})`,
+      `GitHub API request failed (${response.status})${detail ? `: ${detail}` : ''}`,
     );
   }
-  return (await response.json()) as T;
+  const text = await response.text();
+  return (text ? JSON.parse(text) : null) as T;
 }
 
 async function fetchGitlabJson<T>(
   host: string,
   endpoint: string,
   token?: string | null,
+  init: ProviderRequestInit = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'User-Agent': 'Gitastic-Local-Client',
   };
   if (token) headers['PRIVATE-TOKEN'] = token;
+  if (init.body !== undefined) headers['Content-Type'] = 'application/json';
 
   const response = await fetch(`${gitlabApiBase(host)}${endpoint}`, {
+    method: init.method ?? 'GET',
     headers,
+    body: init.body === undefined ? undefined : JSON.stringify(init.body),
     signal: AbortSignal.timeout(8000),
   });
   if (!response.ok) {
+    const detail = await readProviderError(response);
     throw new AppError(
       response.status === 401 || response.status === 403 ? 401 : 422,
       'PROVIDER_API_FAILED',
-      `GitLab API request failed (${response.status})`,
+      `GitLab API request failed (${response.status})${detail ? `: ${detail}` : ''}`,
     );
   }
-  return (await response.json()) as T;
+  const text = await response.text();
+  return (text ? JSON.parse(text) : null) as T;
 }
 
 export async function listSshKeys(): Promise<SshKeyEntry[]> {
@@ -406,15 +429,10 @@ export async function addSshKeyToAgent(
     );
   }
 
-  const askpassFile = path.join(
-    os.tmpdir(),
-    `gitastic-askpass-${process.pid}-${Date.now()}.sh`,
-  );
-  await fs.writeFile(
-    askpassFile,
-    '#!/bin/sh\nprintf "%s\\n" "$GITASTIC_SSH_PASS"\n',
-    { mode: 0o700 },
-  );
+  const askpassFile = path.join(os.tmpdir(), `gitastic-askpass-${process.pid}-${Date.now()}.sh`);
+  await fs.writeFile(askpassFile, '#!/bin/sh\nprintf "%s\\n" "$GITASTIC_SSH_PASS"\n', {
+    mode: 0o700,
+  });
 
   try {
     const unlockEnv = {
@@ -443,11 +461,7 @@ export async function addSshKeyToAgent(
       return { ok: true, detail: `Unlocked ${path.basename(resolved)} in ssh-agent` };
     }
 
-    throw new AppError(
-      422,
-      'SSH_ADD_FAILED',
-      'Invalid passphrase or could not unlock SSH key.',
-    );
+    throw new AppError(422, 'SSH_ADD_FAILED', 'Invalid passphrase or could not unlock SSH key.');
   } finally {
     await fs.rm(askpassFile, { force: true }).catch(() => undefined);
   }
@@ -572,7 +586,8 @@ export async function getProvidersStatus(
   for (const extra of extraHosts) {
     if (
       !targets.some(
-        (item) => item.provider === extra.provider && item.host.toLowerCase() === extra.host.toLowerCase(),
+        (item) =>
+          item.provider === extra.provider && item.host.toLowerCase() === extra.host.toLowerCase(),
       )
     ) {
       targets.push(extra);
@@ -653,7 +668,8 @@ export async function getProvidersStatus(
           username: null,
           method: 'none',
           cliInstalled: glabInstalled,
-          detail: 'Connect with a Personal Access Token (`read_api`, `read_repository`, `write_repository`).',
+          detail:
+            'Connect with a Personal Access Token (`read_api`, `read_repository`, `write_repository`).',
         });
       }
     }
@@ -670,7 +686,9 @@ export async function connectProviderAccount(
   runner: GitRunner,
   options: { provider: ProviderKind; host?: string; username?: string; token: string },
 ): Promise<ProviderAccountStatus> {
-  const host = (options.host?.trim() || (options.provider === 'github' ? 'github.com' : 'gitlab.com'))
+  const host = (
+    options.host?.trim() || (options.provider === 'github' ? 'github.com' : 'gitlab.com')
+  )
     .replace(/^https?:\/\//, '')
     .replace(/\/+$/, '');
   const token = options.token.trim();
@@ -738,7 +756,9 @@ export async function listProviderRepos(
   runner: GitRunner,
   options: { provider: ProviderKind; host?: string; query?: string },
 ): Promise<ProviderRepo[]> {
-  const host = (options.host?.trim() || (options.provider === 'github' ? 'github.com' : 'gitlab.com'))
+  const host = (
+    options.host?.trim() || (options.provider === 'github' ? 'github.com' : 'gitlab.com')
+  )
     .replace(/^https?:\/\//, '')
     .replace(/\/+$/, '');
   const query = options.query?.trim() ?? '';
@@ -960,6 +980,563 @@ export async function listRepoPullRequests(
   }
 }
 
+type ProviderRepoRef = {
+  remote: RemoteProviderInfo;
+  auth: { token: string } | null;
+};
+
+async function resolveProviderRepo(runner: GitRunner, repoPath: string): Promise<ProviderRepoRef> {
+  const remotes = await listRemotes(runner, repoPath);
+  const remote = selectPrimaryRemoteInfo(remotes);
+  if (!remote) {
+    throw new AppError(400, 'NO_PROVIDER_REMOTE', 'No GitHub or GitLab remote is configured.');
+  }
+  const auth =
+    remote.provider === 'github'
+      ? await getGithubToken(runner, remote.host)
+      : await getGitlabToken(runner, remote.host);
+  return { remote, auth: auth?.token ? { token: auth.token } : null };
+}
+
+function normalizePullFileStatus(status: string): PullRequestFileStatus {
+  if (
+    status === 'added' ||
+    status === 'modified' ||
+    status === 'removed' ||
+    status === 'renamed' ||
+    status === 'copied' ||
+    status === 'changed' ||
+    status === 'unchanged'
+  ) {
+    return status;
+  }
+  return 'modified';
+}
+
+function normalizeReviewState(state: string): PullRequestReview['state'] {
+  const normalized = state.toUpperCase();
+  if (
+    normalized === 'APPROVED' ||
+    normalized === 'CHANGES_REQUESTED' ||
+    normalized === 'COMMENTED' ||
+    normalized === 'DISMISSED' ||
+    normalized === 'PENDING'
+  ) {
+    return normalized;
+  }
+  return 'COMMENTED';
+}
+
+function reviewSignals(
+  reviews: PullRequestReview[],
+  viewer: string | null,
+): Pick<PullRequestDetail, 'approvedByViewer' | 'reviewDecision'> {
+  const effective = new Map<string, PullRequestReview['state']>();
+  const ordered = [...reviews].sort((left, right) => {
+    const leftTime = left.submittedAt ? Date.parse(left.submittedAt) : 0;
+    const rightTime = right.submittedAt ? Date.parse(right.submittedAt) : 0;
+    return leftTime - rightTime;
+  });
+
+  for (const review of ordered) {
+    if (review.state === 'COMMENTED' || review.state === 'PENDING') continue;
+    if (review.state === 'DISMISSED') {
+      effective.delete(review.author);
+      continue;
+    }
+    effective.set(review.author, review.state);
+  }
+
+  const states = [...effective.values()];
+  return {
+    approvedByViewer: Boolean(viewer && effective.get(viewer) === 'APPROVED'),
+    reviewDecision: states.includes('CHANGES_REQUESTED')
+      ? 'CHANGES_REQUESTED'
+      : states.includes('APPROVED')
+        ? 'APPROVED'
+        : 'REVIEW_REQUIRED',
+  };
+}
+
+function countPatchLines(patch: string): { additions: number; deletions: number } {
+  let additions = 0;
+  let deletions = 0;
+  for (const line of patch.replace(/\r\n/g, '\n').split('\n')) {
+    if (line.startsWith('+') && !line.startsWith('+++')) additions += 1;
+    else if (line.startsWith('-') && !line.startsWith('---')) deletions += 1;
+  }
+  return { additions, deletions };
+}
+
+export async function getPullRequestDetail(
+  runner: GitRunner,
+  repoPath: string,
+  number: number,
+): Promise<PullRequestDetailResponse> {
+  const { remote, auth } = await resolveProviderRepo(runner, repoPath);
+
+  if (remote.provider === 'github') {
+    const token = auth?.token;
+    type GhPullDetailRaw = {
+      id: number | string;
+      number: number;
+      title: string;
+      body?: string | null;
+      state: string;
+      merged?: boolean;
+      draft?: boolean;
+      user?: { login?: string };
+      head?: { ref?: string; sha?: string };
+      base?: { ref?: string; sha?: string };
+      additions?: number;
+      deletions?: number;
+      changed_files?: number;
+      mergeable?: boolean | null;
+      html_url: string;
+    };
+    type GhPullFileRaw = {
+      filename: string;
+      previous_filename?: string;
+      status: string;
+      additions?: number;
+      deletions?: number;
+      patch?: string;
+    };
+    type GhReviewCommentRaw = {
+      id: number | string;
+      user?: { login?: string };
+      body?: string;
+      path?: string;
+      line?: number | null;
+      original_line?: number | null;
+      side?: 'LEFT' | 'RIGHT' | null;
+      created_at?: string;
+      html_url?: string;
+    };
+    type GhReviewRaw = {
+      id: number | string;
+      user?: { login?: string };
+      state: string;
+      body?: string | null;
+      submitted_at?: string | null;
+      html_url?: string;
+    };
+
+    const repoEndpoint = `/repos/${remote.owner}/${remote.repo}/pulls/${number}`;
+    try {
+      const [pull, rawFiles, rawComments, rawIssueComments, rawReviews, viewer] = await Promise.all(
+        [
+          fetchGithubJson<GhPullDetailRaw>(remote.host, repoEndpoint, token),
+          fetchGithubJson<GhPullFileRaw[]>(
+            remote.host,
+            `${repoEndpoint}/files?per_page=100`,
+            token,
+          ),
+          fetchGithubJson<GhReviewCommentRaw[]>(
+            remote.host,
+            `${repoEndpoint}/comments?per_page=100`,
+            token,
+          ),
+          fetchGithubJson<GhReviewCommentRaw[]>(
+            remote.host,
+            `/repos/${remote.owner}/${remote.repo}/issues/${number}/comments?per_page=100`,
+            token,
+          ),
+          fetchGithubJson<GhReviewRaw[]>(
+            remote.host,
+            `${repoEndpoint}/reviews?per_page=100`,
+            token,
+          ),
+          token
+            ? fetchGithubJson<{ login: string }>(remote.host, '/user', token)
+                .then((user) => user.login)
+                .catch(() => null)
+            : Promise.resolve(null),
+        ],
+      );
+
+      const comments: PullRequestComment[] = [...rawComments, ...rawIssueComments]
+        .map((comment) => ({
+          id: String(comment.id),
+          author: comment.user?.login ?? 'unknown',
+          body: comment.body ?? '',
+          path: comment.path ?? null,
+          line: comment.line ?? comment.original_line ?? null,
+          side: comment.side ?? null,
+          createdAt: comment.created_at ?? '',
+          webUrl: comment.html_url ?? null,
+        }))
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      const reviews: PullRequestReview[] = rawReviews.map((review) => ({
+        id: String(review.id),
+        author: review.user?.login ?? 'unknown',
+        state: normalizeReviewState(review.state),
+        body: review.body ?? '',
+        submittedAt: review.submitted_at ?? null,
+        webUrl: review.html_url ?? null,
+      }));
+      const files: PullRequestFile[] = rawFiles.map((file) => ({
+        path: file.filename,
+        oldPath: file.previous_filename ?? null,
+        status: normalizePullFileStatus(file.status),
+        additions: file.additions ?? 0,
+        deletions: file.deletions ?? 0,
+        patch: file.patch ?? null,
+        binary: !file.patch,
+      }));
+      const signals = reviewSignals(reviews, viewer);
+
+      return {
+        remote,
+        pull: {
+          number: pull.number,
+          title: pull.title,
+          body: pull.body ?? '',
+          state: pull.merged ? 'merged' : pull.state === 'open' ? 'open' : 'closed',
+          draft: Boolean(pull.draft),
+          author: pull.user?.login ?? 'unknown',
+          sourceBranch: pull.head?.ref ?? `pr-${pull.number}`,
+          targetBranch: pull.base?.ref ?? 'main',
+          headSha: pull.head?.sha ?? '',
+          baseSha: pull.base?.sha ?? '',
+          startSha: pull.base?.sha ?? '',
+          additions: pull.additions ?? 0,
+          deletions: pull.deletions ?? 0,
+          changedFiles: pull.changed_files ?? files.length,
+          mergeable: pull.mergeable ?? null,
+          webUrl: pull.html_url,
+          viewer,
+          approvedByViewer: signals.approvedByViewer,
+          reviewDecision: signals.reviewDecision,
+        },
+        files,
+        comments,
+        reviews,
+        authHint: null,
+      };
+    } catch (error) {
+      if (error instanceof AppError && error.status === 401) {
+        throw new AppError(
+          401,
+          'PROVIDER_AUTH_REQUIRED',
+          `Connect ${remote.host} in Settings to review this pull request.`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  const token = auth?.token;
+  type GlMergeRequestRaw = {
+    id: number | string;
+    iid: number;
+    title: string;
+    description?: string | null;
+    state: string;
+    draft?: boolean;
+    work_in_progress?: boolean;
+    author?: { username?: string };
+    source_branch: string;
+    target_branch: string;
+    sha?: string;
+    diff_refs?: { base_sha?: string; head_sha?: string; start_sha?: string };
+    web_url: string;
+    detailed_merge_status?: string;
+  };
+  type GlDiffRaw = {
+    old_path: string;
+    new_path: string;
+    new_file?: boolean;
+    renamed_file?: boolean;
+    deleted_file?: boolean;
+    diff?: string;
+    too_large?: boolean;
+  };
+  type GlNoteRaw = {
+    id: number | string;
+    body?: string;
+    author?: { username?: string };
+    created_at?: string;
+    system?: boolean;
+    position?: {
+      new_path?: string;
+      old_path?: string;
+      new_line?: number | null;
+      old_line?: number | null;
+    } | null;
+  };
+  type GlDiscussionRaw = { notes?: GlNoteRaw[] };
+  type GlApprovalsRaw = {
+    approved_by?: Array<{ user?: { username?: string } }>;
+  };
+
+  const project = encodeURIComponent(remote.fullName);
+  const mrEndpoint = `/projects/${project}/merge_requests/${number}`;
+  const viewerPromise = token
+    ? fetchGitlabJson<{ username: string }>(remote.host, '/user', token)
+        .then((user) => user.username)
+        .catch(() => null)
+    : Promise.resolve(null);
+
+  try {
+    const [mr, diffs, discussions, approvals, viewer] = await Promise.all([
+      fetchGitlabJson<GlMergeRequestRaw>(remote.host, mrEndpoint, token),
+      fetchGitlabJson<GlDiffRaw[]>(remote.host, `${mrEndpoint}/diffs?per_page=100`, token).catch(
+        () => [],
+      ),
+      fetchGitlabJson<GlDiscussionRaw[]>(
+        remote.host,
+        `${mrEndpoint}/discussions?per_page=100`,
+        token,
+      ).catch(() => []),
+      token
+        ? fetchGitlabJson<GlApprovalsRaw>(remote.host, `${mrEndpoint}/approvals`, token).catch(
+            () => null,
+          )
+        : Promise.resolve(null),
+      viewerPromise,
+    ]);
+
+    const files: PullRequestFile[] = diffs.map((diff) => {
+      const counts = countPatchLines(diff.diff ?? '');
+      const status: PullRequestFileStatus = diff.new_file
+        ? 'added'
+        : diff.deleted_file
+          ? 'removed'
+          : diff.renamed_file
+            ? 'renamed'
+            : 'modified';
+      return {
+        path: diff.new_path,
+        oldPath: diff.old_path !== diff.new_path ? diff.old_path : null,
+        status,
+        additions: counts.additions,
+        deletions: counts.deletions,
+        patch: diff.diff ?? null,
+        binary: !diff.diff,
+      };
+    });
+
+    const comments: PullRequestComment[] = discussions.flatMap((discussion) =>
+      (discussion.notes ?? [])
+        .filter((note) => !note.system && note.body)
+        .map((note) => ({
+          id: String(note.id),
+          author: note.author?.username ?? 'unknown',
+          body: note.body ?? '',
+          path: note.position?.new_path ?? note.position?.old_path ?? null,
+          line: note.position?.new_line ?? note.position?.old_line ?? null,
+          side: note.position?.new_line ? 'RIGHT' : note.position?.old_line ? 'LEFT' : null,
+          createdAt: note.created_at ?? '',
+          webUrl: mr.web_url,
+        })),
+    );
+
+    const reviews: PullRequestReview[] = (approvals?.approved_by ?? []).map((entry, index) => ({
+      id: `approval-${index}-${entry.user?.username ?? 'unknown'}`,
+      author: entry.user?.username ?? 'unknown',
+      state: 'APPROVED',
+      body: '',
+      submittedAt: null,
+      webUrl: mr.web_url,
+    }));
+    const signals = reviewSignals(reviews, viewer);
+    const headSha = mr.diff_refs?.head_sha ?? mr.sha ?? '';
+    const baseSha = mr.diff_refs?.base_sha ?? '';
+    const additions = files.reduce((total, file) => total + file.additions, 0);
+    const deletions = files.reduce((total, file) => total + file.deletions, 0);
+
+    return {
+      remote,
+      pull: {
+        number: mr.iid,
+        title: mr.title,
+        body: mr.description ?? '',
+        state: mr.state === 'opened' ? 'open' : mr.state === 'merged' ? 'merged' : 'closed',
+        draft: Boolean(mr.draft || mr.work_in_progress),
+        author: mr.author?.username ?? 'unknown',
+        sourceBranch: mr.source_branch,
+        targetBranch: mr.target_branch,
+        headSha,
+        baseSha,
+        startSha: mr.diff_refs?.start_sha ?? baseSha,
+        additions,
+        deletions,
+        changedFiles: files.length,
+        mergeable:
+          mr.detailed_merge_status === 'mergeable' ? true : mr.detailed_merge_status ? false : null,
+        webUrl: mr.web_url,
+        viewer,
+        approvedByViewer: signals.approvedByViewer,
+        reviewDecision: signals.reviewDecision,
+      },
+      files,
+      comments,
+      reviews,
+      authHint: null,
+    };
+  } catch (error) {
+    if (error instanceof AppError && error.status === 401) {
+      throw new AppError(
+        401,
+        'PROVIDER_AUTH_REQUIRED',
+        `Connect ${remote.host} in Settings to review this merge request.`,
+      );
+    }
+    throw error;
+  }
+}
+
+export async function createPullRequestComment(
+  runner: GitRunner,
+  repoPath: string,
+  number: number,
+  input: PullRequestCommentCreate,
+): Promise<{ ok: boolean }> {
+  if ((input.path && !input.line) || (!input.path && input.line)) {
+    throw new AppError(
+      400,
+      'INVALID_COMMENT_POSITION',
+      'Both path and line are required for an inline comment.',
+    );
+  }
+  const { remote, auth } = await resolveProviderRepo(runner, repoPath);
+  if (!auth?.token) {
+    throw new AppError(
+      401,
+      'PROVIDER_AUTH_REQUIRED',
+      `Connect ${remote.host} in Settings to comment.`,
+    );
+  }
+
+  if (remote.provider === 'github') {
+    if (input.path && input.line) {
+      let commitId = input.commitId;
+      if (!commitId) {
+        const pull = await fetchGithubJson<{ head?: { sha?: string } }>(
+          remote.host,
+          `/repos/${remote.owner}/${remote.repo}/pulls/${number}`,
+          auth.token,
+        );
+        commitId = pull.head?.sha;
+      }
+      if (!commitId) {
+        throw new AppError(
+          422,
+          'PULL_COMMIT_MISSING',
+          'Could not determine the pull request commit.',
+        );
+      }
+      await fetchGithubJson<unknown>(
+        remote.host,
+        `/repos/${remote.owner}/${remote.repo}/pulls/${number}/comments`,
+        auth.token,
+        {
+          method: 'POST',
+          body: {
+            body: input.body,
+            commit_id: commitId,
+            path: input.path,
+            line: input.line,
+            side: input.side ?? 'RIGHT',
+          },
+        },
+      );
+    } else {
+      await fetchGithubJson<unknown>(
+        remote.host,
+        `/repos/${remote.owner}/${remote.repo}/issues/${number}/comments`,
+        auth.token,
+        { method: 'POST', body: { body: input.body } },
+      );
+    }
+    return { ok: true };
+  }
+
+  const project = encodeURIComponent(remote.fullName);
+  if (input.path && input.line) {
+    const mr = await fetchGitlabJson<{
+      diff_refs?: { base_sha?: string; head_sha?: string; start_sha?: string };
+    }>(remote.host, `/projects/${project}/merge_requests/${number}`, auth.token);
+    const baseSha = mr.diff_refs?.base_sha ?? '';
+    const headSha = mr.diff_refs?.head_sha ?? '';
+    const startSha = mr.diff_refs?.start_sha ?? baseSha;
+    const side = input.side ?? 'RIGHT';
+    await fetchGitlabJson<unknown>(
+      remote.host,
+      `/projects/${project}/merge_requests/${number}/discussions`,
+      auth.token,
+      {
+        method: 'POST',
+        body: {
+          body: input.body,
+          position: {
+            base_sha: baseSha,
+            head_sha: headSha,
+            start_sha: startSha,
+            position_type: 'text',
+            [side === 'LEFT' ? 'old_path' : 'new_path']: input.path,
+            [side === 'LEFT' ? 'old_line' : 'new_line']: input.line,
+          },
+        },
+      },
+    );
+  } else {
+    await fetchGitlabJson<unknown>(
+      remote.host,
+      `/projects/${project}/merge_requests/${number}/notes`,
+      auth.token,
+      { method: 'POST', body: { body: input.body } },
+    );
+  }
+  return { ok: true };
+}
+
+export async function approvePullRequest(
+  runner: GitRunner,
+  repoPath: string,
+  number: number,
+  body?: string,
+): Promise<{ ok: boolean }> {
+  const { remote, auth } = await resolveProviderRepo(runner, repoPath);
+  if (!auth?.token) {
+    throw new AppError(
+      401,
+      'PROVIDER_AUTH_REQUIRED',
+      `Connect ${remote.host} in Settings to approve.`,
+    );
+  }
+
+  if (remote.provider === 'github') {
+    await fetchGithubJson<unknown>(
+      remote.host,
+      `/repos/${remote.owner}/${remote.repo}/pulls/${number}/reviews`,
+      auth.token,
+      {
+        method: 'POST',
+        body: { event: 'APPROVE', ...(body?.trim() ? { body: body.trim() } : {}) },
+      },
+    );
+  } else {
+    const project = encodeURIComponent(remote.fullName);
+    await fetchGitlabJson<unknown>(
+      remote.host,
+      `/projects/${project}/merge_requests/${number}/approve`,
+      auth.token,
+      { method: 'POST' },
+    );
+    if (body?.trim()) {
+      await fetchGitlabJson<unknown>(
+        remote.host,
+        `/projects/${project}/merge_requests/${number}/notes`,
+        auth.token,
+        { method: 'POST', body: { body: body.trim() } },
+      );
+    }
+  }
+  return { ok: true };
+}
+
 export async function checkoutPullRequest(
   runner: GitRunner,
   repoPath: string,
@@ -969,11 +1546,9 @@ export async function checkoutPullRequest(
   const remoteInfo = selectPrimaryRemoteInfo(remotes);
   const remoteName = options.remote || remoteInfo?.remoteName || 'origin';
 
-  const branchFetch = await runner.run(
-    repoPath,
-    ['fetch', remoteName, options.sourceBranch],
-    { allowFail: true },
-  );
+  const branchFetch = await runner.run(repoPath, ['fetch', remoteName, options.sourceBranch], {
+    allowFail: true,
+  });
   if (branchFetch.exitCode === 0) {
     await checkout(runner, repoPath, `${remoteName}/${options.sourceBranch}`);
     return;
@@ -984,9 +1559,7 @@ export async function checkoutPullRequest(
       ? `merge-requests/${options.number}/head`
       : `pull/${options.number}/head`;
   const localBranch =
-    remoteInfo?.provider === 'gitlab'
-      ? `mr-${options.number}`
-      : `pr-${options.number}`;
+    remoteInfo?.provider === 'gitlab' ? `mr-${options.number}` : `pr-${options.number}`;
 
   await runner.run(repoPath, ['fetch', remoteName, `${refSpec}:${localBranch}`]);
   await checkout(runner, repoPath, localBranch);

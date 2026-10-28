@@ -8,6 +8,7 @@ import type {
   DiffResponse,
   FileStatus,
   OperationKind,
+  ReflogEntry,
   Remote,
   RepoSummary,
   Stash,
@@ -326,4 +327,21 @@ export async function listWorktrees(runner: GitRunner, repoPath: string): Promis
   });
 
   return worktrees;
+}
+
+export async function listReflog(runner: GitRunner, repoPath: string): Promise<ReflogEntry[]> {
+  const out = await runner.run(
+    repoPath,
+    ['log', '-g', '--format=%H%x00%gd%x00%gs%x00%cI', '-n', '200'],
+    { allowFail: true },
+  );
+  return (await import('./parse')).parseReflog(out.stdout);
+}
+
+export async function checkoutReflog(
+  runner: GitRunner,
+  repoPath: string,
+  selector: string,
+): Promise<void> {
+  await runner.run(repoPath, ['checkout', selector]);
 }

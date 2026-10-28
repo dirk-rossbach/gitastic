@@ -5,6 +5,7 @@ import type {
   ConflictBlock,
   DiffFile,
   FileKind,
+  ReflogEntry,
   Status,
   Stash,
   Tag,
@@ -484,4 +485,20 @@ export function parseConflictMarkers(content: string, path = ''): ConflictBlock[
   }
 
   return blocks;
+}
+
+export function parseReflog(output: string): ReflogEntry[] {
+  return output
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const [hash = '', selector = '', message = '', date = ''] = line.split('\0');
+      return {
+        hash,
+        shortHash: shortHash(hash),
+        selector,
+        message,
+        date,
+      } satisfies ReflogEntry;
+    });
 }

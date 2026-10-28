@@ -98,6 +98,8 @@ export function Modal({
   children,
   footer,
   wide,
+  size,
+  bodyClassName,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -106,7 +108,10 @@ export function Modal({
   children: ReactNode;
   footer?: ReactNode;
   wide?: boolean;
+  size?: 'default' | 'wide' | 'full';
+  bodyClassName?: string;
 }) {
+  const modalSize = size ?? (wide ? 'wide' : 'default');
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -114,7 +119,7 @@ export function Modal({
         <Dialog.Content
           className={cn(
             'modal-card fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-edge/80 focus:outline-none',
-            wide ? 'max-w-3xl' : 'max-w-lg',
+            modalSize === 'full' ? 'max-w-6xl' : modalSize === 'wide' ? 'max-w-3xl' : 'max-w-lg',
           )}
         >
           <div className="flex items-start justify-between gap-4 border-b border-edge px-5 py-4">
@@ -130,7 +135,15 @@ export function Modal({
               <X className="h-4 w-4" />
             </Dialog.Close>
           </div>
-          <div className="scrollbar-thin max-h-[62vh] overflow-auto px-5 py-4">{children}</div>
+          <div
+            className={cn(
+              'scrollbar-thin overflow-auto px-5 py-4',
+              modalSize === 'full' ? 'max-h-[70vh]' : 'max-h-[62vh]',
+              bodyClassName,
+            )}
+          >
+            {children}
+          </div>
           {footer ? (
             <div className="flex items-center justify-end gap-2 border-t border-edge bg-raised/40 px-5 py-3">
               {footer}

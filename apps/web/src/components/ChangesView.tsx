@@ -24,7 +24,8 @@ import { useAction } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import { DiffViewer } from './DiffViewer';
-import { ConfirmDialog, EmptyState, ErrorState, LoadingState, Modal, PathText, Spinner } from './ui';
+import { StashDialog } from './StashDialog';
+import { ConfirmDialog, EmptyState, ErrorState, LoadingState, PathText, Spinner } from './ui';
 
 function fileIcon(file: FileStatus) {
   if (file.conflicted) return <AlertTriangle className="h-4 w-4 text-danger" />;
@@ -162,8 +163,6 @@ export function ChangesView() {
   const [stagedOverride, setStagedOverride] = useState<boolean | null>(null);
   const [discardTarget, setDiscardTarget] = useState<string | null>(null);
   const [stashOpen, setStashOpen] = useState(false);
-  const [stashMessage, setStashMessage] = useState('');
-  const [stashUntracked, setStashUntracked] = useState(true);
   const [cleanOpen, setCleanOpen] = useState(false);
   const [cleanPreview, setCleanPreview] = useState<string[]>([]);
 
@@ -532,56 +531,7 @@ export function ChangesView() {
         }}
       />
 
-      <Modal
-        open={stashOpen}
-        onOpenChange={setStashOpen}
-        title="Stash changes"
-        description="Save your working tree changes for later."
-        footer={
-          <>
-            <button type="button" className="btn" onClick={() => setStashOpen(false)}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={busy}
-              onClick={async () => {
-                await run(
-                  () =>
-                    api.stashPush({
-                      message: stashMessage.trim() || undefined,
-                      includeUntracked: stashUntracked,
-                    }),
-                  'Changes stashed.',
-                );
-                setStashOpen(false);
-                setStashMessage('');
-              }}
-            >
-              Stash
-            </button>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          <input
-            className="input"
-            placeholder="Optional stash message"
-            value={stashMessage}
-            onChange={(event) => setStashMessage(event.target.value)}
-          />
-          <label className="flex items-center gap-2 text-sm text-muted">
-            <input
-              type="checkbox"
-              className="accent-accent"
-              checked={stashUntracked}
-              onChange={(event) => setStashUntracked(event.target.checked)}
-            />
-            Include untracked files
-          </label>
-        </div>
-      </Modal>
+      <StashDialog open={stashOpen} onOpenChange={setStashOpen} />
 
       <ConfirmDialog
         open={cleanOpen}

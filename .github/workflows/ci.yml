@@ -102,3 +102,38 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
           retention-days: 14
+
+  tauri-macos:
+    name: tauri bundle (macos)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: npm ci
+      - run: npm run tauri:build
+      - name: Verify macOS bundles
+        run: |
+          test -d src-tauri/target/release/bundle/macos/Gitastic.app
+          test -n "$(ls -1 src-tauri/target/release/bundle/dmg/*.dmg 2>/dev/null)"
+          ls -lh src-tauri/target/release/bundle/macos
+          ls -lh src-tauri/target/release/bundle/dmg
+      - name: Package macOS app
+        run: |
+          cd src-tauri/target/release/bundle/macos
+          ditto -c -k --sequesterRsrc --keepParent Gitastic.app Gitastic.app.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gitastic-macos
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/Gitastic.app.zip
+          if-no-files-found: error
+          retention-days: 14

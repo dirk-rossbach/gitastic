@@ -66,7 +66,15 @@ test('opens a repo, commits staged changes and browses sections', async ({ page 
   await page.getByRole('radio', { name: /Smelly Socks/ }).click();
   await expect(page.locator('html')).toHaveAttribute('data-style', 'smelly-socks');
 
-  for (const name of ['Timeline', 'Tags', 'Remotes', 'Stashes', 'Conflicts', 'Blame', 'File history']) {
+  for (const name of [
+    'Timeline',
+    'Tags',
+    'Remotes',
+    'Stashes',
+    'Conflicts',
+    'Blame',
+    'File history',
+  ]) {
     await nav.getByRole('button', { name, exact: true }).click();
     await page.waitForTimeout(250);
   }
@@ -134,6 +142,108 @@ test('resolves a merge conflict and continues the merge', async ({ page }) => {
   expect(git(repo, 'log', '-1', '--pretty=%s')).toBe("Merge branch 'feature'");
 });
 
+test('switches conflicted files while the file rail is collapsed', async ({ page }) => {
+  const home = path.join(os.tmpdir(), 'gitastic-e2e-home');
+  const repo = path.join(home, 'collapsed-conflicts-repo');
+  fs.rmSync(repo, { recursive: true, force: true });
+  fs.mkdirSync(repo, { recursive: true });
+  git(repo, 'init', '-q', '-b', 'main');
+  git(repo, 'config', 'user.name', 'E2E User');
+  git(repo, 'config', 'user.email', 'e2e@example.com');
+  fs.writeFileSync(path.join(repo, 'a.txt'), 'base a\n');
+  fs.writeFileSync(path.join(repo, 'b.txt'), 'base b\n');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'Base');
+  git(repo, 'checkout', '-q', '-b', 'feature');
+  fs.writeFileSync(path.join(repo, 'a.txt'), 'feature a\n');
+  fs.writeFileSync(path.join(repo, 'b.txt'), 'feature b\n');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'Feature');
+  git(repo, 'checkout', '-q', 'main');
+  fs.writeFileSync(path.join(repo, 'a.txt'), 'main a\n');
+  fs.writeFileSync(path.join(repo, 'b.txt'), 'main b\n');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'Main');
+  try {
+    git(repo, 'merge', 'feature');
+  } catch {
+    // The conflict is expected.
+  }
+
+  await page.request.post('/api/repos/close', {
+    headers: { 'x-gitastic-request': '1' },
+  });
+  await page.goto('/');
+  await page.getByText('Open from local').first().click();
+  const pathInput = page.locator('input[placeholder="/Users/you/project"]');
+  await pathInput.fill(repo);
+  await pathInput.press('Enter');
+  await page.getByText('Merge in progress').waitFor();
+
+  const nav = page.locator('aside nav');
+  await nav.getByRole('button', { name: /^Conflicts/ }).click();
+  await page.getByRole('button', { name: 'Collapse conflicted files' }).click();
+  await expect(page.getByText('Conflicted files')).toBeHidden();
+
+  const fileA = page.getByRole('button', { name: 'Open conflicted file a.txt' });
+  const fileB = page.getByRole('button', { name: 'Open conflicted file b.txt' });
+  await expect(fileA).toHaveAttribute('title', 'a.txt');
+  await expect(fileB).toHaveAttribute('title', 'b.txt');
+  await fileB.click();
+  await expect(fileB).toHaveAttribute('aria-current', 'true');
+  await fileA.click();
+  await expect(fileA).toHaveAttribute('aria-current', 'true');
+});
+
+test('groups consecutive changed lines in the conflict resolver', async ({ page }) => {
+  const home = path.join(os.tmpdir(), 'gitastic-e2e-home');
+  const repo = path.join(home, 'grouped-conflicts-repo');
+  fs.rmSync(repo, { recursive: true, force: true });
+  fs.mkdirSync(repo, { recursive: true });
+  git(repo, 'init', '-q', '-b', 'main');
+  git(repo, 'config', 'user.name', 'E2E User');
+  git(repo, 'config', 'user.email', 'e2e@example.com');
+  fs.writeFileSync(path.join(repo, 'file.txt'), 'base 1\nbase 2\nbase 3\n');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'Base');
+  git(repo, 'checkout', '-q', '-b', 'feature');
+  fs.writeFileSync(path.join(repo, 'file.txt'), 'feature 1\nfeature 2\nfeature 3\n');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'Feature');
+  git(repo, 'checkout', '-q', 'main');
+  fs.writeFileSync(path.join(repo, 'file.txt'), 'main 1\nmain 2\nmain 3\n');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'Main');
+  try {
+    git(repo, 'merge', 'feature');
+  } catch {
+    // The conflict is expected.
+  }
+
+  await page.request.post('/api/repos/close', {
+    headers: { 'x-gitastic-request': '1' },
+  });
+  await page.goto('/');
+  await page.getByText('Open from local').first().click();
+  const pathInput = page.locator('input[placeholder="/Users/you/project"]');
+  await pathInput.fill(repo);
+  await pathInput.press('Enter');
+  await page.getByText('Merge in progress').waitFor();
+
+  const nav = page.locator('aside nav');
+  await nav.getByRole('button', { name: /^Conflicts/ }).click();
+  await expect(page.getByText('3 lines', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Accept theirs group of 3 lines' }).click();
+  await page.getByRole('button', { name: 'Save resolution' }).click();
+  await page.getByText('Merge in progress').waitFor();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.getByText('Merge in progress').waitFor({ state: 'hidden' });
+
+  expect(fs.readFileSync(path.join(repo, 'file.txt'), 'utf8')).toBe(
+    'feature 1\nfeature 2\nfeature 3\n',
+  );
+});
+
 test('creates a branch, creates a tag and stashes changes', async ({ page }) => {
   const home = path.join(os.tmpdir(), 'gitastic-e2e-home');
   const repo = path.join(home, 'tools-repo');
@@ -171,17 +281,21 @@ test('creates a branch, creates a tag and stashes changes', async ({ page }) => 
   await page.getByText('v1.0.0').first().waitFor();
 
   fs.appendFileSync(path.join(repo, 'README.md'), 'stashed\n');
+  fs.writeFileSync(path.join(repo, 'notes.txt'), 'keep me\n');
   await nav.getByRole('button', { name: /^Stashes/ }).click();
   await page.getByRole('button', { name: 'Stash changes' }).first().click();
   await page.locator('input[placeholder="Optional stash message"]').fill('WIP changes');
+  await page.getByRole('checkbox', { name: /notes\.txt/ }).uncheck();
   await page.getByRole('button', { name: 'Stash', exact: true }).click();
   const stashRow = page.getByText('WIP changes').first();
   await stashRow.waitFor();
+  expect(fs.readFileSync(path.join(repo, 'notes.txt'), 'utf8')).toBe('keep me\n');
   await stashRow.hover();
   await page.getByTitle('Pop stash (apply and remove)').click();
   await page.getByText('No stashes').waitFor();
 
   expect(fs.readFileSync(path.join(repo, 'README.md'), 'utf8')).toBe('hello\nstashed\n');
+  expect(fs.readFileSync(path.join(repo, 'notes.txt'), 'utf8')).toBe('keep me\n');
   expect(git(repo, 'branch', '--list', 'ui-branch')).toContain('ui-branch');
   expect(git(repo, 'tag', '--list', 'v1.0.0')).toBe('v1.0.0');
 });

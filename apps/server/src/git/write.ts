@@ -256,11 +256,12 @@ export async function operationAction(
 export async function stashPush(
   runner: GitRunner,
   repoPath: string,
-  options: { message?: string; includeUntracked?: boolean },
+  options: { message?: string; includeUntracked?: boolean; paths?: string[] },
 ): Promise<GitResult> {
   const args = ['stash', 'push'];
   if (options.includeUntracked) args.push('-u');
   if (options.message) args.push('-m', options.message);
+  if (options.paths?.length) args.push('--', ...options.paths);
   return runner.run(repoPath, args);
 }
 

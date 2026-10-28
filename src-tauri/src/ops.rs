@@ -11,12 +11,12 @@ use crate::error::{ApiError, ApiResult};
 use crate::models::{
     Branch, CommitBase, CommitDetail, ConflictFile, ConflictsResponse, DiffFile, DiffResponse,
     DirectoryEntry, DirectoryListing, OnboardingCheck, OnboardingReport, Remote, RepoSummary,
-    Stash, Status, Tag, Worktree, MIN_GIT_VERSION,
+    Stash, Status, Tag, Worktree, ReflogEntry, MIN_GIT_VERSION,
 };
 use crate::parse::{
     combine_diff_files, files_from_patch, parse_branches, parse_commit_log, parse_conflict_markers,
-    parse_remotes, parse_stashes, parse_status_v2, parse_tags, BRANCH_FORMAT, COMMIT_LOG_FORMAT,
-    TAG_FORMAT,
+    parse_remotes, parse_stashes, parse_status_v2, parse_tags, BRANCH_FORMAT,
+    COMMIT_LOG_FORMAT, TAG_FORMAT,
 };
 use crate::runner::{enriched_path, GitResult, GitRunner};
 
@@ -478,6 +478,26 @@ pub async fn list_stashes(runner: &GitRunner, repo_path: &str) -> ApiResult<Vec<
         )
         .await?;
     Ok(parse_stashes(&out.stdout))
+}
+
+pub async fn list_reflog(runner: &GitRunner, repo_path: &str) -> ApiResult<Vec<ReflogEntry>> {
+    let out = runner
+        .run(
+            repo_path,
+            &["log", "-g", "--format=%H%x00%gd%x00%gs%x00%cI", "-n", "200"],
+            true,
+        )
+        .await?;
+    Ok(crate::parse::parse_reflog(&out.stdout))
+}
+
+pub async fn checkout_reflog(
+    runner: &GitRunner,
+    repo_path: &str,
+    selector: &str,
+) -> ApiResult<()> {
+    runner.run(repo_path, &["checkout", selector], false).await?;
+    Ok(())
 }
 
 pub async fn list_worktrees(runner: &GitRunner, repo_path: &str) -> ApiResult<Vec<Worktree>> {

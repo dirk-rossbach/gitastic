@@ -17,8 +17,11 @@ import type {
   ProviderKind,
   ProviderRepo,
   ProvidersStatusResponse,
+  PullRequestCommentCreate,
+  PullRequestDetailResponse,
   PullRequestsResponse,
   RecentRepo,
+  ReflogEntry,
   Remote,
   RemoteProviderInfo,
   RepoSummary,
@@ -198,6 +201,12 @@ export const api = {
   repo: () => request<RepoSummary>('/repo'),
   repoProvider: () => request<{ remote: RemoteProviderInfo | null }>('/repo/provider'),
   pulls: () => request<PullRequestsResponse>('/repo/pulls'),
+  pullRequest: (number: number) =>
+    request<PullRequestDetailResponse>(`/repo/pulls/${number}`),
+  commentOnPullRequest: (number: number, body: PullRequestCommentCreate) =>
+    post<{ ok: boolean }>(`/repo/pulls/${number}/comments`, body),
+  approvePullRequest: (number: number, body?: string) =>
+    post<{ ok: boolean }>(`/repo/pulls/${number}/approve`, { body }),
   checkoutPullRequest: (body: { number: number; sourceBranch: string; remote?: string }) =>
     post<RepoSummary>('/repo/pulls/checkout', body),
   status: () => request<Status>('/repo/status'),
@@ -260,11 +269,14 @@ export const api = {
   operation: (kind: string, action: 'continue' | 'abort' | 'skip') =>
     post<WriteResponse>(`/repo/operation/${kind}`, { action }),
 
-  stashPush: (body: { message?: string; includeUntracked?: boolean }) =>
+  stashPush: (body: { message?: string; includeUntracked?: boolean; paths?: string[] }) =>
     post<WriteResponse>('/repo/stash', body),
   stashApply: (ref: string) => post<WriteResponse>('/repo/stash/apply', { ref }),
   stashPop: (ref: string) => post<WriteResponse>('/repo/stash/pop', { ref }),
   stashDrop: (ref: string) => post<WriteResponse>('/repo/stash/drop', { ref }),
+
+  reflog: () => request<ReflogEntry[]>('/repo/reflog'),
+  checkoutReflog: (selector: string) => post<RepoSummary>('/repo/reflog/checkout', { selector }),
 
   createTag: (body: { name: string; message?: string; ref?: string }) =>
     post<{ ok: boolean }>('/repo/tag', body),

@@ -28,7 +28,10 @@ import {
   ProviderConnectSchema,
   ProviderDisconnectSchema,
   ProviderKindSchema,
+  ReflogCheckoutSchema,
+  PullRequestApproveSchema,
   PullRequestCheckoutSchema,
+  PullRequestCommentCreateSchema,
   PullSchema,
   PushSchema,
   RebaseSchema,
@@ -61,12 +64,15 @@ import { getConflicts, resolveBinaryConflict, resolveConflictFile } from './git/
 import { getBlame, getFileHistory } from './git/history';
 import {
   addSshKeyToAgent,
+  approvePullRequest,
   checkoutPullRequest,
   connectProviderAccount,
+  createPullRequestComment,
   disconnectProviderAccount,
   generateSshKey,
   getGitIdentity,
   getProvidersStatus,
+  getPullRequestDetail,
   listProviderRepos,
   listRepoPullRequests,
   removeSshKey,
@@ -82,6 +88,8 @@ import {
   listStashes,
   listTags,
   listWorktrees,
+  listReflog,
+  checkoutReflog,
 } from './git/repo';
 import {
   backupWorkingTree,
@@ -450,6 +458,35 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     return listRepoPullRequests(state.runner, repo.path);
   });
 
+  app.get('/api/repo/pulls/:number', async (request) => {
+    const repo = repoFor(state, request);
+    const number = Number((request.params as { number: string }).number);
+    if (!Number.isInteger(number) || number <= 0) {
+      throw new AppError(400, 'INVALID_PULL_REQUEST', 'Pull request number is invalid.');
+    }
+    return getPullRequestDetail(state.runner, repo.path, number);
+  });
+
+  app.post('/api/repo/pulls/:number/comments', async (request) => {
+    const repo = repoFor(state, request);
+    const number = Number((request.params as { number: string }).number);
+    if (!Number.isInteger(number) || number <= 0) {
+      throw new AppError(400, 'INVALID_PULL_REQUEST', 'Pull request number is invalid.');
+    }
+    const body = parseBody(PullRequestCommentCreateSchema, request.body);
+    return createPullRequestComment(state.runner, repo.path, number, body);
+  });
+
+  app.post('/api/repo/pulls/:number/approve', async (request) => {
+    const repo = repoFor(state, request);
+    const number = Number((request.params as { number: string }).number);
+    if (!Number.isInteger(number) || number <= 0) {
+      throw new AppError(400, 'INVALID_PULL_REQUEST', 'Pull request number is invalid.');
+    }
+    const body = parseBody(PullRequestApproveSchema, request.body ?? {});
+    return approvePullRequest(state.runner, repo.path, number, body.body);
+  });
+
   app.post('/api/repo/pulls/checkout', async (request) => {
     const repo = repoFor(state, request);
     const body = parseBody(PullRequestCheckoutSchema, request.body);
@@ -461,6 +498,19 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   app.get('/api/repo/stashes', async (request) => {
     const repo = repoFor(state, request);
     return listStashes(state.runner, repo.path);
+  });
+
+  app.get('/api/repo/reflog', async (request) => {
+    const repo = repoFor(state, request);
+    return listReflog(state.runner, repo.path);
+  });
+
+  app.post('/api/repo/reflog/checkout', async (request) => {
+    const repo = repoFor(state, request);
+    const body = parseBody(ReflogCheckoutSchema, request.body);
+    await checkoutReflog(state.runner, repo.path, body.selector);
+    state.invalidate(repo.id);
+    return state.summary(repo.id);
   });
 
   app.get('/api/repo/worktrees', async (request) => {
@@ -774,7 +824,10 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   app.post('/api/repo/stash', async (request) => {
     const repo = repoFor(state, request);
     const body = parseBody(StashPushSchema, request.body ?? {});
-    const result = await write.stashPush(state.runner, repo.path, body);
+    const paths = body.paths
+      ? await Promise.all(body.paths.map((entry) => relativePath(repo.path, entry)))
+      : undefined;
+    const result = await write.stashPush(state.runner, repo.path, { ...body, paths });
     state.invalidate(repo.id);
     return { ok: true, output: outputOf(result) };
   });

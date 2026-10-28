@@ -1,9 +1,11 @@
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+use std::collections::HashMap;
 use std::path::Path;
 use std::process::Stdio;
 use std::time::Duration;
 use serde::Deserialize;
+use serde_json::{json, Value};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
@@ -12,8 +14,9 @@ use uuid::Uuid;
 
 use crate::error::{ApiError, ApiResult};
 use crate::models::{
-    ProviderAccountStatus, ProviderRepo, ProvidersStatusResponse, PullRequestItem,
-    PullRequestsResponse, Remote, RemoteProviderInfo, SshKeyEntry,
+    ProviderAccountStatus, ProviderRepo, ProvidersStatusResponse, PullRequestComment,
+    PullRequestDetail, PullRequestDetailResponse, PullRequestFile, PullRequestItem,
+    PullRequestReview, PullRequestsResponse, Remote, RemoteProviderInfo, SshKeyEntry,
 };
 use crate::ops::{checkout, list_remotes};
 use crate::runner::{enriched_path, GitRunner};
@@ -278,20 +281,37 @@ fn gitlab_api_base(host: &str) -> String {
     format!("https://{host}/api/v4")
 }
 
-async fn fetch_github_json<T: for<'de> Deserialize<'de>>(
+async fn provider_request<T: for<'de> Deserialize<'de>>(
     host: &str,
     endpoint: &str,
     token: Option<&str>,
+    provider: &str,
+    method: reqwest::Method,
+    body: Option<&Value>,
 ) -> ApiResult<T> {
     let client = http_client()?;
-    let url = format!("{}{endpoint}", github_api_base(host));
-    let mut req = client
-        .get(&url)
-        .header("Accept", "application/vnd.github+json");
+    let url = if provider == "github" {
+        format!("{}{endpoint}", github_api_base(host))
+    } else {
+        format!("{}{endpoint}", gitlab_api_base(host))
+    };
+    let mut req = client.request(method, &url);
+    req = if provider == "github" {
+        req.header("Accept", "application/vnd.github+json")
+    } else {
+        req.header("Accept", "application/json")
+    };
     if let Some(t) = token {
         if !t.is_empty() {
-            req = req.header("Authorization", format!("Bearer {t}"));
+            req = if provider == "github" {
+                req.header("Authorization", format!("Bearer {t}"))
+            } else {
+                req.header("PRIVATE-TOKEN", t)
+            };
         }
+    }
+    if let Some(payload) = body {
+        req = req.json(payload);
     }
     let res = req
         .send()
@@ -299,10 +319,19 @@ async fn fetch_github_json<T: for<'de> Deserialize<'de>>(
         .map_err(|e| ApiError::new(422, "PROVIDER_API_FAILED", e.to_string()))?;
     if !res.status().is_success() {
         let code = res.status().as_u16();
+        let detail = res.text().await.unwrap_or_default();
+        let suffix = if detail.trim().is_empty() {
+            String::new()
+        } else {
+            format!(": {}", detail.chars().take(300).collect::<String>())
+        };
         return Err(ApiError::new(
             if code == 401 || code == 403 { 401 } else { 422 },
             "PROVIDER_API_FAILED",
-            format!("GitHub API request failed ({code})"),
+            format!(
+                "{} API request failed ({code}){suffix}",
+                if provider == "github" { "GitHub" } else { "GitLab" }
+            ),
         ));
     }
     res.json::<T>()
@@ -310,34 +339,54 @@ async fn fetch_github_json<T: for<'de> Deserialize<'de>>(
         .map_err(|e| ApiError::new(422, "PROVIDER_PARSE_FAILED", e.to_string()))
 }
 
+async fn fetch_github_json<T: for<'de> Deserialize<'de>>(
+    host: &str,
+    endpoint: &str,
+    token: Option<&str>,
+) -> ApiResult<T> {
+    provider_request(host, endpoint, token, "github", reqwest::Method::GET, None).await
+}
+
+async fn post_github_json<T: for<'de> Deserialize<'de>>(
+    host: &str,
+    endpoint: &str,
+    token: Option<&str>,
+    body: &Value,
+) -> ApiResult<T> {
+    provider_request(
+        host,
+        endpoint,
+        token,
+        "github",
+        reqwest::Method::POST,
+        Some(body),
+    )
+    .await
+}
+
 async fn fetch_gitlab_json<T: for<'de> Deserialize<'de>>(
     host: &str,
     endpoint: &str,
     token: Option<&str>,
 ) -> ApiResult<T> {
-    let client = http_client()?;
-    let url = format!("{}{endpoint}", gitlab_api_base(host));
-    let mut req = client.get(&url).header("Accept", "application/json");
-    if let Some(t) = token {
-        if !t.is_empty() {
-            req = req.header("PRIVATE-TOKEN", t);
-        }
-    }
-    let res = req
-        .send()
-        .await
-        .map_err(|e| ApiError::new(422, "PROVIDER_API_FAILED", e.to_string()))?;
-    if !res.status().is_success() {
-        let code = res.status().as_u16();
-        return Err(ApiError::new(
-            if code == 401 || code == 403 { 401 } else { 422 },
-            "PROVIDER_API_FAILED",
-            format!("GitLab API request failed ({code})"),
-        ));
-    }
-    res.json::<T>()
-        .await
-        .map_err(|e| ApiError::new(422, "PROVIDER_PARSE_FAILED", e.to_string()))
+    provider_request(host, endpoint, token, "gitlab", reqwest::Method::GET, None).await
+}
+
+async fn post_gitlab_json<T: for<'de> Deserialize<'de>>(
+    host: &str,
+    endpoint: &str,
+    token: Option<&str>,
+    body: &Value,
+) -> ApiResult<T> {
+    provider_request(
+        host,
+        endpoint,
+        token,
+        "gitlab",
+        reqwest::Method::POST,
+        Some(body),
+    )
+    .await
 }
 
 pub async fn list_ssh_keys(home: &str) -> Vec<SshKeyEntry> {
@@ -1124,6 +1173,777 @@ pub async fn list_repo_pull_requests(
             items: Vec::new(),
         }),
     }
+}
+
+async fn resolve_provider_remote(
+    runner: &GitRunner,
+    home: &str,
+    repo_path: &str,
+) -> ApiResult<(RemoteProviderInfo, Option<String>)> {
+    let remotes = list_remotes(runner, repo_path).await?;
+    let remote = select_primary_remote_info(&remotes).ok_or_else(|| {
+        ApiError::new(
+            400,
+            "NO_PROVIDER_REMOTE",
+            "No GitHub or GitLab remote is configured.",
+        )
+    })?;
+    let token = if remote.provider == "github" {
+        get_github_token(runner, home, &remote.host)
+            .await
+            .map(|(token, _, _)| token)
+    } else {
+        get_gitlab_token(runner, home, &remote.host)
+            .await
+            .map(|(token, _, _)| token)
+    }
+    .filter(|token| !token.is_empty());
+    Ok((remote, token))
+}
+
+fn normalize_review_state(state: &str) -> String {
+    match state.to_uppercase().as_str() {
+        "APPROVED" => "APPROVED".to_string(),
+        "CHANGES_REQUESTED" => "CHANGES_REQUESTED".to_string(),
+        "COMMENTED" => "COMMENTED".to_string(),
+        "DISMISSED" => "DISMISSED".to_string(),
+        "PENDING" => "PENDING".to_string(),
+        _ => "COMMENTED".to_string(),
+    }
+}
+
+fn review_signals(reviews: &[PullRequestReview], viewer: &Option<String>) -> (bool, Option<String>) {
+    let mut effective: HashMap<String, String> = HashMap::new();
+    for review in reviews {
+        match review.state.as_str() {
+            "COMMENTED" | "PENDING" => {}
+            "DISMISSED" => {
+                effective.remove(&review.author);
+            }
+            "APPROVED" | "CHANGES_REQUESTED" => {
+                effective.insert(review.author.clone(), review.state.clone());
+            }
+            _ => {}
+        }
+    }
+    let has_changes = effective.values().any(|state| state == "CHANGES_REQUESTED");
+    let has_approval = effective.values().any(|state| state == "APPROVED");
+    let decision = if has_changes {
+        "CHANGES_REQUESTED"
+    } else if has_approval {
+        "APPROVED"
+    } else {
+        "REVIEW_REQUIRED"
+    };
+    let approved_by_viewer = viewer
+        .as_ref()
+        .map(|login| {
+            effective
+                .get(login)
+                .map(|state| state == "APPROVED")
+                .unwrap_or(false)
+        })
+        .unwrap_or(false);
+    (approved_by_viewer, Some(decision.to_string()))
+}
+
+fn count_patch_lines(patch: &str) -> (i64, i64) {
+    let mut additions = 0i64;
+    let mut deletions = 0i64;
+    for line in patch.replace("\r\n", "\n").split('\n') {
+        if line.starts_with('+') && !line.starts_with("+++") {
+            additions += 1;
+        } else if line.starts_with('-') && !line.starts_with("---") {
+            deletions += 1;
+        }
+    }
+    (additions, deletions)
+}
+
+pub async fn get_pull_request_detail(
+    runner: &GitRunner,
+    home: &str,
+    repo_path: &str,
+    number: i64,
+) -> ApiResult<PullRequestDetailResponse> {
+    let (remote, token) = resolve_provider_remote(runner, home, repo_path).await?;
+
+    if remote.provider == "github" {
+        #[derive(Deserialize)]
+        struct GhUser {
+            login: Option<String>,
+        }
+        #[derive(Deserialize)]
+        struct GhRef {
+            #[serde(rename = "ref")]
+            ref_name: Option<String>,
+            sha: Option<String>,
+        }
+        #[derive(Deserialize)]
+        struct GhPullDetail {
+            number: i64,
+            title: String,
+            body: Option<String>,
+            state: String,
+            merged: Option<bool>,
+            draft: Option<bool>,
+            user: Option<GhUser>,
+            head: Option<GhRef>,
+            base: Option<GhRef>,
+            additions: Option<i64>,
+            deletions: Option<i64>,
+            changed_files: Option<i64>,
+            mergeable: Option<bool>,
+            html_url: String,
+        }
+        #[derive(Deserialize)]
+        struct GhPullFile {
+            filename: String,
+            previous_filename: Option<String>,
+            status: String,
+            additions: Option<i64>,
+            deletions: Option<i64>,
+            patch: Option<String>,
+        }
+        #[derive(Deserialize)]
+        struct GhComment {
+            id: Value,
+            user: Option<GhUser>,
+            body: Option<String>,
+            path: Option<String>,
+            line: Option<i64>,
+            original_line: Option<i64>,
+            side: Option<String>,
+            created_at: Option<String>,
+            html_url: Option<String>,
+        }
+        #[derive(Deserialize)]
+        struct GhReview {
+            id: Value,
+            user: Option<GhUser>,
+            state: String,
+            body: Option<String>,
+            submitted_at: Option<String>,
+            html_url: Option<String>,
+        }
+
+        let repo_endpoint = format!(
+            "/repos/{}/{}/pulls/{number}",
+            remote.owner, remote.repo
+        );
+        let pull = fetch_github_json::<GhPullDetail>(
+            &remote.host,
+            &repo_endpoint,
+            token.as_deref(),
+        )
+        .await?;
+        let raw_files = fetch_github_json::<Vec<GhPullFile>>(
+            &remote.host,
+            &format!("{repo_endpoint}/files?per_page=100"),
+            token.as_deref(),
+        )
+        .await?;
+        let raw_comments = fetch_github_json::<Vec<GhComment>>(
+            &remote.host,
+            &format!("{repo_endpoint}/comments?per_page=100"),
+            token.as_deref(),
+        )
+        .await?;
+        let raw_issue_comments = fetch_github_json::<Vec<GhComment>>(
+            &remote.host,
+            &format!(
+                "/repos/{}/{}/issues/{number}/comments?per_page=100",
+                remote.owner, remote.repo
+            ),
+            token.as_deref(),
+        )
+        .await?;
+        let raw_reviews = fetch_github_json::<Vec<GhReview>>(
+            &remote.host,
+            &format!("{repo_endpoint}/reviews?per_page=100"),
+            token.as_deref(),
+        )
+        .await?;
+        let viewer = if let Some(token) = token.as_deref() {
+            fetch_github_json::<GhUser>(&remote.host, "/user", Some(token))
+                .await
+                .ok()
+                .and_then(|user| user.login)
+        } else {
+            None
+        };
+
+        let files: Vec<PullRequestFile> = raw_files
+            .into_iter()
+            .map(|file| PullRequestFile {
+                path: file.filename,
+                old_path: file.previous_filename,
+                status: match file.status.as_str() {
+                    "added" | "modified" | "removed" | "renamed" | "copied" | "changed"
+                    | "unchanged" => file.status,
+                    _ => "modified".to_string(),
+                },
+                additions: file.additions.unwrap_or(0),
+                deletions: file.deletions.unwrap_or(0),
+                binary: file.patch.is_none(),
+                patch: file.patch,
+            })
+            .collect();
+        let mut comments: Vec<PullRequestComment> = raw_comments
+            .into_iter()
+            .chain(raw_issue_comments)
+            .map(|comment| PullRequestComment {
+                id: comment.id.to_string(),
+                author: comment
+                    .user
+                    .and_then(|user| user.login)
+                    .unwrap_or_else(|| "unknown".to_string()),
+                body: comment.body.unwrap_or_default(),
+                path: comment.path,
+                line: comment.line.or(comment.original_line),
+                side: comment.side,
+                created_at: comment.created_at.unwrap_or_default(),
+                web_url: comment.html_url,
+            })
+            .collect();
+        comments.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+        let reviews: Vec<PullRequestReview> = raw_reviews
+            .into_iter()
+            .map(|review| PullRequestReview {
+                id: review.id.to_string(),
+                author: review
+                    .user
+                    .and_then(|user| user.login)
+                    .unwrap_or_else(|| "unknown".to_string()),
+                state: normalize_review_state(&review.state),
+                body: review.body.unwrap_or_default(),
+                submitted_at: review.submitted_at,
+                web_url: review.html_url,
+            })
+            .collect();
+        let (approved_by_viewer, review_decision) = review_signals(&reviews, &viewer);
+        let changed_files = pull.changed_files.unwrap_or(files.len() as i64);
+
+        return Ok(PullRequestDetailResponse {
+            remote: Some(remote),
+            pull: PullRequestDetail {
+                number: pull.number,
+                title: pull.title,
+                body: pull.body.unwrap_or_default(),
+                state: if pull.merged.unwrap_or(false) {
+                    "merged".to_string()
+                } else if pull.state == "open" {
+                    "open".to_string()
+                } else {
+                    "closed".to_string()
+                },
+                draft: pull.draft.unwrap_or(false),
+                author: pull
+                    .user
+                    .and_then(|user| user.login)
+                    .unwrap_or_else(|| "unknown".to_string()),
+                source_branch: pull
+                    .head
+                    .as_ref()
+                    .and_then(|head| head.ref_name.clone())
+                    .unwrap_or_else(|| format!("pr-{}", pull.number)),
+                target_branch: pull
+                    .base
+                    .as_ref()
+                    .and_then(|base| base.ref_name.clone())
+                    .unwrap_or_else(|| "main".to_string()),
+                head_sha: pull
+                    .head
+                    .and_then(|head| head.sha)
+                    .unwrap_or_default(),
+                base_sha: pull
+                    .base
+                    .as_ref()
+                    .and_then(|base| base.sha.clone())
+                    .unwrap_or_default(),
+                start_sha: pull
+                    .base
+                    .and_then(|base| base.sha)
+                    .unwrap_or_default(),
+                additions: pull.additions.unwrap_or(0),
+                deletions: pull.deletions.unwrap_or(0),
+                changed_files,
+                mergeable: pull.mergeable,
+                web_url: pull.html_url,
+                viewer,
+                approved_by_viewer,
+                review_decision,
+            },
+            files,
+            comments,
+            reviews,
+            auth_hint: None,
+        });
+    }
+
+    #[derive(Deserialize)]
+    struct GlAuthor {
+        username: Option<String>,
+    }
+    #[derive(Deserialize)]
+    struct GlDiffRefs {
+        base_sha: Option<String>,
+        head_sha: Option<String>,
+        start_sha: Option<String>,
+    }
+    #[derive(Deserialize)]
+    struct GlMrDetail {
+        iid: i64,
+        title: String,
+        description: Option<String>,
+        state: String,
+        draft: Option<bool>,
+        work_in_progress: Option<bool>,
+        author: Option<GlAuthor>,
+        source_branch: String,
+        target_branch: String,
+        sha: Option<String>,
+        diff_refs: Option<GlDiffRefs>,
+        web_url: String,
+        detailed_merge_status: Option<String>,
+    }
+    #[derive(Deserialize)]
+    struct GlDiff {
+        old_path: String,
+        new_path: String,
+        new_file: Option<bool>,
+        renamed_file: Option<bool>,
+        deleted_file: Option<bool>,
+        diff: Option<String>,
+    }
+    #[derive(Deserialize)]
+    struct GlPosition {
+        new_path: Option<String>,
+        old_path: Option<String>,
+        new_line: Option<i64>,
+        old_line: Option<i64>,
+    }
+    #[derive(Deserialize)]
+    struct GlNote {
+        id: Value,
+        body: Option<String>,
+        author: Option<GlAuthor>,
+        created_at: Option<String>,
+        system: Option<bool>,
+        position: Option<GlPosition>,
+    }
+    #[derive(Deserialize)]
+    struct GlDiscussion {
+        notes: Option<Vec<GlNote>>,
+    }
+    #[derive(Deserialize)]
+    struct GlApproval {
+        user: Option<GlAuthor>,
+    }
+    #[derive(Deserialize)]
+    struct GlApprovals {
+        approved_by: Option<Vec<GlApproval>>,
+    }
+
+    let project = urlencoding::encode(&remote.full_name);
+    let mr_endpoint = format!("/projects/{project}/merge_requests/{number}");
+    let mr = fetch_gitlab_json::<GlMrDetail>(
+        &remote.host,
+        &mr_endpoint,
+        token.as_deref(),
+    )
+    .await?;
+    let diffs = fetch_gitlab_json::<Vec<GlDiff>>(
+        &remote.host,
+        &format!("{mr_endpoint}/diffs?per_page=100"),
+        token.as_deref(),
+    )
+    .await
+    .unwrap_or_default();
+    let discussions = fetch_gitlab_json::<Vec<GlDiscussion>>(
+        &remote.host,
+        &format!("{mr_endpoint}/discussions?per_page=100"),
+        token.as_deref(),
+    )
+    .await
+    .unwrap_or_default();
+    let approvals = if let Some(token) = token.as_deref() {
+        fetch_gitlab_json::<GlApprovals>(
+            &remote.host,
+            &format!("{mr_endpoint}/approvals"),
+            Some(token),
+        )
+        .await
+        .ok()
+    } else {
+        None
+    };
+    let viewer = if let Some(token) = token.as_deref() {
+        fetch_gitlab_json::<GlAuthor>(&remote.host, "/user", Some(token))
+            .await
+            .ok()
+            .and_then(|user| user.username)
+    } else {
+        None
+    };
+
+    let files: Vec<PullRequestFile> = diffs
+        .into_iter()
+        .map(|diff| {
+            let patch = diff.diff.unwrap_or_default();
+            let (additions, deletions) = count_patch_lines(&patch);
+            PullRequestFile {
+                path: diff.new_path.clone(),
+                old_path: if diff.old_path != diff.new_path {
+                    Some(diff.old_path)
+                } else {
+                    None
+                },
+                status: if diff.new_file.unwrap_or(false) {
+                    "added".to_string()
+                } else if diff.deleted_file.unwrap_or(false) {
+                    "removed".to_string()
+                } else if diff.renamed_file.unwrap_or(false) {
+                    "renamed".to_string()
+                } else {
+                    "modified".to_string()
+                },
+                additions,
+                deletions,
+                binary: patch.is_empty(),
+                patch: if patch.is_empty() { None } else { Some(patch) },
+            }
+        })
+        .collect();
+    let comments: Vec<PullRequestComment> = discussions
+        .into_iter()
+        .flat_map(|discussion| discussion.notes.unwrap_or_default())
+        .filter(|note| !note.system.unwrap_or(false) && note.body.is_some())
+        .map(|note| {
+            let (path, line, side) = if let Some(position) = note.position {
+                let new_line = position.new_line;
+                (
+                    position.new_path.or(position.old_path),
+                    new_line.or(position.old_line),
+                    Some(if new_line.is_some() {
+                        "RIGHT".to_string()
+                    } else if position.old_line.is_some() {
+                        "LEFT".to_string()
+                    } else {
+                        "RIGHT".to_string()
+                    }),
+                )
+            } else {
+                (None, None, None)
+            };
+            PullRequestComment {
+                id: note.id.to_string(),
+                author: note
+                    .author
+                    .and_then(|author| author.username)
+                    .unwrap_or_else(|| "unknown".to_string()),
+                body: note.body.unwrap_or_default(),
+                path,
+                line,
+                side,
+                created_at: note.created_at.unwrap_or_default(),
+                web_url: Some(mr.web_url.clone()),
+            }
+        })
+        .collect();
+    let reviews: Vec<PullRequestReview> = approvals
+        .and_then(|approvals| approvals.approved_by)
+        .unwrap_or_default()
+        .into_iter()
+        .enumerate()
+        .map(|(index, approval)| {
+            let author = approval
+                .user
+                .and_then(|user| user.username)
+                .unwrap_or_else(|| "unknown".to_string());
+            PullRequestReview {
+                id: format!("approval-{index}-{author}"),
+                author,
+                state: "APPROVED".to_string(),
+                body: String::new(),
+                submitted_at: None,
+                web_url: Some(mr.web_url.clone()),
+            }
+        })
+        .collect();
+    let (approved_by_viewer, review_decision) = review_signals(&reviews, &viewer);
+    let additions = files.iter().map(|file| file.additions).sum();
+    let deletions = files.iter().map(|file| file.deletions).sum();
+    let head_sha = mr
+        .diff_refs
+        .as_ref()
+        .and_then(|refs| refs.head_sha.clone())
+        .or(mr.sha)
+        .unwrap_or_default();
+    let base_sha = mr
+        .diff_refs
+        .as_ref()
+        .and_then(|refs| refs.base_sha.clone())
+        .unwrap_or_default();
+    let start_sha = mr
+        .diff_refs
+        .as_ref()
+        .and_then(|refs| refs.start_sha.clone())
+        .unwrap_or_else(|| base_sha.clone());
+
+    Ok(PullRequestDetailResponse {
+        remote: Some(remote),
+        pull: PullRequestDetail {
+            number: mr.iid,
+            title: mr.title,
+            body: mr.description.unwrap_or_default(),
+            state: if mr.state == "opened" {
+                "open".to_string()
+            } else if mr.state == "merged" {
+                "merged".to_string()
+            } else {
+                "closed".to_string()
+            },
+            draft: mr.draft.unwrap_or(false) || mr.work_in_progress.unwrap_or(false),
+            author: mr
+                .author
+                .and_then(|author| author.username)
+                .unwrap_or_else(|| "unknown".to_string()),
+            source_branch: mr.source_branch,
+            target_branch: mr.target_branch,
+            head_sha,
+            base_sha,
+            start_sha,
+            additions,
+            deletions,
+            changed_files: files.len() as i64,
+            mergeable: mr.detailed_merge_status.map(|status| status == "mergeable"),
+            web_url: mr.web_url,
+            viewer,
+            approved_by_viewer,
+            review_decision,
+        },
+        files,
+        comments,
+        reviews,
+        auth_hint: None,
+    })
+}
+
+pub async fn create_pull_request_comment(
+    runner: &GitRunner,
+    home: &str,
+    repo_path: &str,
+    number: i64,
+    body: &str,
+    path: Option<&str>,
+    line: Option<i64>,
+    side: Option<&str>,
+    commit_id: Option<&str>,
+) -> ApiResult<()> {
+    if path.is_some() != line.is_some() {
+        return Err(ApiError::new(
+            400,
+            "INVALID_COMMENT_POSITION",
+            "Both path and line are required for an inline comment.",
+        ));
+    }
+    let (remote, token) = resolve_provider_remote(runner, home, repo_path).await?;
+    let token = token.ok_or_else(|| {
+        ApiError::new(
+            401,
+            "PROVIDER_AUTH_REQUIRED",
+            format!("Connect {} in Settings to comment.", remote.host),
+        )
+    })?;
+
+    if remote.provider == "github" {
+        if let (Some(path), Some(line)) = (path, line) {
+            #[derive(Deserialize)]
+            struct GhHead {
+                head: Option<GhSha>,
+            }
+            #[derive(Deserialize)]
+            struct GhSha {
+                sha: Option<String>,
+            }
+            let commit = if let Some(commit) = commit_id {
+                commit.to_string()
+            } else {
+                fetch_github_json::<GhHead>(
+                    &remote.host,
+                    &format!("/repos/{}/{}/pulls/{number}", remote.owner, remote.repo),
+                    Some(&token),
+                )
+                .await?
+                .head
+                .and_then(|head| head.sha)
+                .ok_or_else(|| {
+                    ApiError::new(
+                        422,
+                        "PULL_COMMIT_MISSING",
+                        "Could not determine the pull request commit.",
+                    )
+                })?
+            };
+            let payload = json!({
+                "body": body,
+                "commit_id": commit,
+                "path": path,
+                "line": line,
+                "side": side.unwrap_or("RIGHT"),
+            });
+            post_github_json::<Value>(
+                &remote.host,
+                &format!(
+                    "/repos/{}/{}/pulls/{number}/comments",
+                    remote.owner, remote.repo
+                ),
+                Some(&token),
+                &payload,
+            )
+            .await?;
+        } else {
+            post_github_json::<Value>(
+                &remote.host,
+                &format!(
+                    "/repos/{}/{}/issues/{number}/comments",
+                    remote.owner, remote.repo
+                ),
+                Some(&token),
+                &json!({ "body": body }),
+            )
+            .await?;
+        }
+        return Ok(());
+    }
+
+    #[derive(Deserialize)]
+    struct GlDiffRefs {
+        base_sha: Option<String>,
+        head_sha: Option<String>,
+        start_sha: Option<String>,
+    }
+    #[derive(Deserialize)]
+    struct GlReviewRefs {
+        diff_refs: Option<GlDiffRefs>,
+    }
+
+    let project = urlencoding::encode(&remote.full_name);
+    if let (Some(path), Some(line)) = (path, line) {
+        let review_refs = fetch_gitlab_json::<GlReviewRefs>(
+            &remote.host,
+            &format!("/projects/{project}/merge_requests/{number}"),
+            Some(&token),
+        )
+        .await?;
+        let base_sha = review_refs
+            .diff_refs
+            .as_ref()
+            .and_then(|refs| refs.base_sha.clone())
+            .unwrap_or_default();
+        let head_sha = review_refs
+            .diff_refs
+            .as_ref()
+            .and_then(|refs| refs.head_sha.clone())
+            .unwrap_or_default();
+        let start_sha = review_refs
+            .diff_refs
+            .as_ref()
+            .and_then(|refs| refs.start_sha.clone())
+            .unwrap_or_else(|| base_sha.clone());
+        let use_left = side == Some("LEFT");
+        let position = if use_left {
+            json!({
+                "base_sha": base_sha,
+                "head_sha": head_sha,
+                "start_sha": start_sha,
+                "position_type": "text",
+                "old_path": path,
+                "old_line": line,
+            })
+        } else {
+            json!({
+                "base_sha": base_sha,
+                "head_sha": head_sha,
+                "start_sha": start_sha,
+                "position_type": "text",
+                "new_path": path,
+                "new_line": line,
+            })
+        };
+        post_gitlab_json::<Value>(
+            &remote.host,
+            &format!("/projects/{project}/merge_requests/{number}/discussions"),
+            Some(&token),
+            &json!({ "body": body, "position": position }),
+        )
+        .await?;
+    } else {
+        post_gitlab_json::<Value>(
+            &remote.host,
+            &format!("/projects/{project}/merge_requests/{number}/notes"),
+            Some(&token),
+            &json!({ "body": body }),
+        )
+        .await?;
+    }
+    Ok(())
+}
+
+pub async fn approve_pull_request(
+    runner: &GitRunner,
+    home: &str,
+    repo_path: &str,
+    number: i64,
+    body: Option<&str>,
+) -> ApiResult<()> {
+    let (remote, token) = resolve_provider_remote(runner, home, repo_path).await?;
+    let token = token.ok_or_else(|| {
+        ApiError::new(
+            401,
+            "PROVIDER_AUTH_REQUIRED",
+            format!("Connect {} in Settings to approve.", remote.host),
+        )
+    })?;
+
+    if remote.provider == "github" {
+        let payload = if let Some(body) = body.map(str::trim).filter(|body| !body.is_empty()) {
+            json!({ "event": "APPROVE", "body": body })
+        } else {
+            json!({ "event": "APPROVE" })
+        };
+        post_github_json::<Value>(
+            &remote.host,
+            &format!(
+                "/repos/{}/{}/pulls/{number}/reviews",
+                remote.owner, remote.repo
+            ),
+            Some(&token),
+            &payload,
+        )
+        .await?;
+        return Ok(());
+    }
+
+    let project = urlencoding::encode(&remote.full_name);
+    post_gitlab_json::<Value>(
+        &remote.host,
+        &format!("/projects/{project}/merge_requests/{number}/approve"),
+        Some(&token),
+        &json!({}),
+    )
+    .await?;
+    if let Some(body) = body.map(str::trim).filter(|body| !body.is_empty()) {
+        post_gitlab_json::<Value>(
+            &remote.host,
+            &format!("/projects/{project}/merge_requests/{number}/notes"),
+            Some(&token),
+            &json!({ "body": body }),
+        )
+        .await?;
+    }
+    Ok(())
 }
 
 pub async fn checkout_pull_request(

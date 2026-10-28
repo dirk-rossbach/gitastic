@@ -429,6 +429,87 @@ pub struct PullRequestsResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PullRequestFile {
+    pub path: String,
+    pub old_path: Option<String>,
+    pub status: String,
+    pub additions: i64,
+    pub deletions: i64,
+    pub patch: Option<String>,
+    pub binary: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PullRequestComment {
+    pub id: String,
+    pub author: String,
+    pub body: String,
+    pub path: Option<String>,
+    pub line: Option<i64>,
+    pub side: Option<String>,
+    pub created_at: String,
+    pub web_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PullRequestReview {
+    pub id: String,
+    pub author: String,
+    pub state: String,
+    pub body: String,
+    pub submitted_at: Option<String>,
+    pub web_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PullRequestDetail {
+    pub number: i64,
+    pub title: String,
+    pub body: String,
+    pub state: String,
+    pub draft: bool,
+    pub author: String,
+    pub source_branch: String,
+    pub target_branch: String,
+    pub head_sha: String,
+    pub base_sha: String,
+    pub start_sha: String,
+    pub additions: i64,
+    pub deletions: i64,
+    pub changed_files: i64,
+    pub mergeable: Option<bool>,
+    pub web_url: String,
+    pub viewer: Option<String>,
+    pub approved_by_viewer: bool,
+    pub review_decision: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PullRequestDetailResponse {
+    pub remote: Option<RemoteProviderInfo>,
+    pub pull: PullRequestDetail,
+    pub files: Vec<PullRequestFile>,
+    pub comments: Vec<PullRequestComment>,
+    pub reviews: Vec<PullRequestReview>,
+    pub auth_hint: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReflogEntry {
+    pub hash: String,
+    pub short_hash: String,
+    pub selector: String,
+    pub message: String,
+    pub date: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Worktree {
     pub path: String,
     pub head: String,

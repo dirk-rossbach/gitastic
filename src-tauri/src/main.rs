@@ -34,10 +34,10 @@ use crate::ops::{
     stage, trash_paths, unstage,
 };
 use crate::providers::{
-    add_ssh_key_to_agent, checkout_pull_request, connect_provider_account,
-    disconnect_provider_account, generate_ssh_key, get_git_identity, get_providers_status,
-    list_provider_repos, list_repo_pull_requests, remove_ssh_key, select_primary_remote_info,
-    set_git_identity,
+    add_ssh_key_to_agent, approve_pull_request, checkout_pull_request, connect_provider_account,
+    create_pull_request_comment, disconnect_provider_account, generate_ssh_key, get_git_identity,
+    get_providers_status, get_pull_request_detail, list_provider_repos, list_repo_pull_requests,
+    remove_ssh_key, select_primary_remote_info, set_git_identity,
 };
 use crate::runner::GitRunner;
 
@@ -860,6 +860,22 @@ async fn dispatch(
             Ok(serde_json::to_value(stashes).unwrap())
         }
 
+        ("GET", "/repo/reflog") => {
+            let (_, rp, runner, _, _) = state.current_repo().await?;
+            let entries = crate::ops::list_reflog(&runner, &rp).await?;
+            Ok(serde_json::to_value(entries).unwrap())
+        }
+
+        ("POST", "/repo/reflog/checkout") => {
+            let (id, rp, runner, _, _) = state.current_repo().await?;
+            let selector = b_str(&body, "selector")
+                .ok_or_else(|| ApiError::new(400, "MISSING_SELECTOR", "selector is required"))?;
+            crate::ops::checkout_reflog(&runner, &rp, &selector).await?;
+            state.invalidate(&id).await;
+            let summary = get_repo_summary(&runner, &rp, &id).await?;
+            Ok(serde_json::to_value(summary).unwrap())
+        }
+
         ("GET", "/repo/worktrees") => {
             let (_, rp, runner, _, _) = state.current_repo().await?;
             let wts = list_worktrees(&runner, &rp).await?;
@@ -1313,6 +1329,11 @@ async fn dispatch(
             let (id, rp, runner, _, _) = state.current_repo().await?;
             let include_untracked = b_bool(&body, "includeUntracked");
             let message = b_str(&body, "message");
+            let mut rels = Vec::new();
+            for p in b_str_vec(&body, "paths") {
+                let (_, rel) = assert_repo_file(&rp, &p).await?;
+                rels.push(rel);
+            }
             let mut args = vec!["stash".to_string(), "push".to_string()];
             if include_untracked {
                 args.push("-u".to_string());
@@ -1320,6 +1341,10 @@ async fn dispatch(
             if let Some(m) = message.filter(|s| !s.is_empty()) {
                 args.push("-m".to_string());
                 args.push(m);
+            }
+            if !rels.is_empty() {
+                args.push("--".to_string());
+                args.extend(rels);
             }
             let res = runner.run_owned(&rp, &args, false).await?;
             state.invalidate(&id).await;
@@ -1520,6 +1545,97 @@ async fn dispatch(
         }
 
         _ => {
+            if let Some(rest) = path.strip_prefix("/repo/pulls/") {
+                let (number_part, action) = rest
+                    .split_once('/')
+                    .map(|(number, action)| (number, Some(action)))
+                    .unwrap_or((rest, None));
+                let number = number_part.parse::<i64>().map_err(|_| {
+                    ApiError::new(
+                        400,
+                        "INVALID_PULL_REQUEST",
+                        "Pull request number is invalid.",
+                    )
+                })?;
+                if number <= 0 {
+                    return Err(ApiError::new(
+                        400,
+                        "INVALID_PULL_REQUEST",
+                        "Pull request number is invalid.",
+                    ));
+                }
+                match (method, action) {
+                    ("GET", None) => {
+                        let (_, rp, runner, _, _) = state.current_repo().await?;
+                        let detail = get_pull_request_detail(
+                            &runner,
+                            &state.home_dir,
+                            &rp,
+                            number,
+                        )
+                        .await?;
+                        return Ok(serde_json::to_value(detail).unwrap());
+                    }
+                    ("POST", Some("comments")) => {
+                        let (_, rp, runner, _, _) = state.current_repo().await?;
+                        let comment_body = body
+                            .as_ref()
+                            .and_then(|value| value.get("body"))
+                            .and_then(|value| value.as_str())
+                            .map(str::trim)
+                            .filter(|value| !value.is_empty())
+                            .ok_or_else(|| {
+                                ApiError::new(
+                                    400,
+                                    "INVALID_COMMENT",
+                                    "Comment body is required.",
+                                )
+                            })?;
+                        let path = b_str(&body, "path");
+                        let line = body
+                            .as_ref()
+                            .and_then(|value| value.get("line"))
+                            .and_then(|value| value.as_i64());
+                        if line.is_some_and(|line| line <= 0) {
+                            return Err(ApiError::new(
+                                400,
+                                "INVALID_COMMENT",
+                                "Comment line must be positive.",
+                            ));
+                        }
+                        let side = b_str(&body, "side");
+                        let commit_id = b_str(&body, "commitId");
+                        create_pull_request_comment(
+                            &runner,
+                            &state.home_dir,
+                            &rp,
+                            number,
+                            comment_body,
+                            path.as_deref(),
+                            line,
+                            side.as_deref(),
+                            commit_id.as_deref(),
+                        )
+                        .await?;
+                        return Ok(json!({ "ok": true }));
+                    }
+                    ("POST", Some("approve")) => {
+                        let (_, rp, runner, _, _) = state.current_repo().await?;
+                        let review_body = b_str(&body, "body");
+                        approve_pull_request(
+                            &runner,
+                            &state.home_dir,
+                            &rp,
+                            number,
+                            review_body.as_deref(),
+                        )
+                        .await?;
+                        return Ok(json!({ "ok": true }));
+                    }
+                    _ => {}
+                }
+            }
+
             if let Some(hash_enc) = path.strip_prefix("/repo/commit/") {
                 let hash = urlencoding::decode(hash_enc)
                     .map(|s| s.into_owned())

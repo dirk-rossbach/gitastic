@@ -13,6 +13,7 @@ export type View =
   | 'conflicts'
   | 'blame'
   | 'file-history'
+  | 'reflog'
   | 'settings';
 
 export type ToastKind = 'success' | 'error' | 'info';

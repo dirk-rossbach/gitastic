@@ -38,6 +38,25 @@ type MergeRow = {
   theirs: MergeCell | null;
 };
 
+type MergeGroup = {
+  key: string;
+  changed: boolean;
+  rows: MergeRow[];
+};
+
+function groupMergeRows(rows: MergeRow[]): MergeGroup[] {
+  const groups: MergeGroup[] = [];
+  for (const row of rows) {
+    const current = groups[groups.length - 1];
+    if (current && current.changed === row.changed) {
+      current.rows.push(row);
+    } else {
+      groups.push({ key: row.id, changed: row.changed, rows: [row] });
+    }
+  }
+  return groups;
+}
+
 const SEGMENT_META: Record<
   Choice,
   { label: string; border: string; background: string; text: string; dot: string }
@@ -82,9 +101,7 @@ function lcsAnchors(left: string[], right: string[]): Array<[number, number]> {
   if (left.length === 0 || right.length === 0) return [];
   if (left.length * right.length > MAX_LCS_CELLS) return [];
 
-  const dp = Array.from({ length: left.length + 1 }, () =>
-    new Uint32Array(right.length + 1),
-  );
+  const dp = Array.from({ length: left.length + 1 }, () => new Uint32Array(right.length + 1));
 
   for (let i = 1; i <= left.length; i += 1) {
     for (let j = 1; j <= right.length; j += 1) {
@@ -256,6 +273,7 @@ function MergeLine({
   acceptSide,
   acceptLabel,
   onAccept,
+  subtle,
 }: {
   cell: MergeCell | null;
   className?: string;
@@ -263,6 +281,7 @@ function MergeLine({
   acceptSide?: LineChoice;
   acceptLabel?: string;
   onAccept?: () => void;
+  subtle?: boolean;
 }) {
   const hasAccept = Boolean(cell && onAccept && acceptSide);
 
@@ -280,6 +299,7 @@ function MergeLine({
           type="button"
           className={cn(
             'absolute inset-y-0 left-0 flex w-8 items-center justify-center border-r border-edge/30 text-faint transition-colors hover:bg-raised hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
+            subtle && 'opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100',
             accepted && 'bg-warning/10 text-warning',
           )}
           title={acceptLabel}
@@ -304,6 +324,7 @@ function MergeLine({
           type="button"
           className={cn(
             'absolute inset-y-0 right-0 flex w-8 items-center justify-center border-l border-edge/30 text-faint transition-colors hover:bg-raised hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
+            subtle && 'opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100',
             accepted && 'bg-accent/10 text-accent',
           )}
           title={acceptLabel}
@@ -330,7 +351,17 @@ export function ConflictsView() {
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const [lineSelections, setLineSelections] = useState<LineSelections>({});
   const [manualContent, setManualContent] = useState<Record<string, string>>({});
-  const [filesCollapsed, setFilesCollapsed] = useState(false);
+  const [filesCollapsed, setFilesCollapsed] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 1400,
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1400) setFilesCollapsed(true);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const files = useMemo(() => conflicts.data?.files ?? [], [conflicts.data]);
   const file = files.find((entry) => entry.path === selectedPath) ?? files[0] ?? null;
@@ -344,10 +375,7 @@ export function ConflictsView() {
     [file, choices, lineSelections],
   );
   const resolved = useMemo(
-    () =>
-      mergeRows
-        .flatMap((row) => (row.result ? [row.result.text] : []))
-        .join('\n'),
+    () => mergeRows.flatMap((row) => (row.result ? [row.result.text] : [])).join('\n'),
     [mergeRows],
   );
   const mergeSections = useMemo(() => {
@@ -396,6 +424,14 @@ export function ConflictsView() {
     setLineSelections((current) => ({ ...current, [row.rowKey]: side }));
   };
 
+  const acceptGroup = (group: MergeGroup, side: LineChoice) => {
+    setLineSelections((current) => {
+      const next = { ...current };
+      for (const row of group.rows) next[row.rowKey] = side;
+      return next;
+    });
+  };
+
   const save = async () => {
     if (!file) return;
     const result = await run(
@@ -409,25 +445,22 @@ export function ConflictsView() {
     }
   };
 
-  const renderMergeRow = (row: MergeRow, interactive: boolean) => {
+  const renderMergeRow = (row: MergeRow, interactive: boolean, subtle = false) => {
     const meta = row.kind === 'context' ? null : SEGMENT_META[row.kind];
-    const oursAccepted =
-      row.selection === 'ours' || row.selection === 'both';
-    const theirsAccepted =
-      row.selection === 'theirs' || row.selection === 'both';
+    const oursAccepted = row.selection === 'ours' || row.selection === 'both';
+    const theirsAccepted = row.selection === 'theirs' || row.selection === 'both';
     const canAcceptOurs = interactive && row.changed && row.ours !== null;
     const canAcceptTheirs = interactive && row.changed && row.theirs !== null;
 
     return (
-      <div key={row.id} className="grid grid-cols-3 border-b border-edge/20">
+      <div key={row.id} className="group/row grid grid-cols-3 border-b border-edge/20">
         <MergeLine
           cell={row.ours}
           accepted={oursAccepted}
           acceptSide="ours"
-          acceptLabel={
-            row.ours ? `Accept local line ${row.ours.line}` : undefined
-          }
+          acceptLabel={row.ours ? `Accept local line ${row.ours.line}` : undefined}
           onAccept={canAcceptOurs ? () => acceptLine(row, 'ours') : undefined}
+          subtle={subtle}
           className={cn(
             canAcceptOurs && oursAccepted && 'bg-accent/10',
             canAcceptOurs && !oursAccepted && 'bg-accent/[0.03]',
@@ -445,10 +478,9 @@ export function ConflictsView() {
           cell={row.theirs}
           accepted={theirsAccepted}
           acceptSide="theirs"
-          acceptLabel={
-            row.theirs ? `Accept server line ${row.theirs.line}` : undefined
-          }
+          acceptLabel={row.theirs ? `Accept server line ${row.theirs.line}` : undefined}
           onAccept={canAcceptTheirs ? () => acceptLine(row, 'theirs') : undefined}
+          subtle={subtle}
           className={cn(
             canAcceptTheirs && theirsAccepted && 'bg-warning/10',
             canAcceptTheirs && !theirsAccepted && 'bg-warning/[0.03]',
@@ -491,6 +523,24 @@ export function ConflictsView() {
             <PanelLeftOpen className="h-4 w-4" />
           </button>
           <span className="badge badge-danger">{files.length}</span>
+          <div className="scrollbar-thin flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto px-1 py-1">
+            {files.map((entry) => (
+              <button
+                key={entry.path}
+                type="button"
+                className={cn(
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent text-faint transition hover:bg-raised hover:text-ink',
+                  file?.path === entry.path && 'border-accent/40 bg-raised text-danger',
+                )}
+                title={entry.path}
+                aria-label={`Open conflicted file ${entry.path}`}
+                aria-current={file?.path === entry.path}
+                onClick={() => setSelectedPath(entry.path)}
+              >
+                <FileWarning className="h-4 w-4" />
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="flex w-[20rem] shrink-0 flex-col border-r border-edge">
@@ -536,13 +586,25 @@ export function ConflictsView() {
               {!file.binary && file.blocks.length > 0 ? (
                 <>
                   <span className="badge">{file.blocks.length} chunks</span>
-                  <button type="button" className="btn h-7 text-xs" onClick={() => chooseAll('ours')}>
+                  <button
+                    type="button"
+                    className="btn h-7 text-xs"
+                    onClick={() => chooseAll('ours')}
+                  >
                     Ours all
                   </button>
-                  <button type="button" className="btn h-7 text-xs" onClick={() => chooseAll('theirs')}>
+                  <button
+                    type="button"
+                    className="btn h-7 text-xs"
+                    onClick={() => chooseAll('theirs')}
+                  >
                     Theirs all
                   </button>
-                  <button type="button" className="btn h-7 text-xs" onClick={() => chooseAll('both')}>
+                  <button
+                    type="button"
+                    className="btn h-7 text-xs"
+                    onClick={() => chooseAll('both')}
+                  >
                     Both all
                   </button>
                 </>
@@ -550,7 +612,7 @@ export function ConflictsView() {
               <div className="ml-auto flex items-center gap-2">
                 {!file.binary && file.blocks.length > 0 ? (
                   <span className="hidden text-[11px] text-faint lg:inline">
-                    Use the arrows to accept lines or chunks.
+                    Accept a group, or hover a line to override.
                   </span>
                 ) : null}
                 {!file.binary && file.blocks.length > 0 ? (
@@ -642,11 +704,13 @@ export function ConflictsView() {
                   </button>
                 </div>
               ) : (
-                <div className="min-w-0">
+                <div className="min-w-[54rem]">
                   <div className="sticky top-0 z-10 grid grid-cols-3 border-b border-edge bg-panel text-[10px] font-semibold uppercase tracking-wide">
                     <div className="border-r border-edge/60 px-3 py-1.5 text-accent">
                       Local Changes{' '}
-                      <span className="font-normal normal-case tracking-normal text-faint">(Ours)</span>
+                      <span className="font-normal normal-case tracking-normal text-faint">
+                        (Ours)
+                      </span>
                     </div>
                     <div className="border-r border-edge/60 px-3 py-1.5">
                       <div className="flex flex-wrap items-center gap-2">
@@ -685,8 +749,7 @@ export function ConflictsView() {
 
                     const block = file.blocks.find((entry) => entry.id === section.blockId);
                     if (!block) return null;
-                    const blockIndex =
-                      file.blocks.findIndex((entry) => entry.id === block.id) + 1;
+                    const blockIndex = file.blocks.findIndex((entry) => entry.id === block.id) + 1;
                     const blockKey = `${file.path}:${block.id}`;
                     const choice = choices[blockKey] ?? 'ours';
                     const hasCustom = section.rows.some(
@@ -771,7 +834,63 @@ export function ConflictsView() {
                             </span>
                           </div>
                         </div>
-                        {section.rows.map((row) => renderMergeRow(row, true))}
+                        {groupMergeRows(section.rows).map((group) => {
+                          if (!group.changed || group.rows.length === 1) {
+                            return group.rows.map((row) => renderMergeRow(row, true));
+                          }
+                          const anyOurs = group.rows.some((row) => row.ours !== null);
+                          const anyTheirs = group.rows.some((row) => row.theirs !== null);
+                          const allOurs = group.rows.every(
+                            (row) => (lineSelections[row.rowKey] ?? choice) === 'ours',
+                          );
+                          const allTheirs = group.rows.every(
+                            (row) => (lineSelections[row.rowKey] ?? choice) === 'theirs',
+                          );
+                          return (
+                            <div key={group.key}>
+                              <div className="grid grid-cols-3 border-b border-accent/15 bg-canvas/50">
+                                <div className="flex items-center justify-end border-r border-edge/30 px-2 py-0.5">
+                                  <button
+                                    type="button"
+                                    className={cn(
+                                      'btn btn-ghost h-6 px-2 text-[10px]',
+                                      allOurs && 'bg-accent/15 text-accent',
+                                    )}
+                                    title={`Accept ours for ${group.rows.length} lines`}
+                                    aria-label={`Accept ours group of ${group.rows.length} lines`}
+                                    disabled={!anyOurs}
+                                    onClick={() => acceptGroup(group, 'ours')}
+                                  >
+                                    Accept
+                                    <ArrowRight className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <div className="flex items-center justify-center gap-1.5 border-r border-edge/30 px-2 py-0.5 text-[10px] uppercase tracking-wide text-faint">
+                                  <span>{group.rows.length} lines</span>
+                                  <span className="text-edge">·</span>
+                                  <span>chunk</span>
+                                </div>
+                                <div className="flex items-center px-2 py-0.5">
+                                  <button
+                                    type="button"
+                                    className={cn(
+                                      'btn btn-ghost h-6 px-2 text-[10px]',
+                                      allTheirs && 'bg-warning/15 text-warning',
+                                    )}
+                                    title={`Accept theirs for ${group.rows.length} lines`}
+                                    aria-label={`Accept theirs group of ${group.rows.length} lines`}
+                                    disabled={!anyTheirs}
+                                    onClick={() => acceptGroup(group, 'theirs')}
+                                  >
+                                    <ArrowLeft className="h-3.5 w-3.5" />
+                                    Accept
+                                  </button>
+                                </div>
+                              </div>
+                              {group.rows.map((row) => renderMergeRow(row, true, true))}
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   })}

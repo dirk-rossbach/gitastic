@@ -1,8 +1,8 @@
-# Gitastic 1.1
+# Gitastic 1.2
 
 **Gitastic** is a fast, native local Git client for macOS and Windows (powered by **Tauri v2 + Rust**) that also runs as a local loopback web app. It combines a high-contrast, modern developer UI with deep Git power features — without cloud accounts, telemetry, or storing plaintext tokens.
 
-[![Version](https://img.shields.io/badge/version-1.1.0-38bdf8?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.2.0-38bdf8?style=flat-square)](#)
 [![Built with Tauri](https://img.shields.io/badge/Tauri_v2-Rust-ff2a85?style=flat-square)](#)
 [![React 19](https://img.shields.io/badge/React_19-Tailwind_CSS_4-a78bfa?style=flat-square)](#)
 [![Sponsor](https://img.shields.io/badge/%E2%99%A5_Sponsor-dirk--rossbach-fb7185?style=flat-square)](https://github.com/sponsors/dirk-rossbach)
@@ -44,7 +44,9 @@
 - **Git User Identity:** View and update global `user.name` and `user.email` directly in Settings.
 
 ### 7. Merge Conflicts, Worktrees, Stashes & Undo Safety Net
-- **Interactive Conflict Resolver:** Resolve merge, rebase, and cherry-pick conflicts block-by-block (`Ours`, `Theirs`, `Both`, or manual edit) with a live resolved preview.
+- **Interactive Conflict Resolver:** Resolve merge, rebase, and cherry-pick conflicts block-by-block (`Ours`, `Theirs`, `Both`, or manual edit) with a live resolved preview, grouped sub-chunks and hover line overrides.
+- **Partial Stash:** Stash only the files you select from the Changes or Stashes view while leaving the rest of your working tree untouched.
+- **Reflog Recovery:** Browse recent HEAD movements and check out any reflog entry to recover lost commits, branches, or resets.
 - **Git Worktrees:** List, create, switch to, and remove linked Git worktrees (`git worktree`) for parallel branch workflows.
 - **Undo Time Machine:** Destructive actions (`reset --hard`, `clean`, `restore`, branch deletion, pull/merge/rebase) automatically create backup refs (`refs/gitastic/backup/...`) and trash snapshots that can be undone with one click.
 - **IDE & OS Integration:** Open the repository or any changed file directly in **Cursor**, **Zed**, **VS Code**, **Terminal**, or **Finder/Explorer**.

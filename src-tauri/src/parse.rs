@@ -3,7 +3,7 @@ use chrono::{TimeZone, Utc};
 
 use crate::models::{
     short_hash, BlameLine, Branch, CommitBase, ConflictBlock, DiffFile, FileStatus, Remote, Stash,
-    Status, Tag,
+    Status, Tag, ReflogEntry,
 };
 
 pub const COMMIT_LOG_FORMAT: &str =
@@ -637,4 +637,25 @@ pub fn parse_conflict_markers(content: &str, path: &str) -> Vec<ConflictBlock> {
     }
 
     blocks
+}
+
+pub fn parse_reflog(output: &str) -> Vec<ReflogEntry> {
+    output
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(|line| {
+            let parts: Vec<&str> = line.split('\0').collect();
+            let hash = parts.first().unwrap_or(&"").to_string();
+            let selector = parts.get(1).unwrap_or(&"").to_string();
+            let message = parts.get(2).unwrap_or(&"").to_string();
+            let date = parts.get(3).unwrap_or(&"").to_string();
+            ReflogEntry {
+                short_hash: short_hash(&hash),
+                hash,
+                selector,
+                message,
+                date,
+            }
+        })
+        .collect()
 }

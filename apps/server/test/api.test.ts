@@ -342,6 +342,22 @@ describe('branches, tags, stashes and rebase', () => {
     expect(readFile(repoPath, 'file.txt')).toBe('stashed\n');
   });
 
+  it('stashes only the selected paths', async () => {
+    writeFile(repoPath, 'file.txt', 'changed\n');
+    writeFile(repoPath, 'other.txt', 'other\n');
+
+    await json(
+      await request('POST', '/api/repo/stash', {
+        message: 'partial stash',
+        paths: ['file.txt'],
+      }),
+    );
+
+    expect(readFile(repoPath, 'file.txt')).toBe('base\n');
+    expect(readFile(repoPath, 'other.txt')).toBe('other\n');
+    expect(git(repoPath, 'stash', 'show', '--name-only', 'stash@{0}').trim()).toBe('file.txt');
+  });
+
   it('rebases a branch onto main', async () => {
     git(repoPath, 'checkout', '-q', '-b', 'topic');
     writeFile(repoPath, 'topic.txt', 'topic\n');

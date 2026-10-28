@@ -5,14 +5,13 @@ import type { Stash } from '@gitastic/shared';
 import { formatRelativeDate } from '@gitastic/shared';
 import { api } from '../api';
 import { useAction } from '../lib/hooks';
-import { ConfirmDialog, EmptyState, ErrorState, LoadingState, Modal, Spinner } from './ui';
+import { StashDialog } from './StashDialog';
+import { ConfirmDialog, EmptyState, ErrorState, LoadingState } from './ui';
 
 export function StashesView() {
   const stashes = useQuery({ queryKey: ['stashes'], queryFn: api.stashes });
   const { busy, run } = useAction();
   const [createOpen, setCreateOpen] = useState(false);
-  const [message, setMessage] = useState('');
-  const [includeUntracked, setIncludeUntracked] = useState(true);
   const [dropTarget, setDropTarget] = useState<Stash | null>(null);
 
   if (stashes.isLoading) return <LoadingState label="Loading stashes..." />;
@@ -92,59 +91,7 @@ export function StashesView() {
         )}
       </div>
 
-      <Modal
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="Stash changes"
-        footer={
-          <>
-            <button type="button" className="btn" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={busy}
-              onClick={async () => {
-                const result = await run(
-                  () =>
-                    api.stashPush({
-                      message: message.trim() || undefined,
-                      includeUntracked,
-                    }),
-                  'Changes stashed.',
-                );
-                if (result) {
-                  setCreateOpen(false);
-                  setMessage('');
-                }
-              }}
-            >
-              {busy ? <Spinner /> : null}
-              Stash
-            </button>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          <input
-            className="input"
-            autoFocus
-            placeholder="Optional stash message"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-          />
-          <label className="flex items-center gap-2 text-sm text-muted">
-            <input
-              type="checkbox"
-              className="accent-accent"
-              checked={includeUntracked}
-              onChange={(event) => setIncludeUntracked(event.target.checked)}
-            />
-            Include untracked files
-          </label>
-        </div>
-      </Modal>
+      <StashDialog open={createOpen} onOpenChange={setCreateOpen} />
 
       <ConfirmDialog
         open={dropTarget !== null}
