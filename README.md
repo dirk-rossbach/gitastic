@@ -1,6 +1,6 @@
 # Gitastic 1.2
 
-**Gitastic** is a fast, native local Git client for macOS and Windows (powered by **Tauri v2 + Rust**) that also runs as a local loopback web app. It combines a high-contrast, modern developer UI with deep Git power features — without cloud accounts, telemetry, or storing plaintext tokens.
+**Gitastic** is a fast, cross-platform local Git client for macOS, Windows and Linux (powered by **Tauri v2 + Rust**) that also runs as a local loopback web app. It combines a high-contrast, modern developer UI with deep Git power features — without cloud accounts, telemetry, or storing plaintext tokens.
 
 [![Version](https://img.shields.io/badge/version-1.2.0-38bdf8?style=flat-square)](#)
 [![Built with Tauri](https://img.shields.io/badge/Tauri_v2-Rust-ff2a85?style=flat-square)](#)
@@ -11,8 +11,8 @@
 
 ## Highlights & Features
 
-### 1. Native Rust Desktop App + Local Web Mode
-- **Native desktop bundles** for macOS (`.app`, `.dmg`) and Windows (`.msi`, NSIS `.exe`) built with **Tauri v2** and a 100% native **Rust backend** (`src-tauri/src/`).
+### 1. Rust-Powered Desktop App + Local Web Mode
+- **Desktop bundles** for macOS (`.app`, `.dmg`), Windows (`.msi`, NSIS `.exe`) and Linux (`.deb`, `.rpm`, `.AppImage`) built with **Tauri v2** and a 100% native **Rust backend** (`src-tauri/src/`).
 - Uses Tauri IPC (`#[tauri::command]`) directly — zero Node.js runtime or open network ports required in the desktop app.
 - Also includes a standalone local loopback server (`npm start` on `127.0.0.1:8787`) for browser or headless workflows.
 
@@ -71,6 +71,7 @@
 - **Git** >= 2.38.0
 - **Rust & Cargo** (for building the native Tauri desktop app)
 - **Windows:** Rust MSVC toolchain, Visual Studio C++ Build Tools, Git for Windows and WebView2. Tauri downloads WiX/NSIS automatically; WebView2 is installed by the bootstrapper if missing.
+- **Linux:** `libwebkit2gtk-4.1-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `patchelf` and `libxdo-dev` (the CI job installs these on Ubuntu 22.04).
 
 ### Install & Run Native Desktop App (Tauri)
 ```bash
@@ -82,7 +83,9 @@ macOS output: `src-tauri/target/release/bundle/macos/Gitastic.app` and `.../bund
 
 Windows output: `src-tauri/target/release/bundle/msi/*.msi` and `.../bundle/nsis/*.exe`
 
-CI builds the Windows installers on `windows-latest` and uploads them as the `gitastic-windows` artifact.
+Linux output: `src-tauri/target/release/bundle/deb/*.deb`, `.../bundle/rpm/*.rpm` and `.../bundle/appimage/*.AppImage`
+
+CI builds macOS, Windows and Linux bundles and uploads them as the `gitastic-macos`, `gitastic-windows` and `gitastic-linux` artifacts.
 
 ### Unsigned Builds
 
@@ -90,6 +93,7 @@ CI builds the Windows installers on `windows-latest` and uploads them as the `gi
 
 - **macOS:** Right-click **Gitastic.app** and choose **Open**, or allow it under **System Settings → Privacy & Security**. The app is distributed as a universal DMG for Apple Silicon and Intel.
 - **Windows:** In the SmartScreen dialog, choose **More info → Run anyway**. The release includes both an NSIS installer (`.exe`) and an MSI package.
+- **Linux:** Use the `.AppImage` (`chmod +x` first) or install the `.deb` / `.rpm` package.
 
 Code signing and Apple notarization are planned; signed assets will replace these builds under the same release.
 
