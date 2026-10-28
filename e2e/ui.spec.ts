@@ -74,6 +74,20 @@ test('opens a repo, commits staged changes and browses sections', async ({ page 
   await expect(page.locator('html')).toHaveAttribute('data-style', 'nightmare-main-branch');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
+  await page.getByRole('radio', { name: /^Domino/ }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-style', 'domino');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('.btn-primary').first()).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.btn-primary').first()).toHaveCSS('background-image', 'none');
+  await expect(page.locator('.btn-primary').first()).toHaveCSS('box-shadow', 'none');
+
+  await page.getByRole('radio', { name: /^Ink/ }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-style', 'ink');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('.btn-primary').first()).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.btn-primary').first()).toHaveCSS('background-image', 'none');
+  await expect(page.locator('.btn-primary').first()).toHaveCSS('box-shadow', 'none');
+
   for (const name of [
     'Timeline',
     'Tags',

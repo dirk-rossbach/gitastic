@@ -1,9 +1,9 @@
 {
   "name": "gitastic",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
-  "description": "A local web-based Git client with history, branches, merges and remote management.",
+  "description": "Gitastic is a fast, cross-platform visual Git client for macOS, Windows and Linux with a branch graph, partial staging, conflict resolution and GitHub/GitLab integration.",
   "license": "Apache-2.0",
   "workspaces": [
     "apps/*",

@@ -122,7 +122,7 @@ export function StylePicker({
         data-theme={previewMode}
         aria-live="polite"
         aria-label={`Preview: ${previewMeta.name} (${previewMode})`}
-        className="relative self-start overflow-hidden rounded-xl border border-edge p-4 lg:sticky lg:top-0"
+        className="style-preview relative self-start overflow-hidden rounded-xl border border-edge p-4 lg:sticky lg:top-0"
         style={{
           background:
             'radial-gradient(120% 90% at 10% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 62%), radial-gradient(110% 80% at 92% 100%, color-mix(in srgb, var(--accent-3) 14%, transparent), transparent 64%), var(--canvas)',
