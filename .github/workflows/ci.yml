@@ -118,22 +118,24 @@ jobs:
         with:
           workspaces: src-tauri -> target
       - run: npm ci
-      - run: npm run tauri:build
+      - run: rustup target add x86_64-apple-darwin
+      - run: npm run tauri:build -- --target universal-apple-darwin
       - name: Verify macOS bundles
         run: |
-          test -d src-tauri/target/release/bundle/macos/Gitastic.app
-          test -n "$(ls -1 src-tauri/target/release/bundle/dmg/*.dmg 2>/dev/null)"
-          ls -lh src-tauri/target/release/bundle/macos
-          ls -lh src-tauri/target/release/bundle/dmg
+          bundle=src-tauri/target/universal-apple-darwin/release/bundle
+          test -d "$bundle/macos/Gitastic.app"
+          test -n "$(ls -1 "$bundle"/dmg/*.dmg 2>/dev/null)"
+          ls -lh "$bundle/macos"
+          ls -lh "$bundle/dmg"
       - name: Package macOS app
         run: |
-          cd src-tauri/target/release/bundle/macos
+          cd src-tauri/target/universal-apple-darwin/release/bundle/macos
           ditto -c -k --sequesterRsrc --keepParent Gitastic.app Gitastic.app.zip
       - uses: actions/upload-artifact@v4
         with:
           name: gitastic-macos
           path: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/macos/Gitastic.app.zip
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/Gitastic.app.zip
           if-no-files-found: error
           retention-days: 14
