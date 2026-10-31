@@ -32,7 +32,7 @@
     "tauri:build": "tauri build"
   },
   "devDependencies": {
-    "@eslint/js": "^9.17.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.49.1",
     "@tauri-apps/cli": "^2.12.4",
     "@types/node": "^22.10.2",
