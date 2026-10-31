@@ -32,7 +32,7 @@ import {
   type Session,
 } from '@gitastic/shared';
 import { api } from '../api';
-import appIcon from '../assets/app-icon.png';
+import { AppIcon } from './AppIcon';
 import { useAction, useStartJob } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore, type View } from '../store';
@@ -179,12 +179,7 @@ export function Shell({ session }: { session: Session }) {
         )}
       >
         <div className="flex items-center gap-2.5 px-4 py-4">
-          <img
-            src={appIcon}
-            alt=""
-            className="h-8 w-8 shrink-0 select-none rounded-lg"
-            draggable={false}
-          />
+          <AppIcon className="h-8 w-8 shrink-0 rounded-lg" />
           <div className="min-w-0">
             <p className="brand-title text-sm font-semibold">Gitastic</p>
             <p className="truncate text-[11px] text-faint">local Git client</p>

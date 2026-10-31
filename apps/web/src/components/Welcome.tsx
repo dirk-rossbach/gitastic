@@ -26,7 +26,7 @@ import { useStore } from '../store';
 import { resolvedThemeMode, styleForTheme, type StyleMode } from '../ui-styles';
 import { ProviderRepoBrowser } from './ProvidersPanel';
 import { StyleMenu } from './StyleMenu';
-import appIcon from '../assets/app-icon.png';
+import { AppIcon } from './AppIcon';
 import { HelpTip } from './HelpTip';
 import { PathText, Spinner } from './ui';
 
@@ -114,12 +114,7 @@ export function Welcome({ session }: { session: Session }) {
       <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col gap-8 px-6 py-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img
-              src={appIcon}
-              alt=""
-              className="h-11 w-11 shrink-0 select-none rounded-xl"
-              draggable={false}
-            />
+            <AppIcon className="h-11 w-11 shrink-0 rounded-xl" />
             <div>
               <h1 className="gradient-text text-2xl font-semibold tracking-tight">Gitastic</h1>
               <p className="flex items-center gap-2 text-sm text-muted">
