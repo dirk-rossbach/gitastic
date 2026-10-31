@@ -11,7 +11,7 @@
 [![React 19](https://img.shields.io/badge/React_19-Tailwind_CSS_4-a78bfa?style=flat-square)](#)
 [![Sponsor](https://img.shields.io/badge/%E2%99%A5_Sponsor-dirk--rossbach-fb7185?style=flat-square)](https://github.com/sponsors/dirk-rossbach)
 
-**[Download Gitastic](https://github.com/dirk-rossbach/gitastic/releases/latest)** for macOS, Windows or Linux.
+**[Download Gitastic](https://github.com/dirk-rossbach/gitastic/releases/latest)** for macOS, Windows or Linux · **[Visit the website](https://dirk-rossbach.github.io/gitastic/)** for screenshots, themes and downloads.
 
 [What is Gitastic?](#what-is-gitastic) · [Screenshots](#screenshots) · [Features](#what-you-can-do) · [Themes](#themes) · [Install](#install) · [For developers](#for-developers)
 
