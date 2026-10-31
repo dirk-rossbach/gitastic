@@ -103,6 +103,9 @@ Set `color-scheme: dark` or `color-scheme: light` so native controls match.
 
 ## Tips
 
+- A ready-made example lives at
+  [`docs/themes-examples/copper-pine.css`](themes-examples/copper-pine.css) — import it directly from
+  **Settings → Custom themes** to try a dark and light custom theme.
 - Start from a built-in file in `apps/web/src/themes/` — copying one and renaming the id is the
   fastest way to get every variable covered.
 - Themes are local CSS only. Gitastic never downloads or executes remote theme files.

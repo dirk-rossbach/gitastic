@@ -1,0 +1,74 @@
+/* @gitastic-theme
+{
+  "id": "copper-pine",
+  "name": "Copper & Pine",
+  "tagline": "Deep pine & warm copper",
+  "description": "Forest-dark surfaces with burnished copper accents, plus a parchment light mode for daytime work.",
+  "keywords": "copper pine forest green warm wood metal dark light",
+  "badge": "Custom",
+  "modes": ["dark", "light"],
+  "swatches": ["#d98f5a", "#2f6f5e", "#f3ead9"],
+  "laneColors": ["#d98f5a", "#7fc8a9", "#e6c069", "#6fa8dc", "#c98bb0", "#9fbf5a", "#e0726d", "#b8a27a"]
+}
+*/
+
+:root[data-style='copper-pine'][data-theme='dark'] {
+  --font-display: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+  --canvas: #0d1512;
+  --panel: #14201b;
+  --raised: #1d2f26;
+  --edge: #355545;
+  --ink: #f3ead9;
+  --muted: #b6c3b3;
+  --faint: #7d9184;
+  --accent: #d98f5a;
+  --accent-2: #7fc8a9;
+  --accent-3: #e6c069;
+  --success: #7fc8a9;
+  --warning: #e6c069;
+  --danger: #e0726d;
+  color-scheme: dark;
+}
+
+:root[data-style='copper-pine'][data-theme='light'] {
+  --font-display: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+  --canvas: #f6f1e7;
+  --panel: #fffdf8;
+  --raised: #ede4d3;
+  --edge: #d3c6ad;
+  --ink: #22312a;
+  --muted: #5c6b60;
+  --faint: #8b9a8d;
+  --accent: #b5622f;
+  --accent-2: #2f6f5e;
+  --accent-3: #a8862f;
+  --success: #2f6f5e;
+  --warning: #a8862f;
+  --danger: #b33b33;
+  color-scheme: light;
+}
+
+:root[data-style='copper-pine'][data-theme='dark'] body {
+  background:
+    radial-gradient(
+      62rem 40rem at 88% -12%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      54rem 36rem at 6% 108%,
+      color-mix(in srgb, var(--accent-2) 12%, transparent),
+      transparent 64%
+    ),
+    var(--canvas) !important;
+}
+
+:root[data-style='copper-pine'][data-theme='light'] body {
+  background:
+    radial-gradient(
+      60rem 40rem at 92% -10%,
+      color-mix(in srgb, var(--accent) 10%, transparent),
+      transparent 60%
+    ),
+    var(--canvas) !important;
+}
