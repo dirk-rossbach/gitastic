@@ -39,7 +39,7 @@
     />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23171713'/%3E%3Cpath d='M11 8v16M11 14c0 2 10 2 10 6' stroke='%23f2efe6' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='11' cy='8' r='2.5' fill='%23e0491d'/%3E%3Ccircle cx='21' cy='12' r='2.5' fill='%23d9ff43'/%3E%3Ccircle cx='21' cy='24' r='2.5' fill='%23f2efe6'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e0491d'/%3E%3Cpath d='M11 8v16M11 16c0-4 10-2 10-6' stroke='%23f2efe6' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='11' cy='8' r='2.5' fill='%23f2efe6'/%3E%3Ccircle cx='21' cy='10' r='2.5' fill='%23d9ff43'/%3E%3Ccircle cx='11' cy='24' r='2.5' fill='%23f2efe6'/%3E%3C/svg%3E"
     />
     <script type="application/ld+json">
       {
@@ -217,14 +217,14 @@
         width: 34px;
         height: 34px;
         place-items: center;
-        border: 1.5px solid var(--ink);
+        border-radius: 7px;
         background: var(--signal);
         color: var(--paper);
       }
 
       .logo-mark svg {
-        width: 19px;
-        height: 19px;
+        width: 22px;
+        height: 22px;
       }
 
       .brand-name {
@@ -253,6 +253,10 @@
         letter-spacing: 0.14em;
         text-transform: uppercase;
         text-decoration: none;
+      }
+
+      .nav-sponsor {
+        display: none;
       }
 
       .nav-links a::after {
@@ -428,6 +432,27 @@
         font-size: 9px;
         letter-spacing: 0.1em;
         text-transform: uppercase;
+      }
+
+      .wordplay {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 20px 0 0;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .wordplay strong {
+        color: var(--signal);
+        font-weight: 600;
+      }
+
+      .wordplay span[aria-hidden="true"] {
+        color: var(--signal);
       }
 
       .hero-meta span::before {
@@ -1244,9 +1269,7 @@
       }
 
       .footer-brand .logo-mark {
-        border-color: var(--paper);
-        background: var(--acid);
-        color: var(--ink);
+        background: var(--signal);
       }
 
       .footer-brand .brand-name {
@@ -1446,6 +1469,10 @@
           display: none;
         }
 
+        .nav-sponsor {
+          display: block;
+        }
+
         .nav-actions .btn-ghost {
           display: none;
         }
@@ -1586,12 +1613,12 @@
       <div class="container nav">
         <a class="brand" href="#" aria-label="Gitastic home">
           <span class="logo-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M7 4v16" />
-              <path d="M7 9c0 3 5 3 5 6s5 3 5 6" />
-              <circle cx="7" cy="4" r="1.6" fill="currentColor" stroke="none" />
-              <circle cx="17" cy="9" r="1.6" fill="currentColor" stroke="none" />
-              <circle cx="17" cy="21" r="1.6" fill="currentColor" stroke="none" />
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M8 4v16" stroke="#f2efe6" stroke-width="2.4" stroke-linecap="round" />
+              <path d="M8 13c0-3.5 8-2 8-6" stroke="#f2efe6" stroke-width="2.4" stroke-linecap="round" />
+              <circle cx="8" cy="4" r="2.2" fill="#f2efe6" />
+              <circle cx="8" cy="20" r="2.2" fill="#f2efe6" />
+              <circle cx="16" cy="7" r="2.2" fill="#d9ff43" />
             </svg>
           </span>
           <span class="brand-name">Gitastic<span class="brand-dot">.</span></span>
@@ -1602,6 +1629,7 @@
           <a href="#themes">Themes</a>
           <a href="#download">Download</a>
           <a href="#faq">FAQ</a>
+          <a class="nav-sponsor" href="https://github.com/sponsors/dirk-rossbach" target="_blank" rel="noopener noreferrer">Sponsor</a>
         </nav>
 
         <div class="nav-actions">
@@ -1655,6 +1683,11 @@
             <p class="lead">
               Gitastic turns branches, changes and conflicts into a visual workspace. Review what changed,
               commit exactly what you mean, and recover from mistakes without fighting the terminal.
+            </p>
+            <p class="wordplay">
+              <span>fantastic Git</span>
+              <span aria-hidden="true">→</span>
+              <strong>Gitastic</strong>
             </p>
             <div class="hero-actions">
               <a
@@ -2189,17 +2222,17 @@
         <div class="footer-brand">
           <a class="brand" href="#" aria-label="Gitastic home">
             <span class="logo-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M7 4v16" />
-                <path d="M7 9c0 3 5 3 5 6s5 3 5 6" />
-                <circle cx="7" cy="4" r="1.6" fill="currentColor" stroke="none" />
-                <circle cx="17" cy="9" r="1.6" fill="currentColor" stroke="none" />
-                <circle cx="17" cy="21" r="1.6" fill="currentColor" stroke="none" />
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M8 4v16" stroke="#f2efe6" stroke-width="2.4" stroke-linecap="round" />
+                <path d="M8 13c0-3.5 8-2 8-6" stroke="#f2efe6" stroke-width="2.4" stroke-linecap="round" />
+                <circle cx="8" cy="4" r="2.2" fill="#f2efe6" />
+                <circle cx="8" cy="20" r="2.2" fill="#f2efe6" />
+                <circle cx="16" cy="7" r="2.2" fill="#d9ff43" />
               </svg>
             </span>
             <span class="brand-name">Gitastic<span class="brand-dot">.</span></span>
           </a>
-          <p>Git, but easier to see and understand.</p>
+          <p>Fantastic Git. Gitastic.</p>
         </div>
         <nav class="footer-links" aria-label="Footer navigation">
           <a href="#features">Features</a>
