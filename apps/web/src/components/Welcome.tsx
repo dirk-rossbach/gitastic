@@ -26,6 +26,7 @@ import { useStore } from '../store';
 import { resolvedThemeMode, styleForTheme, type StyleMode } from '../ui-styles';
 import { ProviderRepoBrowser } from './ProvidersPanel';
 import { StyleMenu } from './StyleMenu';
+import { HelpTip } from './HelpTip';
 import { PathText, Spinner } from './ui';
 
 function CheckRow({ check }: { check: OnboardingCheck }) {
@@ -117,8 +118,9 @@ export function Welcome({ session }: { session: Session }) {
             </div>
             <div>
               <h1 className="gradient-text text-2xl font-semibold tracking-tight">Gitastic</h1>
-              <p className="text-sm text-muted">
+              <p className="flex items-center gap-2 text-sm text-muted">
                 Cross-platform local Git client.
+                <HelpTip term="repository" />
               </p>
             </div>
           </div>

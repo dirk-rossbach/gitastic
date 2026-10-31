@@ -27,7 +27,6 @@ import {
   X,
 } from 'lucide-react';
 import {
-  buildCreatePullUrl,
   buildRemoteBranchUrl,
   type Session,
 } from '@gitastic/shared';
@@ -48,6 +47,7 @@ import { SettingsView } from './SettingsView';
 import { StashesView } from './StashesView';
 import { TagsView } from './TagsView';
 import { WorktreesView } from './WorktreesView';
+import { HelpTip, type GlossaryTerm } from './HelpTip';
 import { Modal, PathText, Spinner } from './ui';
 
 const operations: Record<string, string> = {
@@ -55,6 +55,19 @@ const operations: Record<string, string> = {
   rebase: 'Rebase',
   'cherry-pick': 'Cherry-pick',
   revert: 'Revert',
+};
+
+const viewHelp: Partial<Record<View, GlossaryTerm>> = {
+  history: 'commit',
+  changes: 'staging',
+  branches: 'branch',
+  stashes: 'stash',
+  tags: 'tag',
+  remotes: 'remote',
+  pulls: 'pull-request',
+  worktrees: 'worktree',
+  conflicts: 'conflict',
+  settings: 'theme',
 };
 
 function NavItem({
@@ -218,19 +231,20 @@ export function Shell({ session }: { session: Session }) {
         <nav className="flex-1 space-y-0.5 px-2">
           <NavItem view="history" label="Timeline" icon={History} />
           <NavItem view="changes" label="Changes" icon={FileDiff} count={changes} />
+          <NavItem view="conflicts" label="Conflicts" icon={AlertTriangle} count={conflicts} danger />
           <NavItem view="branches" label="Branches" icon={GitBranch} />
+          <NavItem view="stashes" label="Stashes" icon={Archive} />
+          <NavItem view="tags" label="Tags" icon={Tags} />
+          <div className="my-2 border-t border-edge" />
+          <NavItem view="remotes" label="Remotes" icon={Cloud} />
           <NavItem
             view="pulls"
             label={remoteProvider?.provider === 'gitlab' ? 'Merge Requests' : 'Pull Requests'}
             icon={GitPullRequest}
           />
-          <NavItem view="worktrees" label="Worktrees" icon={FolderGit2} />
-          <NavItem view="tags" label="Tags" icon={Tags} />
-          <NavItem view="remotes" label="Remotes" icon={Cloud} />
-          <NavItem view="stashes" label="Stashes" icon={Archive} />
-          <NavItem view="reflog" label="Reflog" icon={Clock} />
-          <NavItem view="conflicts" label="Conflicts" icon={AlertTriangle} count={conflicts} danger />
           <div className="my-2 border-t border-edge" />
+          <NavItem view="worktrees" label="Worktrees" icon={FolderGit2} />
+          <NavItem view="reflog" label="Reflog" icon={Clock} />
           <NavItem view="blame" label="Blame" icon={FileDiff} />
           <NavItem view="file-history" label="File history" icon={History} />
         </nav>
@@ -257,25 +271,12 @@ export function Shell({ session }: { session: Session }) {
               <GitBranch className="h-3.5 w-3.5" />
               {repo.branch ?? repo.head?.slice(0, 7) ?? 'unborn'}
             </span>
+            {viewHelp[view] ? <HelpTip term={viewHelp[view]!} label="What is this view?" /> : null}
           </div>
 
           <div className="ml-auto flex items-center gap-1">
             {remoteProvider ? (
               <>
-                {repo.branch ? (
-                  <a
-                    href={buildCreatePullUrl(remoteProvider, repo.branch)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn btn-ghost"
-                    title={`Create ${remoteProvider.provider === 'gitlab' ? 'Merge Request' : 'Pull Request'} for ${repo.branch}`}
-                  >
-                    <GitPullRequest className="h-4 w-4 text-accent" />
-                    <span className="hidden xl:inline">
-                      New {remoteProvider.provider === 'gitlab' ? 'MR' : 'PR'}
-                    </span>
-                  </a>
-                ) : null}
                 <a
                   href={
                     repo.branch

@@ -5,7 +5,6 @@ import {
   ExternalLink,
   GitBranch,
   GitMerge,
-  GitPullRequest,
   LogIn,
   Pencil,
   Plus,
@@ -14,7 +13,6 @@ import {
   Upload,
 } from 'lucide-react';
 import {
-  buildCreatePullUrl,
   buildRemoteBranchUrl,
   type Branch,
 } from '@gitastic/shared';
@@ -233,15 +231,6 @@ export function BranchesView() {
         ) : null}
         {remoteProvider ? (
           <>
-            <a
-              href={buildCreatePullUrl(remoteProvider, branch.name)}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-icon"
-              title={`Create ${remoteProvider.provider === 'gitlab' ? 'Merge Request' : 'Pull Request'} for ${branch.name}`}
-            >
-              <GitPullRequest className="h-4 w-4 text-accent" />
-            </a>
             <a
               href={buildRemoteBranchUrl(remoteProvider, branch.name)}
               target="_blank"

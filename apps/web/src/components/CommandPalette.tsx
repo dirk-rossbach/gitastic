@@ -27,7 +27,6 @@ import {
   X,
 } from 'lucide-react';
 import {
-  buildCreatePullUrl,
   buildRemoteBranchUrl,
   type Session,
   type UiStyle,
@@ -343,13 +342,11 @@ export function CommandPalette({ session }: { session: Session }) {
           items.push({
             id: 'remote-create-pr',
             group: 'Git Actions',
-            label: `Create ${remoteProvider.provider === 'gitlab' ? 'Merge Request' : 'Pull Request'} for ${repo.branch}`,
-            subtitle: remoteProvider.fullName,
+            label: `Open ${remoteProvider.provider === 'gitlab' ? 'Merge Requests' : 'Pull Requests'}`,
+            subtitle: `Create one for ${repo.branch}`,
             keywords: 'create pull request merge request pr mr',
             icon: GitPullRequest,
-            action: () => {
-              void api.openExternal(buildCreatePullUrl(remoteProvider, repo.branch!));
-            },
+            action: () => setView('pulls'),
           });
         }
       }
