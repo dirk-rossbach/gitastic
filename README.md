@@ -271,6 +271,8 @@ docs/             Screenshots and documentation assets
 
 Gitastic is licensed under the [Apache License 2.0](LICENSE).
 
+Bundled third-party components — including all embedded fonts, npm packages and Rust crates — are listed with their license texts in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Regenerate it with `npm run licenses`.
+
 ---
 
 ## Support & sponsoring

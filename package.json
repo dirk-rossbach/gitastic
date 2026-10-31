@@ -24,6 +24,7 @@
     "start": "node apps/server/dist/cli.js",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "licenses": "node scripts/generate-third-party-licenses.mjs",
     "typecheck": "tsc -p apps/server --noEmit && tsc -p apps/web --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

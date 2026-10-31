@@ -248,6 +248,15 @@ export function SettingsView({
           </div>
           <div className="flex items-center gap-2">
             <a
+              href="https://github.com/dirk-rossbach/gitastic/blob/main/THIRD_PARTY_LICENSES.md"
+              target="_blank"
+              rel="noreferrer"
+              className="btn"
+            >
+              <Info className="h-4 w-4" />
+              Licenses
+            </a>
+            <a
               href="https://github.com/sponsors/dirk-rossbach"
               target="_blank"
               rel="noreferrer"
