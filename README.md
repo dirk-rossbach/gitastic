@@ -4,7 +4,7 @@
 
 **Gitastic** is a desktop app that helps you work with Git repositories without living in the terminal. It shows your branches and history as a clear visual graph, lets you review and commit changes, and helps you resolve merge conflicts side by side. Everything runs locally on your computer — no account, no cloud and no telemetry.
 
-[![Version](https://img.shields.io/badge/version-1.2.2-38bdf8?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.3.0-38bdf8?style=flat-square)](#)
 [![Latest release](https://img.shields.io/github/v/release/dirk-rossbach/gitastic?style=flat-square)](https://github.com/dirk-rossbach/gitastic/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
 [![Built with Tauri](https://img.shields.io/badge/Tauri_v2-Rust-ff2a85?style=flat-square)](#)
