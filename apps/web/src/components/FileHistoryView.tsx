@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { GitCompare, History, User } from 'lucide-react';
+import { GitCompare, History, User, Clock } from 'lucide-react';
 import { shortHash } from '@gitastic/shared';
 import { api } from '../api';
-import { formatDate } from '../lib/utils';
+import { formatDateTime } from '../lib/utils';
 import { useStore } from '../store';
 import { EmptyState, ErrorState, LoadingState, Spinner } from './ui';
 
@@ -106,7 +106,19 @@ export function FileHistoryView() {
                       <User className="h-3 w-3" />
                       {commit.authorName}
                     </span>
-                    <span>{formatDate(commit.authorDate)}</span>
+                    <span className="inline-flex items-center gap-1 font-mono">
+                      <Clock className="h-3 w-3" />
+                      <time
+                        dateTime={commit.authorDate}
+                        title={
+                          commit.authorDate
+                            ? new Date(commit.authorDate).toLocaleString()
+                            : undefined
+                        }
+                      >
+                        {formatDateTime(commit.authorDate)}
+                      </time>
+                    </span>
                   </span>
                 </span>
               </button>

@@ -23,7 +23,6 @@ export function formatDate(input: string | null | undefined): string {
     minute: '2-digit',
   });
 }
-
 export function formatDateShort(input: string | null | undefined): string {
   if (!input) return '';
   const date = new Date(input);
@@ -33,6 +32,16 @@ export function formatDateShort(input: string | null | undefined): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+export function formatDateTime(input: string | null | undefined): string {
+  if (!input) return '';
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return input;
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
+    date.getHours(),
+  )}:${pad(date.getMinutes())}`;
 }
 
 export function fileName(path: string): string {
