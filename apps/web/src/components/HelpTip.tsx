@@ -146,7 +146,7 @@ const GLOSSARY: Record<GlossaryTerm, { title: string; body: ReactNode }> = {
     title: 'Tag',
     body: (
       <>
-        A tag is a permanent label on a commit, often used for releases such as <em>v1.4.0</em>.
+        A tag is a permanent label on a commit, often used for releases such as <em>v1.4.1</em>.
         Unlike a branch, a tag does not move.
       </>
     ),
