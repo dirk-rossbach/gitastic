@@ -34,6 +34,7 @@ export function ThemePreview({
 }) {
   const laneColors = draft.laneColors.filter(Boolean).slice(0, 6);
   const swatches = draft.swatches.filter(Boolean).slice(0, 6);
+  const displayFont = draft.fontDisplay.trim() || undefined;
 
   return (
     <div
@@ -49,7 +50,10 @@ export function ThemePreview({
           <GitBranch className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-base font-semibold leading-tight">
+          <p
+            className="truncate text-base font-semibold leading-tight"
+            style={{ fontFamily: displayFont }}
+          >
             {draft.name.trim() || 'Untitled theme'}
           </p>
           <p className="truncate text-[10px] text-muted">
@@ -64,7 +68,12 @@ export function ThemePreview({
 
       <div className="mt-3 rounded-lg border border-edge bg-panel/95 p-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-xs font-medium text-ink">feat: wake the old castle</p>
+          <p
+            className="truncate text-xs font-medium text-ink"
+            style={{ fontFamily: displayFont }}
+          >
+            feat: wake the old castle
+          </p>
           <span className="badge badge-accent shrink-0">HEAD</span>
         </div>
         <p className="mt-0.5 text-[10px] text-muted">Ada Lovelace · main · 2m ago</p>
