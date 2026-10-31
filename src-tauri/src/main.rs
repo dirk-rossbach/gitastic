@@ -830,6 +830,7 @@ async fn dispatch(
                 .map(|entry| entry.to_string())
                 .collect();
             files.sort();
+            files.dedup();
             Ok(json!({ "files": files }))
         }
 

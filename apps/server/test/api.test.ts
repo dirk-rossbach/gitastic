@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -656,5 +656,28 @@ describe('working tree files', () => {
 
     const outside = await request('GET', '/api/repo/file?path=../outside.txt');
     expect(outside.statusCode).toBeGreaterThanOrEqual(400);
+  });
+});
+
+describe('working tree files during conflicts', () => {
+  it('lists conflicted files only once', async () => {
+    writeFile(repoPath, 'file.txt', 'line\n');
+    commitAll(repoPath, 'base');
+
+    git(repoPath, 'checkout', '-b', 'feature');
+    writeFile(repoPath, 'file.txt', 'feature\n');
+    commitAll(repoPath, 'feature change');
+
+    git(repoPath, 'checkout', 'main');
+    writeFile(repoPath, 'file.txt', 'main\n');
+    commitAll(repoPath, 'main change');
+
+    spawnSync('git', ['merge', 'feature'], { cwd: repoPath });
+
+    const list = await json(await request('GET', '/api/repo/files'));
+    const occurrences = (list.files as string[]).filter((file) => file === 'file.txt');
+    expect(occurrences).toHaveLength(1);
+
+    git(repoPath, 'merge', '--abort');
   });
 });

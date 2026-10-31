@@ -362,10 +362,9 @@ export async function listRepoFiles(runner: GitRunner, repoPath: string): Promis
       result.stderr.trim() || 'Could not list repository files.',
     );
   }
-  return result.stdout
-    .split('\u0000')
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
+  return [...new Set(result.stdout.split('\u0000').filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b),
+  );
 }
 
 const MAX_FILE_BYTES = 2_000_000;
