@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import type { UiStyle } from '@gitastic/shared';
 import { Check } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { filterStylesByMode, uiStyleMeta, useBuiltinStyles, type StyleMode } from '../ui-styles';
+import {
+  filterStylesByMode,
+  styleVariablesFor,
+  uiStyleMeta,
+  useBuiltinStyles,
+  type StyleMode,
+} from '../ui-styles';
 
 export function StylePicker({
   current,
@@ -15,25 +21,12 @@ export function StylePicker({
 }) {
   const [preview, setPreview] = useState<{ id: string; mode: StyleMode } | null>(null);
   const library = useBuiltinStyles();
-  const restoreRef = useRef({ style: current, mode: currentMode });
-  restoreRef.current = { style: current, mode: currentMode };
-
-  // Theme rules are scoped to :root, so preview has to be applied to <html>.
-  useEffect(() => {
-    const root = document.documentElement;
-    root.dataset.style = preview ? preview.id : current;
-    root.dataset.theme = preview ? preview.mode : currentMode;
-  }, [preview, current, currentMode]);
-
-  useEffect(
-    () => () => {
-      document.documentElement.dataset.style = restoreRef.current.style;
-      document.documentElement.dataset.theme = restoreRef.current.mode;
-    },
-    [],
-  );
   const previewMeta = uiStyleMeta(preview?.id ?? current);
   const previewMode = preview?.mode ?? currentMode;
+  const previewVars = useMemo(
+    () => styleVariablesFor(previewMeta.id, previewMode),
+    [previewMeta.id, previewMode],
+  );
   const PreviewIcon = previewMeta.icon;
   const groups = useMemo(
     () =>
@@ -145,6 +138,7 @@ export function StylePicker({
         aria-label={`Preview: ${previewMeta.name} (${previewMode})`}
         className="style-preview relative self-start overflow-hidden rounded-xl border border-edge p-4 lg:sticky lg:top-0"
         style={{
+          ...(previewVars as CSSProperties),
           background:
             'radial-gradient(120% 90% at 10% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 62%), radial-gradient(110% 80% at 92% 100%, color-mix(in srgb, var(--accent-3) 14%, transparent), transparent 64%), var(--canvas)',
         }}

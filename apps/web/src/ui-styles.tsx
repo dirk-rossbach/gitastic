@@ -365,3 +365,41 @@ export function laneColorFor(style: string | null | undefined, lane: number): st
   if (palette.length === 0) return '#38bdf8';
   return palette[Math.abs(lane) % palette.length] ?? palette[0];
 }
+
+export function styleVariablesFor(style: string, mode: StyleMode): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (typeof document === 'undefined') return result;
+  const quoted = [`data-style='${style}'`, `data-style="${style}"`];
+  const themes = [`data-theme='${mode}'`, `data-theme="${mode}"`];
+
+  const visit = (rules: CSSRuleList) => {
+    for (const rule of Array.from(rules)) {
+      if (rule instanceof CSSMediaRule) {
+        visit(rule.cssRules);
+        continue;
+      }
+      if (!(rule instanceof CSSStyleRule)) continue;
+      const selector = rule.selectorText;
+      if (!selector || !quoted.some((entry) => selector.includes(entry))) continue;
+      if (selector.includes('data-theme=') && !themes.some((entry) => selector.includes(entry))) {
+        continue;
+      }
+      const ruleStyle = rule.style;
+      for (let index = 0; index < ruleStyle.length; index += 1) {
+        const property = ruleStyle[index];
+        if (property.startsWith('--') || property === 'font-family' || property === 'color-scheme') {
+          result[property] = ruleStyle.getPropertyValue(property);
+        }
+      }
+    }
+  };
+
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      visit(sheet.cssRules);
+    } catch {
+      // Cross-origin sheets are not readable; skip them.
+    }
+  }
+  return result;
+}
