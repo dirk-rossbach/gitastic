@@ -518,27 +518,24 @@
         position: absolute;
         right: -18px;
         bottom: -30px;
-        display: grid;
         width: 112px;
         height: 112px;
-        place-items: center;
-        border: 1.5px solid var(--ink);
-        border-radius: 50%;
-        background: var(--acid);
         box-shadow: 4px 4px 0 var(--ink);
-        color: var(--ink);
-        font-family: var(--mono);
-        font-size: 9px;
-        letter-spacing: 0.12em;
-        line-height: 1.35;
-        text-align: center;
-        text-transform: uppercase;
         transform: rotate(-8deg);
       }
 
-      .hero-stamp span {
+      .hero-stamp svg {
         display: block;
-        color: var(--signal-dark);
+        width: 100%;
+        height: 100%;
+      }
+
+      .hero-stamp .stamp-serif {
+        font-family: var(--serif);
+      }
+
+      .hero-stamp .stamp-mono {
+        font-family: var(--mono);
       }
 
       /* Trust strip */
@@ -1744,7 +1741,21 @@
               </figcaption>
             </figure>
             <div class="hero-stamp" aria-hidden="true">
-              Local<br />first<br /><span>No cloud</span>
+              <svg viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="57" fill="#d9ff43" stroke="#171713" stroke-width="1.5" />
+                <circle cx="60" cy="60" r="40" fill="none" stroke="#171713" stroke-width="1" stroke-dasharray="2.5 3.5" />
+                <path id="stamp-top" d="M12 60a48 48 0 0 1 96 0" fill="none" />
+                <path id="stamp-bottom" d="M12 60a48 48 0 0 0 96 0" fill="none" />
+                <text class="stamp-mono" font-size="8.2" letter-spacing="1.2" fill="#171713">
+                  <textPath href="#stamp-top" startOffset="50%" text-anchor="middle">LOCAL-FIRST GIT CLIENT</textPath>
+                </text>
+                <text class="stamp-mono" font-size="8.2" letter-spacing="1.2" fill="#b53610">
+                  <textPath href="#stamp-bottom" startOffset="50%" text-anchor="middle">NO CLOUD · NO ACCOUNT</textPath>
+                </text>
+                <text class="stamp-serif" x="60" y="57" text-anchor="middle" font-size="17" font-weight="600" letter-spacing="-0.4" fill="#171713">Local</text>
+                <text class="stamp-serif" x="60" y="76" text-anchor="middle" font-size="17" font-weight="600" font-style="italic" letter-spacing="-0.4" fill="#b53610">First</text>
+                <text class="stamp-mono" x="60" y="91" text-anchor="middle" font-size="7" letter-spacing="1.4" fill="#171713">100% LOCAL</text>
+              </svg>
             </div>
           </div>
         </div>
