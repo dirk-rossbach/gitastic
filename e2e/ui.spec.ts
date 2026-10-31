@@ -49,16 +49,13 @@ test('opens a repo, commits staged changes and browses sections', async ({ page 
 
   const nav = page.locator('aside nav');
 
-  await nav.getByRole('button', { name: 'Blame', exact: true }).click();
-  const blameInput = page.locator('input[placeholder="path/to/file"]');
-  await blameInput.fill('README.md');
-  await blameInput.press('Enter');
+  await nav.getByRole('button', { name: 'Files', exact: true }).click();
+  await page.getByText('README.md').first().waitFor();
+  await page.locator('button').filter({ hasText: 'README.md' }).first().click();
+  await page.getByRole('button', { name: 'Blame', exact: true }).click();
   await page.getByText('E2E User').first().waitFor();
 
-  await nav.getByRole('button', { name: 'File history', exact: true }).click();
-  const fileHistoryInput = page.locator('input[placeholder="path/to/file"]');
-  await fileHistoryInput.fill('README.md');
-  await fileHistoryInput.press('Enter');
+  await page.getByRole('button', { name: 'File history', exact: true }).click();
   await page.getByText('2 commits').waitFor();
 
   await page.getByRole('button', { name: 'Settings' }).click();
@@ -94,8 +91,9 @@ test('opens a repo, commits staged changes and browses sections', async ({ page 
     'Remotes',
     'Stashes',
     'Conflicts',
-    'Blame',
-    'File history',
+    'Files',
+    'Worktrees',
+    'Reflog',
   ]) {
     await nav.getByRole('button', { name, exact: true }).click();
     await page.waitForTimeout(250);
