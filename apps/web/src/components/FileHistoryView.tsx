@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, GitCompare, History, User, X } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, GitCompare, History, User, X } from 'lucide-react';
 import { shortHash } from '@gitastic/shared';
 import { api } from '../api';
 import { cn, formatDateTime } from '../lib/utils';
@@ -37,17 +37,11 @@ export function FileHistoryView() {
     setClosing(false);
   }, [selected]);
 
-  useEffect(() => {
-    if (!selected) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closeDrawer();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selected]);
+  const history = useQuery({
+    queryKey: ['file-history', submitted],
+    queryFn: () => api.fileHistory(submitted),
+    enabled: Boolean(submitted),
+  });
 
   const revision = useQuery({
     queryKey: ['file-at', submitted, selected?.hash],
@@ -55,18 +49,50 @@ export function FileHistoryView() {
     enabled: Boolean(submitted && selected),
   });
 
+  const commits = useMemo(() => history.data?.commits ?? [], [history.data]);  const selectedIndex = selected ? commits.findIndex((c) => c.hash === selected.hash) : -1;
+  const hasPrevious = selectedIndex > 0;
+  const hasNext = selectedIndex >= 0 && selectedIndex < commits.length - 1;
+
+  const openAt = useCallback(
+    (index: number) => {
+      const commit = commits[index];
+      if (!commit) return;
+      setSelected({ hash: commit.hash, subject: commit.subject, authorDate: commit.authorDate });
+    },
+    [commits],
+  );
+
+  const previous = () => {
+    if (hasPrevious) openAt(selectedIndex - 1);
+  };
+  const next = () => {
+    if (hasNext) openAt(selectedIndex + 1);
+  };
+
+  useEffect(() => {
+    if (!selected) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDrawer();
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        if (hasPrevious) openAt(selectedIndex - 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        if (hasNext) openAt(selectedIndex + 1);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selected, hasPrevious, hasNext, selectedIndex, openAt]);
+
   useEffect(() => {
     if (storedPath) {
       setPath(storedPath);
       setSubmitted(storedPath);
     }
   }, [storedPath]);
-
-  const history = useQuery({
-    queryKey: ['file-history', submitted],
-    queryFn: () => api.fileHistory(submitted),
-    enabled: Boolean(submitted),
-  });
 
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-panel">
@@ -205,6 +231,31 @@ export function FileHistoryView() {
                 <Clock className="h-3 w-3" />
                 {formatDateTime(selected.authorDate)}
               </span>
+              <div className="flex shrink-0 items-center gap-0.5">
+                <button
+                  type="button"
+                  className="btn-icon h-7 w-7"
+                  title="Previous version (←)"
+                  aria-label="Previous version"
+                  disabled={!hasPrevious}
+                  onClick={previous}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="w-10 text-center font-mono text-[10px] text-faint">
+                  {selectedIndex + 1} / {commits.length}
+                </span>
+                <button
+                  type="button"
+                  className="btn-icon h-7 w-7"
+                  title="Next version (→)"
+                  aria-label="Next version"
+                  disabled={!hasNext}
+                  onClick={next}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
               <button
                 type="button"
                 className="btn h-7 shrink-0 text-xs"
