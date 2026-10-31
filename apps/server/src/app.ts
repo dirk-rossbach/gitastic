@@ -96,6 +96,7 @@ import {
   checkoutReflog,
   listRepoFiles,
   readRepoFile,
+  readFileAtRevision,
 } from './git/repo';
 import {
   backupWorkingTree,
@@ -445,6 +446,14 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     const filePath = queryValue(request, 'path');
     if (!filePath) throw new AppError(400, 'MISSING_PATH', 'path is required');
     return readRepoFile(repo.path, filePath);
+  });
+  app.get('/api/repo/file-at', async (request) => {
+    const repo = repoFor(state, request);
+    const filePath = queryValue(request, 'path');
+    const rev = queryValue(request, 'rev');
+    if (!filePath) throw new AppError(400, 'MISSING_PATH', 'path is required');
+    if (!rev) throw new AppError(400, 'MISSING_REV', 'rev is required');
+    return readFileAtRevision(state.runner, repo.path, rev, filePath);
   });
   app.get('/api/repo/status', async (request) => {
     const repo = repoFor(state, request);

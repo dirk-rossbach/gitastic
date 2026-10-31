@@ -369,8 +369,7 @@ export async function listRepoFiles(runner: GitRunner, repoPath: string): Promis
 
 const MAX_FILE_BYTES = 2_000_000;
 
-export async function readRepoFile(repoPath: string, relative: string): Promise<RepoFileContent> {
-  const resolved = await assertRepoFile(repoPath, relative);
+export async function readRepoFile(repoPath: string, relative: string): Promise<RepoFileContent> {  const resolved = await assertRepoFile(repoPath, relative);
   const stat = await fs.stat(resolved).catch(() => null);
   if (!stat || !stat.isFile()) {
     throw new AppError(404, 'FILE_NOT_FOUND', `Not a file: ${relative}`);
@@ -386,5 +385,33 @@ export async function readRepoFile(repoPath: string, relative: string): Promise<
     binary,
     truncated: false,
     size: stat.size,
+  };
+}
+
+export async function readFileAtRevision(
+  runner: GitRunner,
+  repoPath: string,
+  rev: string,
+  relative: string,
+): Promise<RepoFileContent> {
+  const result = await runner.run(repoPath, ['show', `${rev}:${relative}`], { allowFail: true });
+  if (result.exitCode !== 0) {
+    throw new AppError(
+      404,
+      'FILE_NOT_FOUND',
+      result.stderr.trim() || `No "${relative}" at ${rev}`,
+    );
+  }
+  const size = Buffer.byteLength(result.stdout);
+  if (size > MAX_FILE_BYTES) {
+    return { path: relative, content: null, binary: false, truncated: true, size };
+  }
+  const binary = result.stdout.includes('\u0000');
+  return {
+    path: relative,
+    content: binary ? null : result.stdout,
+    binary,
+    truncated: false,
+    size,
   };
 }

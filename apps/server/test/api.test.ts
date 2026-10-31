@@ -681,3 +681,16 @@ describe('working tree files during conflicts', () => {
     git(repoPath, 'merge', '--abort');
   });
 });
+
+describe('file content at revision', () => {
+  it('returns the file at a specific commit', async () => {
+    const head = git(repoPath, 'rev-parse', 'HEAD');
+    const file = await json(
+      await request('GET', `/api/repo/file-at?path=file.txt&rev=${head}`),
+    );
+    expect(file.content).toBe('base\n');
+
+    const missing = await request('GET', '/api/repo/file-at?path=file.txt&rev=deadbeef');
+    expect(missing.statusCode).toBeGreaterThanOrEqual(400);
+  });
+});

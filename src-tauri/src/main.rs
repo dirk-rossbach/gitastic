@@ -877,6 +877,50 @@ async fn dispatch(
             }))
         }
 
+        ("GET", "/repo/file-at") => {
+            let (_, rp, runner, _, _) = state.current_repo().await?;
+            let relative = q_str(&query, "path")
+                .ok_or_else(|| ApiError::new(400, "MISSING_PATH", "path is required"))?;
+            let rev = q_str(&query, "rev")
+                .ok_or_else(|| ApiError::new(400, "MISSING_REV", "rev is required"))?;
+            let spec = format!("{rev}:{relative}");
+            let res = runner.run(&rp, &["show", &spec], true).await?;
+            if res.exit_code != 0 {
+                return Err(ApiError::new(
+                    404,
+                    "FILE_NOT_FOUND",
+                    if res.stderr.trim().is_empty() {
+                        format!("No \"{relative}\" at {rev}")
+                    } else {
+                        res.stderr.trim().to_string()
+                    },
+                ));
+            }
+            let size = res.stdout.len() as u64;
+            if size > 2_000_000 {
+                return Ok(json!({
+                    "path": relative,
+                    "content": Value::Null,
+                    "binary": false,
+                    "truncated": true,
+                    "size": size,
+                }));
+            }
+            let binary = res.stdout.as_bytes().contains(&0);
+            let content = if binary {
+                Value::Null
+            } else {
+                Value::String(res.stdout)
+            };
+            Ok(json!({
+                "path": relative,
+                "content": content,
+                "binary": binary,
+                "truncated": false,
+                "size": size,
+            }))
+        }
+
         ("GET", "/repo/status") => {
             let (_, rp, runner, _, _) = state.current_repo().await?;
             let status = get_status(&runner, &rp).await?;

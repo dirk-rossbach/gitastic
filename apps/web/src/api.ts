@@ -235,6 +235,8 @@ export const api = {
     request<DiffResponse>('/repo/diff', { query: options }),
   listFiles: () => request<RepoFileListResponse>('/repo/files'),
   fileContent: (path: string) => request<RepoFileContent>('/repo/file', { query: { path } }),
+  fileAtRevision: (path: string, rev: string) =>
+    request<RepoFileContent>('/repo/file-at', { query: { path, rev } }),
   branches: () => request<Branch[]>('/repo/branches'),
   tags: () => request<Tag[]>('/repo/tags'),
   remotes: () => request<Remote[]>('/repo/remotes'),
