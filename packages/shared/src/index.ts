@@ -271,7 +271,7 @@ export const UI_STYLE_IDS = [
   'ubernerd',
   'daybreak',
   'vellum',
-  'blueprint',
+  'raspberry-cheesecake',
   'lemon-baby',
   'cats-cradle',
   'ink',

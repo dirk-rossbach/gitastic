@@ -14,7 +14,7 @@ const BUILTIN_IDS: &[&str] = &[
     "ubernerd",
     "daybreak",
     "vellum",
-    "blueprint",
+    "raspberry-cheesecake",
     "lemon-baby",
     "cats-cradle",
     "ink",

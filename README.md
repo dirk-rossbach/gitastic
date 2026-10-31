@@ -114,7 +114,7 @@ Choose from 15 visual styles, from calm monochrome layouts to colourful retro th
 Gitastic ships with **15 visual styles**. Each style is self-contained and already includes its preferred light or dark appearance.
 
 - **Dark styles:** Gorgeous (default), Synthwave, Transilvania, Ubernerd, 8-Bit, Smelly Socks, Nightmare on Main Branch and Domino.
-- **Light styles:** Daybreak, Vellum, Blueprint, Lemon Baby, Cat's Cradle and Ink.
+- **Light styles:** Daybreak, Vellum, Raspberry Cheesecake, Lemon Baby, Cat's Cradle and Ink.
 - **Minimal options:** Focus is available in dark and light versions. Domino and Ink are strictly monochrome. These styles remove animations, gradients and other visual effects.
 
 ### Custom themes
@@ -171,9 +171,9 @@ untouched. See **[docs/THEMES.md](docs/THEMES.md)** for the format and a full re
 | :---: | :---: |
 | ![Daybreak porcelain light Git client theme](docs/screenshots/themes/daybreak-light.png) | ![Vellum parchment light Git client theme](docs/screenshots/themes/vellum-light.png) |
 
-| Blueprint | Lemon Baby |
+| Raspberry Cheesecake | Lemon Baby |
 | :---: | :---: |
-| ![Blueprint technical light Git client theme](docs/screenshots/themes/blueprint-light.png) | ![Lemon Baby citrus light Git client theme](docs/screenshots/themes/lemon-baby-light.png) |
+| ![Raspberry Cheesecake pastel light Git client theme](docs/screenshots/themes/raspberry-cheesecake-light.png) | ![Lemon Baby citrus light Git client theme](docs/screenshots/themes/lemon-baby-light.png) |
 
 | Cat's Cradle | Ink |
 | :---: | :---: |
