@@ -25,7 +25,11 @@ const MAX_PATCH_BYTES: usize = 2_000_000;
 pub fn repo_id_for_path(repo_path: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(repo_path.as_bytes());
-    let hex = format!("{:x}", hasher.finalize());
+    let hex = hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     hex.chars().take(12).collect()
 }
 

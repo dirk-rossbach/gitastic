@@ -10,7 +10,7 @@ import {
   Folder,
   FolderOpen,
   GitBranch,
-  Github,
+  GitFork,
   HardDrive,
   Home,
   Info,
@@ -436,7 +436,7 @@ export function Welcome({ session }: { session: Session }) {
                   disabled={!cloneUrl.trim() || !clonePath.trim()}
                   onClick={() => void startJob(api.clone(cloneUrl.trim(), clonePath.trim()))}
                 >
-                  <Github className="h-4 w-4" />
+                  <GitFork className="h-4 w-4" />
                   Clone repository
                 </button>
               </div>
