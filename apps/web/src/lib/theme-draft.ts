@@ -39,15 +39,31 @@ export interface ThemeDraft {
 }
 
 export const FONT_OPTIONS = [
-  { value: '', label: 'Theme default' },
+  { value: '', label: 'Theme default (Inter)' },
+  { value: "'Inter', ui-sans-serif, system-ui, sans-serif", label: 'Inter' },
   { value: "'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif", label: 'Space Grotesk' },
+  { value: "'Lexend', ui-sans-serif, system-ui, sans-serif", label: 'Lexend' },
+  {
+    value: "'Atkinson Hyperlegible', ui-sans-serif, system-ui, sans-serif",
+    label: 'Atkinson Hyperlegible',
+  },
   { value: "'JetBrains Mono', SFMono-Regular, ui-monospace, monospace", label: 'JetBrains Mono' },
+  { value: "'IBM Plex Mono', ui-monospace, monospace", label: 'IBM Plex Mono' },
   {
     value: "'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif",
-    label: 'Iowan Old Style',
+    label: 'Iowan Old Style (system)',
+  },
+  {
+    value: "'Source Serif 4', 'Iowan Old Style', Palatino, Georgia, serif",
+    label: 'Source Serif 4',
+  },
+  { value: "'Lora', Georgia, serif", label: 'Lora' },
+  { value: "'Playfair Display', Georgia, serif", label: 'Playfair Display' },
+  {
+    value: "'IM Fell English', 'Iowan Old Style', Palatino, Georgia, serif",
+    label: 'IM Fell English',
   },
   { value: "'Cinzel Decorative', 'Iowan Old Style', Palatino, Georgia, serif", label: 'Cinzel Decorative' },
-  { value: "'IM Fell English', 'Iowan Old Style', Palatino, Georgia, serif", label: 'IM Fell English' },
   { value: "Orbitron, 'Avenir Next Condensed', ui-sans-serif, sans-serif", label: 'Orbitron' },
   { value: "'Special Elite', 'Courier New', ui-monospace, monospace", label: 'Special Elite' },
   { value: "Fredoka, 'Arial Rounded MT Bold', 'Trebuchet MS', ui-sans-serif, sans-serif", label: 'Fredoka' },

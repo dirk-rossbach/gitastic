@@ -110,6 +110,19 @@ Base rules for `--font-display` and `body` font-family can also be set per theme
 
 Set `color-scheme: dark` or `color-scheme: light` so native controls match.
 
+## Fonts
+
+All fonts offered by the Theme Builder are bundled with Gitastic, so themes look the same on every
+machine:
+
+- **Sans:** Inter, Space Grotesk, Lexend, Atkinson Hyperlegible
+- **Mono:** JetBrains Mono, IBM Plex Mono
+- **Serif:** Source Serif 4, Lora, Playfair Display, IM Fell English, Cinzel Decorative, Iowan Old Style
+- **Display:** Orbitron, Special Elite, Fredoka, VT323, Press Start 2P
+
+The app body defaults to Inter, monospace text to JetBrains Mono. Set `--font-display` in a theme to
+use one of the stacks above.
+
 ## Tips
 
 - A ready-made dark example lives at

@@ -68,9 +68,9 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
-  --font-display: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --shadow-panel: 0 24px 70px rgb(0 0 0 / 0.38);
   --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 20px 55px rgb(0 0 0 / 0.2);
 
