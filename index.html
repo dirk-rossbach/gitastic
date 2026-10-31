@@ -1,0 +1,2533 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      document.documentElement.classList.add("js");
+    </script>
+    <title>Gitastic — See Git clearly</title>
+    <meta
+      name="description"
+      content="Gitastic is a local-first visual Git client for macOS, Windows and Linux. Understand your history, review every change and resolve conflicts without fighting the terminal."
+    />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f2efe6" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Gitastic — See Git clearly" />
+    <meta
+      property="og:description"
+      content="A local-first visual Git client with a branch graph, line-level staging, an interactive conflict resolver and 15 visual styles."
+    />
+    <meta
+      property="og:image"
+      content="https://raw.githubusercontent.com/dirk-rossbach/gitastic/main/docs/screenshots/timeline.png"
+    />
+    <meta
+      property="og:image:alt"
+      content="Gitastic timeline with a visual branch graph and commit details"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Gitastic — See Git clearly" />
+    <meta
+      name="twitter:description"
+      content="A local-first visual Git client for macOS, Windows and Linux."
+    />
+    <meta
+      name="twitter:image"
+      content="https://raw.githubusercontent.com/dirk-rossbach/gitastic/main/docs/screenshots/timeline.png"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23171713'/%3E%3Cpath d='M11 8v16M11 14c0 2 10 2 10 6' stroke='%23f2efe6' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='11' cy='8' r='2.5' fill='%23e0491d'/%3E%3Ccircle cx='21' cy='12' r='2.5' fill='%23d9ff43'/%3E%3Ccircle cx='21' cy='24' r='2.5' fill='%23f2efe6'/%3E%3C/svg%3E"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Gitastic",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Windows, Linux",
+        "description": "A local-first visual Git client with a branch graph, line-level staging, an interactive conflict resolver and 15 visual styles.",
+        "url": "https://github.com/dirk-rossbach/gitastic",
+        "downloadUrl": "https://github.com/dirk-rossbach/gitastic/releases/latest",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --paper: #f2efe6;
+        --paper-2: #e8e3d7;
+        --ink: #171713;
+        --ink-soft: #3b3932;
+        --muted: #6d685e;
+        --line: rgba(23, 23, 19, 0.17);
+        --line-strong: rgba(23, 23, 19, 0.55);
+        --signal: #e0491d;
+        --signal-dark: #b53610;
+        --acid: #d9ff43;
+        --cobalt: #263bc7;
+        --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+        --mono: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        --max: 1240px;
+        --gutter: clamp(18px, 4vw, 48px);
+        --header-h: 72px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        overflow-x: clip;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        color: var(--ink);
+        background-color: var(--paper);
+        background-image:
+          linear-gradient(rgba(23, 23, 19, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(23, 23, 19, 0.035) 1px, transparent 1px);
+        background-size: 40px 40px;
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+        overflow-x: clip;
+      }
+
+      ::selection {
+        background: var(--signal);
+        color: #fff;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--signal);
+        outline-offset: 3px;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      img {
+        max-width: 100%;
+      }
+
+      svg {
+        display: block;
+      }
+
+      .container {
+        width: min(calc(100% - (var(--gutter) * 2)), var(--max));
+        margin-inline: auto;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .skip-link {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 100;
+        padding: 10px 14px;
+        border: 1.5px solid var(--ink);
+        background: var(--acid);
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        text-decoration: none;
+        transform: translateY(-160%);
+        transition: transform 0.2s ease;
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .reveal {
+        opacity: 1;
+        transform: none;
+      }
+
+      .js .reveal {
+        opacity: 0;
+        transform: translateY(16px);
+        transition:
+          opacity 0.65s ease,
+          transform 0.65s ease;
+      }
+
+      .js .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+      }
+
+      /* Header */
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--paper);
+        border-bottom: 1.5px solid var(--ink);
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        min-height: var(--header-h);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 11px;
+        text-decoration: none;
+        flex: none;
+      }
+
+      .logo-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1.5px solid var(--ink);
+        background: var(--signal);
+        color: var(--paper);
+      }
+
+      .logo-mark svg {
+        width: 19px;
+        height: 19px;
+      }
+
+      .brand-name {
+        font-family: var(--serif);
+        font-size: 27px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.035em;
+      }
+
+      .brand-dot {
+        color: var(--signal);
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+      }
+
+      .nav-links a {
+        position: relative;
+        padding: 8px 0;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        text-decoration: none;
+      }
+
+      .nav-links a::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: 2px;
+        left: 0;
+        height: 1.5px;
+        background: var(--signal);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.2s ease;
+      }
+
+      .nav-links a:hover::after {
+        transform: scaleX(1);
+      }
+
+      .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: none;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border: 1.5px solid var(--ink);
+        background: var(--paper);
+        color: var(--ink);
+        box-shadow: 4px 4px 0 var(--ink);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        line-height: 1;
+        text-transform: uppercase;
+        text-decoration: none;
+        cursor: pointer;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease,
+          background 0.15s ease;
+      }
+
+      .btn svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .btn:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .btn-primary {
+        background: var(--signal);
+        color: #fff;
+      }
+
+      .btn-ghost {
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .btn-ghost:hover {
+        box-shadow: none;
+        background: var(--acid);
+        transform: none;
+      }
+
+      .btn-sm {
+        padding: 10px 13px;
+      }
+
+      .menu-toggle {
+        display: none;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border: 1.5px solid var(--ink);
+        background: var(--paper);
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      /* Hero */
+      .hero {
+        position: relative;
+        padding: clamp(56px, 8vw, 104px) 0 clamp(64px, 10vw, 136px);
+        border-bottom: 1.5px solid var(--ink);
+      }
+
+      .hero-rail {
+        position: absolute;
+        top: 50%;
+        left: 14px;
+        transform: translateY(-50%);
+        writing-mode: vertical-rl;
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+        gap: clamp(36px, 6vw, 84px);
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        padding: 7px 10px;
+        border: 1.5px solid var(--ink);
+        background: var(--paper);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--signal);
+      }
+
+      .hero h1 {
+        margin: 28px 0 24px;
+        font-family: var(--serif);
+        font-size: clamp(64px, 9.4vw, 132px);
+        font-weight: 500;
+        line-height: 0.86;
+        letter-spacing: -0.058em;
+      }
+
+      .hero h1 em {
+        color: var(--signal);
+        font-weight: 500;
+      }
+
+      .lead {
+        max-width: 35rem;
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: clamp(17px, 1.8vw, 21px);
+        line-height: 1.5;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin: 32px 0 30px;
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .hero-meta span::before {
+        content: "+";
+        margin-right: 6px;
+        color: var(--signal);
+      }
+
+      .hero-visual {
+        position: relative;
+      }
+
+      .plate {
+        margin: 0;
+        border: 1.5px solid var(--ink);
+        background: #fff;
+        box-shadow: 12px 12px 0 var(--signal);
+      }
+
+      .plate-head,
+      .plate-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 13px;
+        font-family: var(--mono);
+        font-size: 8px;
+        letter-spacing: 0.13em;
+        line-height: 1.3;
+        text-transform: uppercase;
+      }
+
+      .plate-head {
+        border-bottom: 1.5px solid var(--ink);
+        background: var(--paper-2);
+      }
+
+      .plate-foot {
+        border-top: 1.5px solid var(--ink);
+        color: var(--muted);
+      }
+
+      .hero-visual .plate-foot {
+        padding-right: 132px;
+      }
+
+      .plate-body {
+        background: #0b1020;
+      }
+
+      .plate-body img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      [data-lightbox] {
+        cursor: zoom-in;
+      }
+
+      .hero-stamp {
+        position: absolute;
+        right: -18px;
+        bottom: -30px;
+        display: grid;
+        width: 112px;
+        height: 112px;
+        place-items: center;
+        border: 1.5px solid var(--ink);
+        border-radius: 50%;
+        background: var(--acid);
+        box-shadow: 4px 4px 0 var(--ink);
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        line-height: 1.35;
+        text-align: center;
+        text-transform: uppercase;
+        transform: rotate(-8deg);
+      }
+
+      .hero-stamp span {
+        display: block;
+        color: var(--signal-dark);
+      }
+
+      /* Trust strip */
+      .trust-strip {
+        border-bottom: 1.5px solid var(--ink);
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .trust-inner {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .trust-item {
+        display: flex;
+        flex: 1 1 220px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 24px;
+        border-right: 1px solid rgba(242, 239, 230, 0.18);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .trust-item svg {
+        width: 14px;
+        height: 14px;
+        flex: none;
+        color: var(--acid);
+      }
+
+      /* Sections */
+      .section {
+        padding: clamp(64px, 9vw, 128px) 0;
+        border-bottom: 1.5px solid var(--ink);
+        scroll-margin-top: calc(var(--header-h) + 20px);
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        gap: 24px clamp(32px, 5vw, 72px);
+        align-items: end;
+        margin-bottom: clamp(38px, 5vw, 68px);
+      }
+
+      .section-kicker {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        color: var(--signal);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        line-height: 1.4;
+        text-transform: uppercase;
+      }
+
+      .section-kicker::before {
+        content: "";
+        width: 28px;
+        height: 1.5px;
+        flex: none;
+        background: currentColor;
+      }
+
+      .section-head h2,
+      .split-copy h2,
+      .local-copy h2 {
+        margin: 0;
+        font-family: var(--serif);
+        font-size: clamp(40px, 5.7vw, 76px);
+        font-weight: 500;
+        line-height: 0.94;
+        letter-spacing: -0.045em;
+      }
+
+      .section-head p {
+        max-width: 36rem;
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 17px;
+      }
+
+      /* Features */
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border-top: 1.5px solid var(--ink);
+        border-left: 1.5px solid var(--ink);
+      }
+
+      .feature-card {
+        min-height: 100%;
+        padding: 24px 24px 30px;
+        border-right: 1.5px solid var(--ink);
+        border-bottom: 1.5px solid var(--ink);
+        background: rgba(242, 239, 230, 0.62);
+        transition: background 0.2s ease;
+      }
+
+      .feature-card:hover {
+        background: var(--acid);
+      }
+
+      .feature-index {
+        display: block;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+      }
+
+      .feature-icon {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        margin: 20px 0 22px;
+        place-items: center;
+        border: 1.5px solid var(--ink);
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      .feature-icon svg {
+        width: 22px;
+        height: 22px;
+      }
+
+      .feature-card h3 {
+        margin: 0 0 12px;
+        font-family: var(--serif);
+        font-size: 26px;
+        font-weight: 600;
+        line-height: 1.04;
+        letter-spacing: -0.025em;
+      }
+
+      .feature-card p {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 14.5px;
+        line-height: 1.55;
+      }
+
+      /* Split features */
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 1.14fr) minmax(0, 0.86fr);
+        gap: clamp(34px, 6vw, 84px);
+        align-items: center;
+      }
+
+      .split.reverse .split-media {
+        order: 2;
+      }
+
+      .split.reverse .split-copy {
+        order: 1;
+      }
+
+      .split .plate {
+        box-shadow: 9px 9px 0 var(--ink);
+      }
+
+      .split-copy .section-kicker {
+        margin-bottom: 20px;
+      }
+
+      .split-copy p {
+        max-width: 34rem;
+        margin: 22px 0 0;
+        color: var(--ink-soft);
+        font-size: 16px;
+      }
+
+      .check-list {
+        max-width: 34rem;
+        margin: 28px 0 0;
+        padding: 0;
+        border-top: 1px solid var(--line);
+        list-style: none;
+      }
+
+      .check-list li {
+        display: flex;
+        gap: 10px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 14.5px;
+        line-height: 1.45;
+      }
+
+      .check-list svg {
+        width: 16px;
+        height: 16px;
+        margin-top: 3px;
+        flex: none;
+        color: var(--signal);
+      }
+
+      /* Theme lab */
+      .themes-section {
+        border-bottom: 1.5px solid var(--ink);
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .themes-section .section-kicker {
+        color: var(--acid);
+      }
+
+      .themes-section .section-head p {
+        color: rgba(242, 239, 230, 0.68);
+      }
+
+      .theme-lab {
+        display: grid;
+        grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+        gap: clamp(30px, 4vw, 60px);
+        align-items: start;
+      }
+
+      .theme-stage {
+        position: sticky;
+        top: calc(var(--header-h) + 24px);
+        border: 1.5px solid var(--paper);
+        background: #0c0c0a;
+        color: var(--paper);
+      }
+
+      .stage-top {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 16px 18px;
+        border-bottom: 1px solid rgba(242, 239, 230, 0.24);
+      }
+
+      .stage-kicker {
+        color: var(--acid);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .theme-stage h3 {
+        margin: 5px 0 0;
+        font-family: var(--serif);
+        font-size: 36px;
+        font-weight: 500;
+        line-height: 0.95;
+        letter-spacing: -0.035em;
+      }
+
+      .stage-swatches {
+        display: flex;
+        gap: 6px;
+        flex: none;
+        padding-top: 4px;
+      }
+
+      .stage-swatches span {
+        width: 18px;
+        height: 18px;
+        border: 1px solid rgba(242, 239, 230, 0.8);
+      }
+
+      .stage-image-wrap {
+        background: #000;
+      }
+
+      .stage-image-wrap img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .stage-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 13px 18px;
+        border-top: 1px solid rgba(242, 239, 230, 0.24);
+        color: rgba(242, 239, 230, 0.62);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        line-height: 1.4;
+      }
+
+      .stage-bottom p {
+        margin: 0;
+      }
+
+      .theme-picker {
+        min-width: 0;
+      }
+
+      .theme-tabs {
+        display: flex;
+        width: max-content;
+        margin-bottom: 20px;
+        border: 1px solid rgba(242, 239, 230, 0.3);
+      }
+
+      .theme-tab {
+        appearance: none;
+        padding: 10px 18px;
+        border: 0;
+        border-right: 1px solid rgba(242, 239, 230, 0.3);
+        background: transparent;
+        color: var(--paper);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+
+      .theme-tab:last-child {
+        border-right: 0;
+      }
+
+      .theme-tab:hover {
+        background: rgba(242, 239, 230, 0.08);
+      }
+
+      .theme-tab.is-active {
+        background: var(--acid);
+        color: var(--ink);
+      }
+
+      .theme-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-height: 516px;
+        overflow-y: auto;
+        border-top: 1px solid rgba(242, 239, 230, 0.24);
+        scrollbar-color: rgba(242, 239, 230, 0.35) transparent;
+        scrollbar-width: thin;
+      }
+
+      .theme-grid::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .theme-grid::-webkit-scrollbar-thumb {
+        background: rgba(242, 239, 230, 0.35);
+      }
+
+      .theme-card {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 0;
+        padding: 11px 10px;
+        border: 0;
+        border-bottom: 1px solid rgba(242, 239, 230, 0.18);
+        background: transparent;
+        color: var(--paper);
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .theme-card:nth-child(odd) {
+        border-right: 1px solid rgba(242, 239, 230, 0.18);
+      }
+
+      .theme-card:hover {
+        background: rgba(242, 239, 230, 0.08);
+      }
+
+      .theme-card.is-active {
+        outline: 1px solid var(--acid);
+        outline-offset: -1px;
+        background: rgba(242, 239, 230, 0.07);
+      }
+
+      .theme-card img {
+        width: 58px;
+        height: 38px;
+        flex: none;
+        border: 1px solid rgba(242, 239, 230, 0.28);
+        object-fit: cover;
+      }
+
+      .theme-card span {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .theme-card strong {
+        overflow: hidden;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .theme-card small {
+        color: rgba(242, 239, 230, 0.52);
+        font-family: var(--mono);
+        font-size: 8px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .theme-hint {
+        margin: 12px 0 0;
+        color: rgba(242, 239, 230, 0.42);
+        font-family: var(--mono);
+        font-size: 8px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      /* Steps */
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border-top: 1.5px solid var(--ink);
+      }
+
+      .step {
+        position: relative;
+        padding: 34px 30px 0 0;
+        border-right: 1px solid var(--line);
+      }
+
+      .step:last-child {
+        padding-right: 0;
+        border-right: 0;
+      }
+
+      .step::before {
+        content: "";
+        position: absolute;
+        top: -6px;
+        left: 0;
+        width: 11px;
+        height: 11px;
+        border: 1.5px solid var(--ink);
+        border-radius: 50%;
+        background: var(--paper);
+      }
+
+      .step-index {
+        display: block;
+        color: var(--signal);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+      }
+
+      .step-icon {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        margin: 18px 0 20px;
+        place-items: center;
+        border: 1.5px solid var(--ink);
+        background: var(--paper);
+      }
+
+      .step-icon svg {
+        width: 21px;
+        height: 21px;
+      }
+
+      .step h3 {
+        margin: 0 0 10px;
+        font-family: var(--serif);
+        font-size: 30px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.03em;
+      }
+
+      .step p {
+        max-width: 24rem;
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 15px;
+      }
+
+      /* Local */
+      .local {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: clamp(38px, 6vw, 88px);
+        align-items: start;
+      }
+
+      .local-copy p {
+        max-width: 32rem;
+        margin: 22px 0 0;
+        color: var(--ink-soft);
+        font-size: 16px;
+      }
+
+      .local-card {
+        border: 1.5px solid var(--ink);
+        background: var(--acid);
+        box-shadow: 10px 10px 0 var(--ink);
+      }
+
+      .local-badge {
+        display: inline-block;
+        padding: 8px 12px;
+        background: var(--ink);
+        color: var(--acid);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .local-list {
+        padding: 4px 24px 22px;
+      }
+
+      .local-item {
+        display: flex;
+        gap: 14px;
+        padding: 18px 0;
+        border-bottom: 1px solid rgba(23, 23, 19, 0.24);
+      }
+
+      .local-item:last-child {
+        border-bottom: 0;
+      }
+
+      .local-item svg {
+        width: 22px;
+        height: 22px;
+        flex: none;
+        margin-top: 2px;
+      }
+
+      .local-item strong {
+        display: block;
+        font-family: var(--serif);
+        font-size: 21px;
+        font-weight: 600;
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+      }
+
+      .local-item span {
+        display: block;
+        margin-top: 4px;
+        color: var(--ink-soft);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      /* Download */
+      .download {
+        padding: clamp(64px, 9vw, 128px) 0;
+        border-bottom: 1.5px solid var(--ink);
+        background: var(--ink);
+        color: var(--paper);
+        scroll-margin-top: calc(var(--header-h) + 20px);
+      }
+
+      .download .section-kicker {
+        color: var(--acid);
+      }
+
+      .download h2 {
+        max-width: 10ch;
+        margin: 22px 0 18px;
+        font-family: var(--serif);
+        font-size: clamp(52px, 8vw, 112px);
+        font-weight: 500;
+        line-height: 0.88;
+        letter-spacing: -0.055em;
+      }
+
+      .download-intro {
+        max-width: 34rem;
+        margin: 0;
+        color: rgba(242, 239, 230, 0.66);
+        font-size: 17px;
+      }
+
+      .platform-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 44px;
+        border-top: 1px solid rgba(242, 239, 230, 0.3);
+        border-left: 1px solid rgba(242, 239, 230, 0.3);
+      }
+
+      .platform {
+        display: flex;
+        min-height: 190px;
+        flex-direction: column;
+        gap: 6px;
+        padding: 24px;
+        border-right: 1px solid rgba(242, 239, 230, 0.3);
+        border-bottom: 1px solid rgba(242, 239, 230, 0.3);
+        color: var(--paper);
+        text-decoration: none;
+        transition:
+          background 0.2s ease,
+          color 0.2s ease;
+      }
+
+      .platform:hover {
+        background: var(--acid);
+        color: var(--ink);
+      }
+
+      .platform svg {
+        width: 28px;
+        height: 28px;
+        margin-bottom: 22px;
+      }
+
+      .platform strong {
+        font-family: var(--serif);
+        font-size: 30px;
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: -0.03em;
+      }
+
+      .platform span {
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        line-height: 1.5;
+        text-transform: uppercase;
+        opacity: 0.62;
+      }
+
+      .platform:hover span {
+        opacity: 0.8;
+      }
+
+      .download-note {
+        max-width: 54rem;
+        margin: 20px 0 0;
+        color: rgba(242, 239, 230, 0.45);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.04em;
+        line-height: 1.7;
+      }
+
+      .download-note a {
+        color: var(--acid);
+      }
+
+      /* FAQ */
+      .faq-list {
+        border-top: 1.5px solid var(--ink);
+      }
+
+      .faq-list details {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .faq-list summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 20px 0;
+        font-family: var(--serif);
+        font-size: 24px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        list-style: none;
+        cursor: pointer;
+      }
+
+      .faq-list summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .faq-list summary::after {
+        content: "+";
+        color: var(--signal);
+        font-family: var(--mono);
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 1;
+        transition: transform 0.2s ease;
+      }
+
+      .faq-list details[open] summary::after {
+        transform: rotate(45deg);
+      }
+
+      .faq-list details p {
+        max-width: 58rem;
+        margin: -4px 0 24px;
+        color: var(--ink-soft);
+        font-size: 15px;
+      }
+
+      /* Footer */
+      .site-footer {
+        padding: 48px 0 32px;
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .footer-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 28px 40px;
+        align-items: start;
+      }
+
+      .footer-brand .logo-mark {
+        border-color: var(--paper);
+        background: var(--acid);
+        color: var(--ink);
+      }
+
+      .footer-brand .brand-name {
+        color: var(--paper);
+      }
+
+      .footer-brand p {
+        margin: 14px 0 0;
+        color: rgba(242, 239, 230, 0.5);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 22px;
+      }
+
+      .footer-links a {
+        color: rgba(242, 239, 230, 0.68);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        text-decoration: none;
+      }
+
+      .footer-links a:hover {
+        color: var(--acid);
+      }
+
+      .footer-meta {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding-top: 20px;
+        border-top: 1px solid rgba(242, 239, 230, 0.18);
+        color: rgba(242, 239, 230, 0.36);
+        font-family: var(--mono);
+        font-size: 8px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      /* Lightbox and back-to-top */
+      .lightbox {
+        width: min(92vw, 1100px);
+        max-width: 1100px;
+        padding: 0;
+        border: 1.5px solid var(--paper);
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .lightbox::backdrop {
+        background: rgba(12, 12, 10, 0.88);
+      }
+
+      .lightbox-inner {
+        position: relative;
+        padding: 10px;
+      }
+
+      .lightbox img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid rgba(242, 239, 230, 0.24);
+      }
+
+      .lightbox-close {
+        position: absolute;
+        top: -18px;
+        right: -18px;
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border: 1.5px solid var(--paper);
+        background: var(--signal);
+        color: #fff;
+        cursor: pointer;
+      }
+
+      .lightbox-close svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .to-top {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        z-index: 40;
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        border: 1.5px solid var(--ink);
+        background: var(--acid);
+        box-shadow: 4px 4px 0 var(--ink);
+        color: var(--ink);
+        cursor: pointer;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+
+      .to-top.is-visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .to-top svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      @media (max-width: 1200px) {
+        .hero-rail {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .hero-grid,
+        .split,
+        .local,
+        .theme-lab {
+          grid-template-columns: 1fr;
+        }
+
+        .split.reverse .split-media,
+        .split.reverse .split-copy {
+          order: initial;
+        }
+
+        .section-head {
+          grid-template-columns: 1fr;
+          align-items: start;
+        }
+
+        .section-head p {
+          max-width: 44rem;
+        }
+
+        .feature-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .theme-stage {
+          position: static;
+        }
+
+        .theme-grid {
+          max-height: 460px;
+        }
+
+        .hero-stamp {
+          right: 12px;
+          bottom: -24px;
+          width: 96px;
+          height: 96px;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .nav-links {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          left: 0;
+          display: none;
+          max-height: calc(100dvh - var(--header-h));
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0;
+          overflow-y: auto;
+          padding: 4px var(--gutter) 22px;
+          border-bottom: 1.5px solid var(--ink);
+          background: var(--paper);
+        }
+
+        .nav-links.is-open {
+          display: flex;
+        }
+
+        .nav-links a {
+          padding: 14px 0;
+          border-bottom: 1px solid var(--line);
+          font-size: 11px;
+        }
+
+        .nav-links a::after {
+          display: none;
+        }
+
+        .nav-actions .btn-ghost {
+          display: none;
+        }
+
+        .menu-toggle {
+          display: grid;
+          margin-left: auto;
+        }
+
+        .trust-item {
+          flex-basis: 50%;
+          padding: 12px 16px;
+        }
+
+        .steps {
+          grid-template-columns: 1fr;
+        }
+
+        .step {
+          padding: 28px 0 30px;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .step:last-child {
+          border-bottom: 0;
+        }
+      }
+
+      @media (max-width: 720px) {
+        :root {
+          --header-h: 64px;
+        }
+
+        .brand-name {
+          font-size: 24px;
+        }
+
+        .logo-mark {
+          width: 31px;
+          height: 31px;
+        }
+
+        .nav-actions .btn-primary {
+          padding: 10px 11px;
+          font-size: 9px;
+        }
+
+        .hero {
+          padding-top: 48px;
+        }
+
+        .hero h1 {
+          font-size: clamp(58px, 17vw, 82px);
+        }
+
+        .hero-actions .btn {
+          width: 100%;
+        }
+
+        .hero-stamp {
+          display: none;
+        }
+
+        .hero-visual .plate-foot {
+          padding-right: 13px;
+        }
+
+        .plate {
+          box-shadow: 7px 7px 0 var(--signal);
+        }
+
+        .split .plate {
+          box-shadow: 7px 7px 0 var(--ink);
+        }
+
+        .feature-grid,
+        .platform-grid,
+        .theme-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .theme-card:nth-child(odd) {
+          border-right: 0;
+        }
+
+        .theme-grid {
+          max-height: 420px;
+        }
+
+        .theme-stage h3 {
+          font-size: 30px;
+        }
+
+        .stage-bottom {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .local-card {
+          box-shadow: 7px 7px 0 var(--ink);
+        }
+
+        .footer-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .faq-list summary {
+          font-size: 21px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+
+        .js .reveal {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="container nav">
+        <a class="brand" href="#" aria-label="Gitastic home">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M7 4v16" />
+              <path d="M7 9c0 3 5 3 5 6s5 3 5 6" />
+              <circle cx="7" cy="4" r="1.6" fill="currentColor" stroke="none" />
+              <circle cx="17" cy="9" r="1.6" fill="currentColor" stroke="none" />
+              <circle cx="17" cy="21" r="1.6" fill="currentColor" stroke="none" />
+            </svg>
+          </span>
+          <span class="brand-name">Gitastic<span class="brand-dot">.</span></span>
+        </a>
+
+        <nav class="nav-links" id="nav-links" aria-label="Main navigation">
+          <a href="#features">Features</a>
+          <a href="#themes">Themes</a>
+          <a href="#download">Download</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+
+        <div class="nav-actions">
+          <a
+            class="btn btn-ghost btn-sm"
+            href="https://github.com/sponsors/dirk-rossbach"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Sponsor
+          </a>
+          <a
+            class="btn btn-primary btn-sm"
+            href="https://github.com/dirk-rossbach/gitastic/releases/latest"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Download
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12" />
+              <path d="m7 10 5 5 5-5" />
+              <path d="M5 21h14" />
+            </svg>
+          </a>
+        </div>
+
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-label="Toggle navigation"
+          aria-expanded="false"
+          aria-controls="nav-links"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <div class="hero-rail" aria-hidden="true">Gitastic field notes / 2026</div>
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <div class="eyebrow">
+              <span class="eyebrow-dot" aria-hidden="true"></span>
+              Local-first Git client · v1.2.2
+            </div>
+            <h1>See Git <br /><em>clearly.</em></h1>
+            <p class="lead">
+              Gitastic turns branches, changes and conflicts into a visual workspace. Review what changed,
+              commit exactly what you mean, and recover from mistakes without fighting the terminal.
+            </p>
+            <div class="hero-actions">
+              <a
+                class="btn btn-primary"
+                href="https://github.com/dirk-rossbach/gitastic/releases/latest"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Download Gitastic
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" />
+                </svg>
+              </a>
+              <a
+                class="btn btn-ghost"
+                href="https://github.com/dirk-rossbach/gitastic"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View on GitHub
+              </a>
+            </div>
+            <div class="hero-meta" aria-label="Platforms and privacy">
+              <span>macOS</span>
+              <span>Windows</span>
+              <span>Linux</span>
+              <span>No account</span>
+              <span>No cloud</span>
+              <span>No telemetry</span>
+            </div>
+          </div>
+
+          <div class="hero-visual">
+            <figure class="plate">
+              <div class="plate-head">
+                <span>Plate 01 / Timeline</span>
+                <span>Gitastic v1.2.2</span>
+              </div>
+              <div class="plate-body">
+                <img
+                  src="docs/screenshots/timeline.png"
+                  alt="Gitastic timeline with a visual branch graph and commit details"
+                  width="2880"
+                  height="1800"
+                  fetchpriority="high"
+                  data-lightbox
+                />
+              </div>
+              <figcaption class="plate-foot">
+                <span>Visual history</span>
+                <span>Click to enlarge</span>
+              </figcaption>
+            </figure>
+            <div class="hero-stamp" aria-hidden="true">
+              Local<br />first<br /><span>No cloud</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="trust-strip">
+        <div class="container trust-inner">
+          <span class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+            Existing repositories
+          </span>
+          <span class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+            GitHub &amp; GitLab
+          </span>
+          <span class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+            macOS · Windows · Linux
+          </span>
+          <span class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+            Free &amp; open source
+          </span>
+        </div>
+      </div>
+
+      <section class="section" id="features">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="section-kicker">01 / Everything in one place</span>
+              <h2>Git, without the guesswork.</h2>
+            </div>
+            <p>
+              Gitastic keeps the power of Git and makes the important parts visible. No command
+              memorisation, no lost changes and no mystery state.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card reveal">
+              <span class="feature-index">01</span>
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 4v16" />
+                  <path d="M6 9c0 3 6 3 6 6s6 3 6 6" />
+                  <circle cx="6" cy="4" r="2" />
+                  <circle cx="18" cy="9" r="2" />
+                  <circle cx="18" cy="21" r="2" />
+                </svg>
+              </span>
+              <h3>A history you can actually read</h3>
+              <p>See branches, tags and commits as a clear visual graph. Jump around your repository without reconstructing it in your head.</p>
+            </article>
+
+            <article class="feature-card reveal">
+              <span class="feature-index">02</span>
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 6h16M4 12h10M4 18h7" />
+                  <path d="M17 14v6M14 17h6" />
+                </svg>
+              </span>
+              <h3>Commit only what you mean</h3>
+              <p>Stage a whole file, a section of changes or a single line. Keep unrelated edits out of the same commit.</p>
+            </article>
+
+            <article class="feature-card reveal">
+              <span class="feature-index">03</span>
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 4v6c0 2 8 2 8 4v6" />
+                  <path d="M5 7l3-3 3 3" />
+                  <path d="M19 17l-3 3-3-3" />
+                </svg>
+              </span>
+              <h3>Conflicts, side by side</h3>
+              <p>Compare your version, the incoming version and the live result. Accept a block or a line, or edit the result directly.</p>
+            </article>
+
+            <article class="feature-card reveal">
+              <span class="feature-index">04</span>
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 7H4v5" />
+                  <path d="M4 12a8 8 0 1 0 2.3-5.7L4 8" />
+                </svg>
+              </span>
+              <h3>A safety net for mistakes</h3>
+              <p>Automatic backups and undo help you recover from destructive actions. Browse your recovery history when you need to get work back.</p>
+            </article>
+
+            <article class="feature-card reveal">
+              <span class="feature-index">05</span>
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.3 9.2 4.5 4.5 0 0 0 7 18Z" />
+                  <path d="m9 13 2 2 4-4" />
+                </svg>
+              </span>
+              <h3>Your accounts, connected</h3>
+              <p>Clone repositories and browse pull requests or merge requests from GitHub and GitLab, including self-hosted instances.</p>
+            </article>
+
+            <article class="feature-card reveal">
+              <span class="feature-index">06</span>
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="10" width="14" height="10" rx="2" />
+                  <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                  <path d="M12 14v2" />
+                </svg>
+              </span>
+              <h3>Private by default</h3>
+              <p>Everything runs on your machine. No account, no cloud sync and no telemetry. Your access tokens stay in your OS credential store.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container split">
+          <div class="split-media reveal">
+            <figure class="plate">
+              <div class="plate-head">
+                <span>Plate 02 / Split diff</span>
+                <span>Line-level staging</span>
+              </div>
+              <div class="plate-body">
+                <img
+                  src="docs/screenshots/diff-split-synthwave.png"
+                  alt="Side-by-side Git diff with line-level staging in Gitastic"
+                  width="2880"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                  data-lightbox
+                />
+              </div>
+              <figcaption class="plate-foot">
+                <span>Review every change</span>
+                <span>Click to enlarge</span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="split-copy reveal">
+            <span class="section-kicker">02 / Review with confidence</span>
+            <h2>Every change, exactly where you expect it.</h2>
+            <p>
+              Switch between unified and side-by-side diffs. Stage a whole file, a section or a
+              single line, and keep unrelated work out of your commit.
+            </p>
+            <ul class="check-list">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                Unified and split diff views
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                Stage or discard files, sections and individual lines
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                Clear file badges for new, deleted, renamed and copied files
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container split reverse">
+          <div class="split-media reveal">
+            <figure class="plate">
+              <div class="plate-head">
+                <span>Plate 03 / Conflict resolver</span>
+                <span>Ours / theirs / result</span>
+              </div>
+              <div class="plate-body">
+                <img
+                  src="docs/screenshots/conflicts.png"
+                  alt="Interactive merge conflict resolver with ours, theirs and live result panes"
+                  width="2880"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                  data-lightbox
+                />
+              </div>
+              <figcaption class="plate-foot">
+                <span>Resolve block by block</span>
+                <span>Click to enlarge</span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="split-copy reveal">
+            <span class="section-kicker">03 / Conflicts without the panic</span>
+            <h2>See both sides. Choose the result.</h2>
+            <p>
+              When a merge, rebase or cherry-pick has conflicts, Gitastic shows your version,
+              the other version and the live result together. Resolve it block by block or line
+              by line — or edit the result directly.
+            </p>
+            <ul class="check-list">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                Live preview of the resolved file
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                Accept blocks, groups of lines or single lines
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                Works with merge, rebase and cherry-pick conflicts
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section themes-section" id="themes">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="section-kicker">04 / Make it yours</span>
+              <h2>15 visual styles. One app.</h2>
+            </div>
+            <p>
+              From aurora gradients to strict monochrome. Every style includes its own light or
+              dark appearance, so you can match your workspace without a separate theme switch.
+            </p>
+          </div>
+
+          <div class="theme-lab reveal">
+            <div class="theme-stage" id="theme-stage" aria-live="polite">
+              <div class="stage-top">
+                <div>
+                  <span class="stage-kicker" id="theme-mode">Dark</span>
+                  <h3 id="theme-name">Gorgeous</h3>
+                </div>
+                <div class="stage-swatches" id="theme-swatches" aria-hidden="true"></div>
+              </div>
+              <div class="stage-image-wrap">
+                <img
+                  id="theme-image"
+                  src="docs/screenshots/themes/gorgeous-dark.png"
+                  alt="Gorgeous dark theme preview"
+                  width="810"
+                  height="550"
+                  loading="lazy"
+                  decoding="async"
+                  data-lightbox
+                />
+              </div>
+              <div class="stage-bottom">
+                <p id="theme-note">Aurora gradients &amp; neon glow</p>
+                <span id="theme-count">01 / 16</span>
+              </div>
+            </div>
+
+            <div class="theme-picker">
+              <div class="theme-tabs" role="group" aria-label="Filter themes">
+                <button class="theme-tab is-active" type="button" data-mode="all" aria-pressed="true">All</button>
+                <button class="theme-tab" type="button" data-mode="dark" aria-pressed="false">Dark</button>
+                <button class="theme-tab" type="button" data-mode="light" aria-pressed="false">Light</button>
+              </div>
+              <div class="theme-grid" id="theme-grid"></div>
+              <p class="theme-hint">Select a theme to preview it.</p>
+            </div>
+          </div>
+          <p class="sr-only" id="theme-status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="section-kicker">05 / A calmer workflow</span>
+              <h2>From first clone to confident commit.</h2>
+            </div>
+            <p>
+              Gitastic stays out of your way and gives you the context you need at each step.
+            </p>
+          </div>
+          <div class="steps">
+            <article class="step reveal">
+              <span class="step-index">Step 01</span>
+              <span class="step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z" />
+                  <path d="M12 11v5M9.5 13.5 12 16l2.5-2.5" />
+                </svg>
+              </span>
+              <h3>Open or clone</h3>
+              <p>Start from a local repository or clone one from GitHub or GitLab over HTTPS or SSH.</p>
+            </article>
+            <article class="step reveal">
+              <span class="step-index">Step 02</span>
+              <span class="step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 6h16M4 12h10M4 18h7" />
+                  <path d="M17 14v6M14 17h6" />
+                </svg>
+              </span>
+              <h3>Review and stage</h3>
+              <p>Look at what changed, then stage only the parts that belong in your next commit.</p>
+            </article>
+            <article class="step reveal">
+              <span class="step-index">Step 03</span>
+              <span class="step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12l4 4L19 6" />
+                </svg>
+              </span>
+              <h3>Commit and move on</h3>
+              <p>Write your message, commit with confidence and keep your history clean.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container local">
+          <div class="local-copy reveal">
+            <span class="section-kicker">06 / Private by default</span>
+            <h2>Your code stays yours.</h2>
+            <p>
+              Gitastic runs entirely on your machine. It uses your existing Git installation and
+              credentials, and never uploads your repositories to a cloud service.
+            </p>
+            <ul class="check-list">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                No account and no sign-up
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                No cloud sync and no telemetry
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                Uses your existing Git repositories and credentials
+              </li>
+            </ul>
+          </div>
+          <div class="local-card reveal">
+            <span class="local-badge">100% local</span>
+            <div class="local-list">
+              <div class="local-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+                <div>
+                  <strong>Your repositories stay on disk</strong>
+                  <span>Nothing is uploaded to a Gitastic server.</span>
+                </div>
+              </div>
+              <div class="local-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 8l7-5 7 5" /></svg>
+                <div>
+                  <strong>Your credentials stay in your keychain</strong>
+                  <span>Tokens live in your operating system's secure credential store.</span>
+                </div>
+              </div>
+              <div class="local-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z" /><path d="m8 10 2 2-2 2M13 14h3" /></svg>
+                <div>
+                  <strong>Open source under Apache 2.0</strong>
+                  <span>Inspect the code, build it yourself or contribute.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="download" id="download">
+        <div class="container">
+          <div class="reveal">
+            <span class="section-kicker">07 / Download Gitastic</span>
+            <h2>Ready to see Git clearly?</h2>
+            <p class="download-intro">Free and open source. Available for macOS, Windows and Linux.</p>
+            <div class="platform-grid">
+              <a
+                class="platform"
+                href="https://github.com/dirk-rossbach/gitastic/releases/latest"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="12" rx="2" />
+                  <path d="M8 20h8M12 16v4" />
+                </svg>
+                <strong>macOS</strong>
+                <span>Universal · Apple Silicon &amp; Intel</span>
+              </a>
+              <a
+                class="platform"
+                href="https://github.com/dirk-rossbach/gitastic/releases/latest"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                </svg>
+                <strong>Windows</strong>
+                <span>x64 · NSIS installer or MSI</span>
+              </a>
+              <a
+                class="platform"
+                href="https://github.com/dirk-rossbach/gitastic/releases/latest"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <path d="m7 9 3 3-3 3M13 15h4" />
+                </svg>
+                <strong>Linux</strong>
+                <span>x64 · AppImage, .deb or .rpm</span>
+              </a>
+            </div>
+            <p class="download-note">
+              Builds are currently unsigned. macOS and Windows may show a first-launch warning.
+              Verify the published
+              <a href="https://github.com/dirk-rossbach/gitastic/releases/latest" target="_blank" rel="noopener noreferrer">SHA256SUMS.txt</a>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="faq">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="section-kicker">08 / Questions</span>
+              <h2>Good to know.</h2>
+            </div>
+          </div>
+          <div class="faq-list reveal">
+            <details>
+              <summary>Is Gitastic free?</summary>
+              <p>Yes. Gitastic is open source under the Apache 2.0 license. You can download and use it for free.</p>
+            </details>
+            <details>
+              <summary>Does Gitastic upload my code?</summary>
+              <p>No. Gitastic runs locally on your machine. Your repositories are not uploaded to a Gitastic server, and there is no telemetry.</p>
+            </details>
+            <details>
+              <summary>Can I use my existing repositories and remotes?</summary>
+              <p>Yes. Gitastic works with your existing Git repositories, remotes and credentials. You can keep using the same workflow and hosting provider.</p>
+            </details>
+            <details>
+              <summary>Does it work with GitHub and GitLab?</summary>
+              <p>Yes, including self-hosted GitLab instances. You can clone repositories, browse pull requests or merge requests and open links in your browser.</p>
+            </details>
+            <details>
+              <summary>Are the builds code-signed?</summary>
+              <p>Not yet. macOS and Windows may show a warning the first time you open the app. Each release includes SHA-256 checksums so you can verify your download.</p>
+            </details>
+            <details>
+              <summary>Which platforms are supported?</summary>
+              <p>Gitastic is available for macOS (universal), Windows x64 and Linux x64.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="#" aria-label="Gitastic home">
+            <span class="logo-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M7 4v16" />
+                <path d="M7 9c0 3 5 3 5 6s5 3 5 6" />
+                <circle cx="7" cy="4" r="1.6" fill="currentColor" stroke="none" />
+                <circle cx="17" cy="9" r="1.6" fill="currentColor" stroke="none" />
+                <circle cx="17" cy="21" r="1.6" fill="currentColor" stroke="none" />
+              </svg>
+            </span>
+            <span class="brand-name">Gitastic<span class="brand-dot">.</span></span>
+          </a>
+          <p>Git, but easier to see and understand.</p>
+        </div>
+        <nav class="footer-links" aria-label="Footer navigation">
+          <a href="#features">Features</a>
+          <a href="#themes">Themes</a>
+          <a href="#download">Download</a>
+          <a href="https://github.com/dirk-rossbach/gitastic" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/dirk-rossbach/gitastic/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+          <a href="https://github.com/sponsors/dirk-rossbach" target="_blank" rel="noopener noreferrer">Sponsor</a>
+          <a href="https://github.com/dirk-rossbach/gitastic/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+        </nav>
+        <p class="footer-meta">© 2026 Gitastic · Apache-2.0 · Built with Tauri, Rust, React and TypeScript.</p>
+      </div>
+    </footer>
+
+    <button class="to-top" type="button" aria-label="Back to top">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 19V5" />
+        <path d="m5 12 7-7 7 7" />
+      </svg>
+    </button>
+
+    <dialog class="lightbox" id="lightbox" aria-label="Screenshot preview">
+      <div class="lightbox-inner">
+        <button class="lightbox-close" type="button" aria-label="Close preview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
+        <img src="docs/screenshots/themes/gorgeous-dark.png" alt="" />
+      </div>
+    </dialog>
+
+    <script>
+      const themes = [
+        {
+          id: "gorgeous",
+          name: "Gorgeous",
+          mode: "dark",
+          image: "docs/screenshots/themes/gorgeous-dark.png",
+          colors: ["#38bdf8", "#a78bfa", "#f472b6"],
+          note: "Aurora gradients & neon glow",
+        },
+        {
+          id: "synthwave",
+          name: "Synthwave",
+          mode: "dark",
+          image: "docs/screenshots/themes/synthwave-dark.png",
+          colors: ["#ff2a85", "#00f0ff", "#ffe600"],
+          note: "Outrun magenta & cyber-cyan",
+        },
+        {
+          id: "transilvania",
+          name: "Transilvania",
+          mode: "dark",
+          image: "docs/screenshots/themes/transilvania-dark.png",
+          colors: ["#c81d3a", "#e8d5c4", "#aebfd9"],
+          note: "Bloodmoon gothic & candlelit shadows",
+        },
+        {
+          id: "ubernerd",
+          name: "Ubernerd",
+          mode: "dark",
+          image: "docs/screenshots/themes/ubernerd-dark.png",
+          colors: ["#39ff14", "#ffb000", "#00e5ff"],
+          note: "Phosphor terminal & CRT scanlines",
+        },
+        {
+          id: "8bit",
+          name: "8-Bit",
+          mode: "dark",
+          image: "docs/screenshots/themes/8bit-dark.png",
+          colors: ["#ff004d", "#ffec27", "#00e436"],
+          note: "Pixel quest & arcade cabinet",
+        },
+        {
+          id: "smelly-socks",
+          name: "Smelly Socks",
+          mode: "dark",
+          image: "docs/screenshots/themes/smelly-socks-dark.png",
+          colors: ["#b8f34a", "#e8d8b7", "#6f8f5c"],
+          note: "Moldy lime & unwashed linen",
+        },
+        {
+          id: "nightmare-main-branch",
+          name: "Nightmare on Main Branch",
+          mode: "dark",
+          image: "docs/screenshots/themes/nightmare-on-main-branch-dark.png",
+          colors: ["#ff7a18", "#b6ff4a", "#e5263f"],
+          note: "Pumpkin glow & slasher shadows",
+        },
+        {
+          id: "domino",
+          name: "Domino",
+          mode: "dark",
+          image: "docs/screenshots/themes/domino-dark.png",
+          colors: ["#ffffff", "#7a7a7a", "#000000"],
+          note: "White on black & zero effects",
+        },
+        {
+          id: "focus-dark",
+          name: "Focus",
+          mode: "dark",
+          image: "docs/screenshots/themes/focus-dark.png",
+          colors: ["#6893b8", "#9aa2b1", "#2c313c"],
+          note: "Flat surfaces & zero effects",
+        },
+        {
+          id: "daybreak",
+          name: "Daybreak",
+          mode: "light",
+          image: "docs/screenshots/themes/daybreak-light.png",
+          colors: ["#2563eb", "#0d9488", "#f59e0b"],
+          note: "Porcelain light & sunrise glow",
+        },
+        {
+          id: "vellum",
+          name: "Vellum",
+          mode: "light",
+          image: "docs/screenshots/themes/vellum-light.png",
+          colors: ["#9f1239", "#6b4f2a", "#d5c2a8"],
+          note: "Parchment, iron-gall ink & wax seals",
+        },
+        {
+          id: "blueprint",
+          name: "Blueprint",
+          mode: "light",
+          image: "docs/screenshots/themes/blueprint-light.png",
+          colors: ["#1d4ed8", "#0891b2", "#f59e0b"],
+          note: "Drafting paper, navy grid & cyan ink",
+        },
+        {
+          id: "lemon-baby",
+          name: "Lemon Baby",
+          mode: "light",
+          image: "docs/screenshots/themes/lemon-baby-light.png",
+          colors: ["#eab308", "#f97316", "#65a30d"],
+          note: "Lemon drop, tangerine & lime",
+        },
+        {
+          id: "cats-cradle",
+          name: "Cat's Cradle",
+          mode: "light",
+          image: "docs/screenshots/themes/cats-cradle-light.png",
+          colors: ["#3b4fa3", "#d04f45", "#3f8f7f"],
+          note: "Woven thread & paper daylight",
+        },
+        {
+          id: "ink",
+          name: "Ink",
+          mode: "light",
+          image: "docs/screenshots/themes/ink-light.png",
+          colors: ["#000000", "#737373", "#ffffff"],
+          note: "Black on white & zero effects",
+        },
+        {
+          id: "focus-light",
+          name: "Focus",
+          mode: "light",
+          image: "docs/screenshots/themes/focus-light.png",
+          colors: ["#6893b8", "#9aa2b1", "#2c313c"],
+          note: "Flat surfaces & zero effects",
+        },
+      ];
+
+      const stage = document.querySelector("#theme-stage");
+      const themeGrid = document.querySelector("#theme-grid");
+      const themeImage = document.querySelector("#theme-image");
+      const themeName = document.querySelector("#theme-name");
+      const themeMode = document.querySelector("#theme-mode");
+      const themeNote = document.querySelector("#theme-note");
+      const themeSwatches = document.querySelector("#theme-swatches");
+      const themeCount = document.querySelector("#theme-count");
+      const themeStatus = document.querySelector("#theme-status");
+      const tabs = [...document.querySelectorAll(".theme-tab")];
+
+      let activeMode = "all";
+      let activeTheme = themes[0];
+
+      function visibleThemes() {
+        return themes.filter((theme) => activeMode === "all" || theme.mode === activeMode);
+      }
+
+      function updateStage(theme) {
+        themeImage.src = theme.image;
+        themeImage.alt = `${theme.name} ${theme.mode} theme preview`;
+        themeName.textContent = theme.name;
+        themeMode.textContent = theme.mode === "dark" ? "Dark" : "Light";
+        themeNote.textContent = theme.note;
+        themeSwatches.innerHTML = theme.colors
+          .map((color) => `<span style="background:${color}"></span>`)
+          .join("");
+        themeCount.textContent = `${String(themes.indexOf(theme) + 1).padStart(2, "0")} / ${String(
+          themes.length,
+        ).padStart(2, "0")}`;
+        stage.style.setProperty("--stage-accent", theme.colors[0]);
+        stage.style.setProperty("--stage-accent-2", theme.colors[1] || theme.colors[0]);
+        themeStatus.textContent = `Previewing ${theme.name} ${theme.mode} theme.`;
+      }
+
+      function renderGrid() {
+        themeGrid.innerHTML = visibleThemes()
+          .map(
+            (theme) => `
+              <button
+                class="theme-card${theme.id === activeTheme.id ? " is-active" : ""}"
+                type="button"
+                data-theme="${theme.id}"
+                aria-pressed="${theme.id === activeTheme.id}"
+                aria-label="Preview ${theme.name} ${theme.mode} theme"
+              >
+                <img src="${theme.image}" alt="" loading="lazy" decoding="async" />
+                <span>
+                  <strong>${theme.name}</strong>
+                  <small>${theme.mode === "dark" ? "Dark" : "Light"}</small>
+                </span>
+              </button>
+            `,
+          )
+          .join("");
+
+        themeGrid.querySelectorAll(".theme-card").forEach((button) => {
+          button.addEventListener("click", () => selectTheme(button.dataset.theme));
+        });
+      }
+
+      function selectTheme(id) {
+        activeTheme = themes.find((theme) => theme.id === id) || themes[0];
+        updateStage(activeTheme);
+        themeGrid.querySelectorAll(".theme-card").forEach((button) => {
+          const isActive = button.dataset.theme === activeTheme.id;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-pressed", String(isActive));
+        });
+      }
+
+      function setMode(mode) {
+        activeMode = mode;
+        tabs.forEach((tab) => {
+          const isActive = tab.dataset.mode === mode;
+          tab.classList.toggle("is-active", isActive);
+          tab.setAttribute("aria-pressed", String(isActive));
+        });
+        const visible = visibleThemes();
+        if (!visible.some((theme) => theme.id === activeTheme.id)) {
+          activeTheme = visible[0];
+          updateStage(activeTheme);
+        }
+        renderGrid();
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => setMode(tab.dataset.mode));
+      });
+
+      updateStage(activeTheme);
+      renderGrid();
+
+      const menuToggle = document.querySelector(".menu-toggle");
+      const navLinks = document.querySelector("#nav-links");
+
+      menuToggle.addEventListener("click", () => {
+        const open = navLinks.classList.toggle("is-open");
+        menuToggle.setAttribute("aria-expanded", String(open));
+      });
+
+      navLinks.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => {
+          navLinks.classList.remove("is-open");
+          menuToggle.setAttribute("aria-expanded", "false");
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          navLinks.classList.remove("is-open");
+          menuToggle.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      const lightbox = document.querySelector("#lightbox");
+      const lightboxImage = lightbox.querySelector("img");
+      const lightboxClose = lightbox.querySelector(".lightbox-close");
+
+      document.querySelectorAll("[data-lightbox]").forEach((image) => {
+        image.addEventListener("click", () => {
+          lightboxImage.src = image.currentSrc || image.src;
+          lightboxImage.alt = image.alt;
+          lightbox.showModal();
+        });
+      });
+
+      lightboxClose.addEventListener("click", () => lightbox.close());
+      lightbox.addEventListener("click", (event) => {
+        if (event.target === lightbox) lightbox.close();
+      });
+
+      const revealItems = document.querySelectorAll(".reveal");
+      if (
+        "IntersectionObserver" in window &&
+        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.12 },
+        );
+        revealItems.forEach((item) => observer.observe(item));
+      } else {
+        revealItems.forEach((item) => item.classList.add("is-visible"));
+      }
+
+      const toTop = document.querySelector(".to-top");
+      window.addEventListener(
+        "scroll",
+        () => {
+          toTop.classList.toggle("is-visible", window.scrollY > 600);
+        },
+        { passive: true },
+      );
+      toTop.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    </script>
+  </body>
+</html>
