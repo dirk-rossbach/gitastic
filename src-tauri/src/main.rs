@@ -811,6 +811,71 @@ async fn dispatch(
             Ok(serde_json::to_value(summary).unwrap())
         }
 
+        ("GET", "/repo/files") => {
+            let (_, rp, runner, _, _) = state.current_repo().await?;
+            let res = runner
+                .run(
+                    &rp,
+                    &["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                    true,
+                )
+                .await?;
+            if res.exit_code != 0 {
+                return Err(ApiError::new(400, "FILE_LIST_FAILED", res.stderr.trim()));
+            }
+            let mut files: Vec<String> = res
+                .stdout
+                .split('\u{0}')
+                .filter(|entry| !entry.is_empty())
+                .map(|entry| entry.to_string())
+                .collect();
+            files.sort();
+            Ok(json!({ "files": files }))
+        }
+
+        ("GET", "/repo/file") => {
+            let (_, rp, _, _, _) = state.current_repo().await?;
+            let relative = q_str(&query, "path")
+                .ok_or_else(|| ApiError::new(400, "MISSING_PATH", "path is required"))?;
+            let (abs, relative) = assert_repo_file(&rp, &relative).await?;
+            let meta = fs::metadata(&abs).await.map_err(|_| {
+                ApiError::new(404, "FILE_NOT_FOUND", format!("Not a file: {relative}"))
+            })?;
+            if !meta.is_file() {
+                return Err(ApiError::new(
+                    404,
+                    "FILE_NOT_FOUND",
+                    format!("Not a file: {relative}"),
+                ));
+            }
+            let size = meta.len();
+            if size > 2_000_000 {
+                return Ok(json!({
+                    "path": relative,
+                    "content": Value::Null,
+                    "binary": false,
+                    "truncated": true,
+                    "size": size,
+                }));
+            }
+            let bytes = fs::read(&abs).await.map_err(|_| {
+                ApiError::new(404, "FILE_NOT_FOUND", format!("Not a file: {relative}"))
+            })?;
+            let binary = bytes.contains(&0);
+            let content = if binary {
+                Value::Null
+            } else {
+                Value::String(String::from_utf8_lossy(&bytes).into_owned())
+            };
+            Ok(json!({
+                "path": relative,
+                "content": content,
+                "binary": binary,
+                "truncated": false,
+                "size": size,
+            }))
+        }
+
         ("GET", "/repo/status") => {
             let (_, rp, runner, _, _) = state.current_repo().await?;
             let status = get_status(&runner, &rp).await?;

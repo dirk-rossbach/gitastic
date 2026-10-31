@@ -400,6 +400,18 @@ export const DirectoryListingSchema = z.object({
 });
 export type DirectoryListing = z.infer<typeof DirectoryListingSchema>;
 
+export const RepoFileListResponseSchema = z.object({ files: z.array(z.string()) });
+export type RepoFileListResponse = z.infer<typeof RepoFileListResponseSchema>;
+
+export const RepoFileContentSchema = z.object({
+  path: z.string(),
+  content: z.string().nullable(),
+  binary: z.boolean(),
+  truncated: z.boolean(),
+  size: z.number().int().nonnegative(),
+});
+export type RepoFileContent = z.infer<typeof RepoFileContentSchema>;
+
 export const ApiErrorBodySchema = z.object({
   error: z.object({
     code: z.string(),

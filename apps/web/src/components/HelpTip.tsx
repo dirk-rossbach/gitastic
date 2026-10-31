@@ -3,6 +3,7 @@ import { cn } from '../lib/utils';
 
 export type GlossaryTerm =
   | 'repository'
+  | 'file'
   | 'branch'
   | 'commit'
   | 'head'
@@ -26,6 +27,15 @@ const GLOSSARY: Record<GlossaryTerm, { title: string; body: ReactNode }> = {
       <>
         A repository (repo) is the folder that Git tracks. It contains your files plus a hidden
         history of every commit, branch and tag.
+      </>
+    ),
+  },
+  file: {
+    title: 'Working tree file',
+    body: (
+      <>
+        A file in your working tree — tracked by Git or new and untracked. Open it to read its
+        contents, follow its history or blame each line.
       </>
     ),
   },

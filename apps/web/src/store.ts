@@ -4,6 +4,7 @@ import type { Job } from '@gitastic/shared';
 export type View =
   | 'history'
   | 'changes'
+  | 'files'
   | 'branches'
   | 'pulls'
   | 'worktrees'

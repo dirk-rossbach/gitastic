@@ -10,6 +10,7 @@ import {
   Download,
   ExternalLink,
   FileDiff,
+  FileText,
   FolderGit2,
   FolderOpen,
   GitBranch,
@@ -39,6 +40,7 @@ import { BlameView } from './BlameView';
 import { ChangesView } from './ChangesView';
 import { ConflictsView } from './ConflictsView';
 import { FileHistoryView } from './FileHistoryView';
+import { FilesView } from './FilesView';
 import { HistoryView } from './HistoryView';
 import { PullRequestsView } from './PullRequestsView';
 import { ReflogView } from './ReflogView';
@@ -60,6 +62,7 @@ const operations: Record<string, string> = {
 const viewHelp: Partial<Record<View, GlossaryTerm>> = {
   history: 'commit',
   changes: 'staging',
+  files: 'file',
   branches: 'branch',
   stashes: 'stash',
   tags: 'tag',
@@ -231,6 +234,7 @@ export function Shell({ session }: { session: Session }) {
         <nav className="flex-1 space-y-0.5 px-2">
           <NavItem view="history" label="Timeline" icon={History} />
           <NavItem view="changes" label="Changes" icon={FileDiff} count={changes} />
+          <NavItem view="files" label="Files" icon={FileText} />
           <NavItem view="conflicts" label="Conflicts" icon={AlertTriangle} count={conflicts} danger />
           <NavItem view="branches" label="Branches" icon={GitBranch} />
           <NavItem view="stashes" label="Stashes" icon={Archive} />
@@ -399,6 +403,7 @@ export function Shell({ session }: { session: Session }) {
         <main key={view} className="view-enter relative min-h-0 flex-1 overflow-hidden">
           {view === 'history' ? <HistoryView /> : null}
           {view === 'changes' ? <ChangesView /> : null}
+          {view === 'files' ? <FilesView /> : null}
           {view === 'branches' ? <BranchesView /> : null}
           {view === 'pulls' ? <PullRequestsView /> : null}
           {view === 'worktrees' ? <WorktreesView /> : null}

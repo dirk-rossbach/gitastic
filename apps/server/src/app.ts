@@ -94,6 +94,8 @@ import {
   listWorktrees,
   listReflog,
   checkoutReflog,
+  listRepoFiles,
+  readRepoFile,
 } from './git/repo';
 import {
   backupWorkingTree,
@@ -434,6 +436,16 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   });
 
   app.get('/api/repo', async (request) => state.summary(queryValue(request, 'repo')));
+  app.get('/api/repo/files', async (request) => {
+    const repo = repoFor(state, request);
+    return { files: await listRepoFiles(state.runner, repo.path) };
+  });
+  app.get('/api/repo/file', async (request) => {
+    const repo = repoFor(state, request);
+    const filePath = queryValue(request, 'path');
+    if (!filePath) throw new AppError(400, 'MISSING_PATH', 'path is required');
+    return readRepoFile(repo.path, filePath);
+  });
   app.get('/api/repo/status', async (request) => {
     const repo = repoFor(state, request);
     return getStatus(state.runner, repo.path);

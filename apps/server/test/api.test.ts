@@ -639,3 +639,22 @@ describe('interactive rebase', () => {
     expect(log.trim().split('\n')).toEqual(['C', 'Initial commit']);
   });
 });
+
+describe('working tree files', () => {
+  it('lists files and returns their content', async () => {
+    fs.mkdirSync(path.join(repoPath, 'src'), { recursive: true });
+    writeFile(repoPath, 'src/app.ts', 'export const app = 1;\n');
+
+    const list = await json(await request('GET', '/api/repo/files'));
+    expect(list.files).toContain('file.txt');
+    expect(list.files).toContain('src/app.ts');
+
+    const file = await json(await request('GET', '/api/repo/file?path=src/app.ts'));
+    expect(file.path).toBe('src/app.ts');
+    expect(file.binary).toBe(false);
+    expect(file.content).toBe('export const app = 1;\n');
+
+    const outside = await request('GET', '/api/repo/file?path=../outside.txt');
+    expect(outside.statusCode).toBeGreaterThanOrEqual(400);
+  });
+});

@@ -73,6 +73,8 @@ New to Git? Look for the small <kbd>?</kbd> icons throughout the app — they ex
 
 Browse branches, tags and commits in a visual history. Search for commits, jump between branches and use the command palette to reach actions quickly. Recently opened repositories are ready when you come back.
 
+The **Files** view lists every tracked and untracked file in your working tree. Open any file to read its contents with line numbers, then jump straight to its **History** or **Blame**.
+
 ### Review and commit changes
 
 Switch between a unified diff and a side-by-side view. Stage a whole file, a section of changes or a single line, then write your commit message and commit. This makes it easy to keep unrelated changes out of the same commit.

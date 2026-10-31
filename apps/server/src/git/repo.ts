@@ -10,12 +10,15 @@ import type {
   OperationKind,
   ReflogEntry,
   Remote,
+  RepoFileContent,
   RepoSummary,
   Stash,
   Status,
   Tag,
   Worktree,
 } from '@gitastic/shared';
+import { AppError } from '../errors';
+import { assertRepoFile } from '../security/paths';
 import { COMMIT_LOG_FORMAT } from './parse';
 import { parseStatusV2, combineDiffFiles } from './parse';
 import type { GitRunner } from './runner';
@@ -344,4 +347,45 @@ export async function checkoutReflog(
   selector: string,
 ): Promise<void> {
   await runner.run(repoPath, ['checkout', selector]);
+}
+
+export async function listRepoFiles(runner: GitRunner, repoPath: string): Promise<string[]> {
+  const result = await runner.run(
+    repoPath,
+    ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],
+    { allowFail: true },
+  );
+  if (result.exitCode !== 0) {
+    throw new AppError(
+      400,
+      'FILE_LIST_FAILED',
+      result.stderr.trim() || 'Could not list repository files.',
+    );
+  }
+  return result.stdout
+    .split('\u0000')
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+const MAX_FILE_BYTES = 2_000_000;
+
+export async function readRepoFile(repoPath: string, relative: string): Promise<RepoFileContent> {
+  const resolved = await assertRepoFile(repoPath, relative);
+  const stat = await fs.stat(resolved).catch(() => null);
+  if (!stat || !stat.isFile()) {
+    throw new AppError(404, 'FILE_NOT_FOUND', `Not a file: ${relative}`);
+  }
+  if (stat.size > MAX_FILE_BYTES) {
+    return { path: relative, content: null, binary: false, truncated: true, size: stat.size };
+  }
+  const buffer = await fs.readFile(resolved);
+  const binary = buffer.includes(0);
+  return {
+    path: relative,
+    content: binary ? null : buffer.toString('utf8'),
+    binary,
+    truncated: false,
+    size: stat.size,
+  };
 }
