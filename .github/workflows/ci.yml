@@ -39,7 +39,7 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
@@ -94,7 +94,7 @@ jobs:
           if ($running.HasExited) { throw "Gitastic exited during startup with code $($running.ExitCode)" }
           "Gitastic still running after 10 seconds"
           Stop-Process -Id $running.Id -Force
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: gitastic-windows
           path: |
@@ -131,7 +131,7 @@ jobs:
         run: |
           cd src-tauri/target/universal-apple-darwin/release/bundle/macos
           ditto -c -k --sequesterRsrc --keepParent Gitastic.app Gitastic.app.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: gitastic-macos
           path: |
@@ -172,7 +172,7 @@ jobs:
           test -n "$(ls -1 "$bundle"/rpm/*.rpm 2>/dev/null)"
           test -n "$(ls -1 "$bundle"/appimage/*.AppImage 2>/dev/null)"
           ls -lh "$bundle/deb" "$bundle/rpm" "$bundle/appimage"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: gitastic-linux
           path: |
