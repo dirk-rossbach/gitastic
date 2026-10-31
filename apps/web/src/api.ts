@@ -116,7 +116,7 @@ async function request<T>(
   const response = await fetch(withQuery(`/api${path}`, options.query), {
     method: options.method ?? 'GET',
     headers: {
-      'Content-Type': 'application/json',
+      ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
       [API_REQUEST_HEADER]: '1',
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
