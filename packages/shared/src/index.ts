@@ -281,11 +281,38 @@ export const UI_STYLE_IDS = [
   'domino',
 ] as const;
 export const UiStyleSchema = z.enum(UI_STYLE_IDS);
-export type UiStyle = z.infer<typeof UiStyleSchema>;
+export type BuiltinStyleId = z.infer<typeof UiStyleSchema>;
+export type UiStyle = string;
+
+export const ThemeModeSchema = z.enum(['dark', 'light']);
+export type ThemeMode = z.infer<typeof ThemeModeSchema>;
+
+export const ThemeManifestSchema = z.object({
+  id: z
+    .string()
+    .min(2)
+    .max(41)
+    .regex(/^[a-z0-9][a-z0-9-]*$/, 'Theme ids use lowercase letters, numbers and dashes.'),
+  name: z.string().min(1).max(60),
+  tagline: z.string().max(140).default(''),
+  description: z.string().max(500).default(''),
+  keywords: z.string().max(240).default(''),
+  badge: z.string().max(30).optional(),
+  modes: z.array(ThemeModeSchema).min(1),
+  swatches: z.array(z.string().max(64)).max(8).default([]),
+  laneColors: z.array(z.string().max(64)).max(16).default([]),
+});
+export type ThemeManifest = z.infer<typeof ThemeManifestSchema>;
+
+export const ThemesResponseSchema = z.object({ themes: z.array(ThemeManifestSchema) });
+export type ThemesResponse = z.infer<typeof ThemesResponseSchema>;
+
+export const ThemeImportSchema = z.object({ css: z.string().min(1).max(200_000) });
+export type ThemeImport = z.infer<typeof ThemeImportSchema>;
 
 export const SettingsSchema = z.object({
   theme: z.enum(['dark', 'light', 'system']),
-  uiStyle: UiStyleSchema.default('gorgeous'),
+  uiStyle: z.string().min(1).default('gorgeous'),
   gitPath: z.string().min(1),
   editor: z.string(),
   pullStrategy: z.enum(['ff-only', 'merge', 'rebase']),

@@ -1,0 +1,186 @@
+/* Gitastic theme: nightmare-main-branch */
+
+:root[data-style='nightmare-main-branch'][data-theme='dark'] {
+
+  --font-display: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+  --canvas: #08060d;
+  --panel: #140e19;
+  --raised: #211429;
+  --edge: #4a2440;
+  --ink: #f5ead7;
+  --muted: #c4a7b2;
+  --faint: #9c7786;
+  --accent: #ff7a18;
+  --accent-2: #b6ff4a;
+  --accent-3: #e5263f;
+  --success: #b6ff4a;
+  --warning: #ffb000;
+  --danger: #ff4d5e;
+  color-scheme: dark;
+
+}
+
+:root[data-style='nightmare-main-branch'] body {
+
+  background:
+    radial-gradient(52rem 38rem at 78% -10%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 56%),
+    radial-gradient(62rem 44rem at 10% 0%, color-mix(in srgb, #6b2a8a 24%, transparent), transparent 64%),
+    radial-gradient(48rem 36rem at 50% 118%, color-mix(in srgb, var(--accent-3) 16%, transparent), transparent 68%),
+    var(--canvas) !important;
+
+}
+
+:root[data-style='nightmare-main-branch'] body::before {
+
+  background-image:
+    radial-gradient(40rem 20rem at 8% 28%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 70%),
+    radial-gradient(32rem 18rem at 88% 58%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%),
+    radial-gradient(46rem 22rem at 48% 78%, color-mix(in srgb, #7b2d8e 15%, transparent), transparent 72%);
+  background-size: 100% 100%;
+  mask-image: none;
+  filter: blur(18px);
+  opacity: 0.58;
+  animation: fog-drift 38s ease-in-out infinite alternate;
+
+}
+
+:root[data-style='nightmare-main-branch'] body::after {
+
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='520' viewBox='0 0 420 520'%3E%3Cg fill='none' stroke='%23ff7a18' stroke-opacity='.18' stroke-width='7' stroke-linecap='round'%3E%3Cpath d='M40 0 C 70 110 82 220 58 380'/%3E%3Cpath d='M128 0 C 160 120 172 238 146 410'/%3E%3Cpath d='M216 0 C 248 130 260 256 234 438'/%3E%3Cpath d='M304 0 C 336 140 348 274 322 466'/%3E%3C/g%3E%3C/svg%3E")
+      top -36px right -24px / 420px 520px no-repeat,
+    radial-gradient(ellipse at 50% 42%, transparent 34%, rgb(0 0 0 / 0.66) 100%);
+
+}
+
+:root[data-style='nightmare-main-branch'] .gradient-text,
+:root[data-style='nightmare-main-branch'] .brand-title {
+
+  background: linear-gradient(100deg, var(--ink) 4%, var(--accent) 42%, var(--accent-3) 72%, var(--accent-2) 100%);
+  background-size: 210% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.025em;
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 38%, transparent));
+
+}
+
+:root[data-style='nightmare-main-branch'] .brand-mark {
+
+  position: relative;
+  background:
+    radial-gradient(circle at 42% 36%, #ffbb5c 0%, #ff7a18 38%, #9c2f00 72%, #421508 100%);
+  border-color: color-mix(in srgb, var(--accent-2) 55%, transparent);
+  color: #1d0b05;
+  box-shadow:
+    0 0 26px color-mix(in srgb, var(--accent) 42%, transparent),
+    0 0 54px color-mix(in srgb, var(--accent-3) 18%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.32);
+  animation: pumpkin-glow 7s ease-in-out infinite;
+
+}
+
+:root[data-style='nightmare-main-branch'] .card,
+:root[data-style='nightmare-main-branch'] .repo-card,
+:root[data-style='nightmare-main-branch'] .diff-file-card {
+
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--edge));
+  box-shadow:
+    5px 5px 0 rgb(0 0 0 / 0.58),
+    0 18px 42px rgb(0 0 0 / 0.42),
+    0 0 30px color-mix(in srgb, var(--accent) 10%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--accent-2) 8%, transparent);
+
+}
+
+:root[data-style='nightmare-main-branch'] .nav-item-active,
+:root[data-style='nightmare-main-branch'] .history-row-selected {
+
+  border-left-color: var(--accent-2);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    color-mix(in srgb, var(--accent-3) 14%, transparent) 54%,
+    transparent 95%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent-2),
+    0 0 30px color-mix(in srgb, var(--accent) 18%, transparent);
+
+}
+
+:root[data-style='nightmare-main-branch'] .btn {
+
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--edge));
+
+}
+
+:root[data-style='nightmare-main-branch'] .btn-primary {
+
+  border-color: color-mix(in srgb, var(--accent-2) 52%, transparent);
+  background: linear-gradient(135deg, #ffb000 0%, var(--accent) 48%, #b52a0b 100%);
+  background-size: 200% 200%;
+  color: #190805;
+  box-shadow:
+    0 0 26px color-mix(in srgb, var(--accent) 38%, transparent),
+    0 0 38px color-mix(in srgb, var(--accent-2) 16%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.36);
+
+}
+
+:root[data-style='nightmare-main-branch'] .badge {
+
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--edge));
+  font-family: 'Special Elite', 'Courier New', ui-monospace, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--accent) 8%, var(--raised));
+
+}
+
+:root[data-style='nightmare-main-branch'] .panel-title {
+
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+
+}
+
+:root[data-style='nightmare-main-branch'] .lane-label {
+
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--edge));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 14%, var(--panel)),
+    color-mix(in srgb, var(--accent-2) 7%, var(--panel))
+  );
+  font-family: 'Special Elite', 'Courier New', ui-monospace, monospace;
+
+}
+
+:root[data-style='nightmare-main-branch'] .detail-drawer {
+
+  box-shadow:
+    -44px 0 100px -24px rgb(0 0 0 / 0.96),
+    -2px 0 0 color-mix(in srgb, var(--accent) 34%, transparent),
+    -18px 0 58px rgb(0 0 0 / 0.7),
+    0 0 42px color-mix(in srgb, var(--accent) 10%, transparent);
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+:root[data-style='nightmare-main-branch'] body::before,
+:root[data-style='nightmare-main-branch'] body::before,
+:root[data-style='nightmare-main-branch'] .brand-mark {
+
+    animation: none !important;
+  
+}
+}

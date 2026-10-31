@@ -1,0 +1,7 @@
+/* Gitastic theme: gorgeous */
+
+:root[data-style='gorgeous'] {
+
+  --font-display: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+
+}

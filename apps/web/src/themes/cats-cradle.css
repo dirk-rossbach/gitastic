@@ -1,0 +1,204 @@
+/* Gitastic theme: cats-cradle */
+
+:root[data-style='cats-cradle'] {
+
+  --font-display: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+  --canvas: #f6f0e4;
+  --panel: #fffaf1;
+  --raised: #eee3d1;
+  --edge: #d8c8ae;
+  --ink: #1f2a44;
+  --muted: #5b6077;
+  --faint: #7c7b83;
+  --accent: #3b4fa3;
+  --accent-2: #d04f45;
+  --accent-3: #3f8f7f;
+  --success: #2f7d66;
+  --warning: #a86b18;
+  --danger: #b52f35;
+  color-scheme: light;
+
+}
+
+:root[data-style='cats-cradle'] body {
+
+  background:
+    radial-gradient(70rem 46rem at 8% -12%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 62%),
+    radial-gradient(58rem 38rem at 96% 2%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 64%),
+    radial-gradient(48rem 30rem at 50% 118%, color-mix(in srgb, var(--accent-3) 14%, transparent), transparent 68%),
+    var(--canvas) !important;
+
+}
+
+:root[data-style='cats-cradle'] body::before {
+
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M-120 250 C 170 40 390 430 640 260 S 1100 30 1720 300' stroke='%233b4fa3' stroke-opacity='.2' stroke-width='2.5'/%3E%3Cpath d='M-80 760 C 240 540 500 880 790 660 S 1290 470 1700 760' stroke='%23d04f45' stroke-opacity='.17' stroke-width='2'/%3E%3Cpath d='M120 1080 C 300 760 550 720 720 500 S 980 150 1180 -80' stroke='%233f8f7f' stroke-opacity='.15' stroke-width='2'/%3E%3Cpath d='M1650 80 C 1380 260 1480 470 1240 560 S 860 620 720 840' stroke='%23c9973f' stroke-opacity='.14' stroke-width='1.6'/%3E%3Cpath d='M-100 480 C 260 360 420 680 760 480 S 1260 260 1700 490' stroke='%233b4fa3' stroke-opacity='.1' stroke-width='1.2'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--ink) 11%, transparent) 0 0.6px,
+      transparent 0.9px
+    );
+  background-size:
+    1600px 1000px,
+    7px 7px;
+  background-position:
+    center 0,
+    0 0;
+  background-repeat: repeat;
+  mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+  opacity: 0.82;
+  animation: thread-drift 34s ease-in-out infinite alternate;
+
+}
+
+:root[data-style='cats-cradle'] body::after {
+
+  content: '';
+  position: fixed;
+  inset: 10px;
+  z-index: 0;
+  pointer-events: none;
+  border: 1px dashed color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: 18px;
+  mask-image: linear-gradient(135deg, black 0%, transparent 16%, black 30%, black 72%, transparent 88%, black 100%);
+  opacity: 0.85;
+
+}
+
+:root[data-style='cats-cradle'] .gradient-text,
+:root[data-style='cats-cradle'] .brand-title {
+
+  background: linear-gradient(100deg, var(--ink) 4%, var(--accent) 42%, var(--accent-2) 78%, var(--accent-3) 100%);
+  background-size: 210% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.01em;
+  filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--accent-2) 12%, transparent));
+
+}
+
+:root[data-style='cats-cradle'] .brand-mark {
+
+  position: relative;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 5px,
+      rgb(255 255 255 / 0.18) 5px 6px
+    ),
+    linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 56%, var(--accent-3) 100%);
+  border-color: color-mix(in srgb, var(--accent-2) 45%, transparent);
+  color: #fffaf1;
+  box-shadow:
+    0 12px 30px color-mix(in srgb, var(--accent) 24%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.45);
+
+}
+
+:root[data-style='cats-cradle'] .brand-mark::after {
+
+  content: '';
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  border: 2px solid var(--panel);
+  background: var(--accent-2);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--accent-2) 35%, transparent);
+
+}
+
+:root[data-style='cats-cradle'] .card,
+:root[data-style='cats-cradle'] .repo-card,
+:root[data-style='cats-cradle'] .diff-file-card {
+
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--edge));
+  box-shadow:
+    5px 5px 0 color-mix(in srgb, var(--accent) 10%, transparent),
+    0 16px 36px color-mix(in srgb, var(--ink) 9%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+
+}
+
+:root[data-style='cats-cradle'] .nav-item-active,
+:root[data-style='cats-cradle'] .history-row-selected {
+
+  border-left-color: var(--accent-2);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    color-mix(in srgb, var(--accent-2) 12%, transparent) 52%,
+    color-mix(in srgb, var(--accent-3) 10%, transparent) 76%,
+    transparent 96%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent-2),
+    0 10px 24px color-mix(in srgb, var(--accent-2) 10%, transparent);
+
+}
+
+:root[data-style='cats-cradle'] .btn-primary {
+
+  border-color: color-mix(in srgb, var(--accent-2) 58%, transparent);
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 7px,
+      rgb(255 255 255 / 0.14) 7px 8px
+    ),
+    linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 58%, var(--accent-3) 100%);
+  background-size:
+    auto,
+    200% 200%;
+  color: #fffaf1;
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--accent) 24%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.32);
+
+}
+
+:root[data-style='cats-cradle'] .panel-title {
+
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--accent);
+
+}
+
+:root[data-style='cats-cradle'] .lane-label {
+
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--edge));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 10%, var(--panel)),
+    color-mix(in srgb, var(--accent-2) 8%, var(--panel))
+  );
+
+}
+
+:root[data-style='cats-cradle'] .detail-drawer {
+
+  box-shadow:
+    -38px 0 90px -24px color-mix(in srgb, var(--ink) 38%, transparent),
+    -2px 0 0 color-mix(in srgb, var(--accent) 26%, transparent),
+    -16px 0 48px color-mix(in srgb, var(--accent) 10%, transparent);
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+:root[data-style='cats-cradle'] body::before,
+:root[data-style='cats-cradle'] body::before,
+:root[data-style='cats-cradle'] .brand-mark {
+
+    animation: none !important;
+  
+}
+}

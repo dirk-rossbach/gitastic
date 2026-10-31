@@ -1,0 +1,317 @@
+/* Gitastic theme: domino */
+
+:root[data-style='domino'][data-theme='dark'] {
+
+  --canvas: #111318;
+  --panel: #171a21;
+  --raised: #1f232c;
+  --edge: #2c313c;
+  --ink: #e5e9f0;
+  --muted: #9aa2b1;
+  --faint: #6c7483;
+  --accent: #6893b8;
+  --accent-2: #6893b8;
+  --accent-3: #6893b8;
+  --success: #68a888;
+  --warning: #c89b55;
+  --danger: #c66868;
+  color-scheme: dark;
+
+}
+
+:root[data-style='domino'][data-theme='light'] {
+
+  --canvas: #f5f6f8;
+  --panel: #ffffff;
+  --raised: #eceef2;
+  --edge: #d6dae2;
+  --ink: #1b1f27;
+  --muted: #545d6c;
+  --faint: #7d8696;
+  --accent: #2f628f;
+  --accent-2: #2f628f;
+  --accent-3: #2f628f;
+  --success: #247856;
+  --warning: #9e6716;
+  --danger: #b93848;
+  color-scheme: light;
+
+}
+
+:root[data-style='domino'][data-theme='dark'] {
+
+  --font-display: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+  --canvas: #000000;
+  --panel: #080808;
+  --raised: #161616;
+  --edge: #333333;
+  --ink: #ffffff;
+  --muted: #b8b8b8;
+  --faint: #7a7a7a;
+  --accent: #ffffff;
+  --accent-2: #ffffff;
+  --accent-3: #ffffff;
+  --success: #d4d4d4;
+  --warning: #e5e5e5;
+  --danger: #ffffff;
+  color-scheme: dark;
+
+}
+
+:root[data-style='domino'] body,
+:root[data-style='domino'].style-preview {
+
+  background: var(--canvas) !important;
+
+}
+
+:root[data-style='domino'] body::before,
+:root[data-style='domino'] .app-backdrop::before,
+:root[data-style='domino'] .app-backdrop::after,
+:root[data-style='domino'] .repo-card::after,
+:root[data-style='domino'] .graph-flow {
+
+  display: none !important;
+
+}
+
+:root[data-style='domino'] *,
+:root[data-style='domino'] *::before,
+:root[data-style='domino'] *::after {
+
+  animation: none !important;
+  transition: none !important;
+
+}
+
+:root[data-style='domino'] .gradient-text,
+:root[data-style='domino'] .brand-title {
+
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  color: var(--ink) !important;
+
+}
+
+:root[data-style='domino'] .brand-mark {
+
+  background: var(--raised) !important;
+  border-color: var(--edge) !important;
+  color: var(--accent) !important;
+  box-shadow: none !important;
+
+}
+
+:root[data-style='domino'] .brand-mark svg,
+:root[data-style='domino'] .nav-item-active svg {
+
+  filter: none !important;
+
+}
+
+:root[data-style='domino'] .repo-card,
+:root[data-style='domino'] .card,
+:root[data-style='domino'] .diff-file-card,
+:root[data-style='domino'] .modal-card {
+
+  background: var(--panel) !important;
+  border-color: var(--edge) !important;
+  box-shadow: none !important;
+
+}
+
+:root[data-style='domino'] .history-toolbar,
+:root[data-style='domino'] .diff-toolbar {
+
+  background: var(--panel) !important;
+  backdrop-filter: none !important;
+
+}
+
+:root[data-style='domino'] .diff-file-header {
+
+  background: var(--raised) !important;
+
+}
+
+:root[data-style='domino'] .diff-file-header:hover {
+
+  background: color-mix(in srgb, var(--raised) 80%, var(--edge)) !important;
+
+}
+
+:root[data-style='domino'] .history-row:hover {
+
+  background: var(--raised) !important;
+  border-left-color: var(--edge) !important;
+
+}
+
+:root[data-style='domino'] .history-row-selected {
+
+  background: var(--raised) !important;
+  border-left-color: var(--accent) !important;
+  box-shadow: inset 3px 0 0 var(--accent) !important;
+
+}
+
+:root[data-style='domino'] .btn {
+
+  background: var(--raised) !important;
+  border-color: var(--edge) !important;
+  box-shadow: none !important;
+  transform: none !important;
+
+}
+
+:root[data-style='domino'] .btn:hover {
+
+  background: color-mix(in srgb, var(--raised) 82%, var(--ink) 8%) !important;
+  border-color: var(--muted) !important;
+  box-shadow: none !important;
+  transform: none !important;
+
+}
+
+:root[data-style='domino'] .btn-primary,
+:root[data-style='domino'] .btn-primary:hover {
+
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+
+}
+
+:root[data-style='domino'] .btn-danger,
+:root[data-style='domino'] .btn-danger:hover {
+
+  background: var(--danger) !important;
+  border-color: var(--danger) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+
+}
+
+:root[data-style='domino'] .btn-primary,
+:root[data-style='domino'] .btn-primary:hover,
+:root[data-style='domino'] .btn-danger,
+:root[data-style='domino'] .btn-danger:hover {
+
+  color: #000000 !important;
+
+}
+
+:root[data-style='domino'] .btn-ghost,
+:root[data-style='domino'] .btn-icon {
+
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+
+}
+
+:root[data-style='domino'] .btn-ghost:hover,
+:root[data-style='domino'] .btn-icon:hover {
+
+  background: var(--raised) !important;
+  border-color: var(--edge) !important;
+  box-shadow: none !important;
+  transform: none !important;
+
+}
+
+:root[data-style='domino'] .nav-item:hover {
+
+  background: var(--raised) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+
+}
+
+:root[data-style='domino'] .nav-item-active {
+
+  background: var(--raised) !important;
+  border-color: var(--edge) !important;
+  box-shadow: inset 3px 0 0 var(--accent) !important;
+
+}
+
+:root[data-style='domino'] .badge {
+
+  background: var(--raised) !important;
+  box-shadow: none !important;
+
+}
+
+:root[data-style='domino'] .badge-accent,
+:root[data-style='domino'] .diff-count-pill {
+
+  background: color-mix(in srgb, var(--accent) 14%, transparent) !important;
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent) !important;
+  color: var(--accent) !important;
+  box-shadow: none !important;
+
+}
+
+:root[data-style='domino'] .input:focus,
+:root[data-style='domino'] .select:focus {
+
+  box-shadow: none !important;
+  border-color: var(--accent) !important;
+
+}
+
+:root[data-style='domino'] .diff-add {
+
+  background: color-mix(in srgb, var(--success) 12%, transparent) !important;
+
+}
+
+:root[data-style='domino'] .diff-del {
+
+  background: color-mix(in srgb, var(--danger) 12%, transparent) !important;
+
+}
+
+:root[data-style='domino'] .diff-hunk {
+
+  background: color-mix(in srgb, var(--accent) 10%, transparent) !important;
+
+}
+
+:root[data-style='domino'] .lane-label {
+
+  background: var(--panel) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+
+}
+
+:root[data-style='domino'] .detail-drawer {
+
+  box-shadow: none !important;
+
+}
+
+:root[data-style='domino'] .modal-overlay {
+
+  background: rgb(0 0 0 / 0.55) !important;
+  backdrop-filter: none !important;
+
+}
+
+:root[data-style='domino'] .detail-backdrop {
+
+  backdrop-filter: none !important;
+
+}
+
+:root[data-style='domino'] .scrollbar-thin::-webkit-scrollbar-thumb {
+
+  background: var(--edge) !important;
+
+}

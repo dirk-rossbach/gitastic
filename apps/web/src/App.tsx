@@ -4,6 +4,7 @@ import { GitBranch, Heart, ServerCrash } from 'lucide-react';
 import type { UiStyle } from '@gitastic/shared';
 import { api } from './api';
 import { errorMessage } from './lib/utils';
+import { loadCustomThemes } from './lib/theme-loader';
 import { rememberStyleForMode, resolvedThemeMode, styleForTheme } from './ui-styles';
 import { JobHost } from './components/JobHost';
 import { CommandPalette } from './components/CommandPalette';
@@ -44,6 +45,11 @@ export function App() {
   const openCommandPalette = useStore((state) => state.openCommandPalette);
   const toggleCommandPalette = useStore((state) => state.toggleCommandPalette);
   const session = useQuery({ queryKey: ['session'], queryFn: api.session });
+  const customThemes = useQuery({
+    queryKey: ['themes'],
+    queryFn: loadCustomThemes,
+    staleTime: 60_000,
+  });
   const theme = session.data?.config.theme;
   const uiStyle = session.data?.config.uiStyle ?? 'gorgeous';
   const repoId = session.data?.repo?.id ?? null;
@@ -52,7 +58,7 @@ export function App() {
   useEffect(() => {
     if (!theme) return;
     return applyAppearance(theme, uiStyle);
-  }, [theme, uiStyle]);
+  }, [theme, uiStyle, customThemes.dataUpdatedAt]);
 
   useEffect(() => {
     const handleOpenSettings = () => openSettings();

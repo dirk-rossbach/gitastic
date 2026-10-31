@@ -1,0 +1,143 @@
+/* Gitastic theme: transilvania */
+
+:root[data-style='transilvania'][data-theme='dark'] {
+
+  --font-display: 'Cinzel Decorative', 'Iowan Old Style', Palatino, Georgia, serif;
+  --canvas: #070304;
+  --panel: #100609;
+  --raised: #1c0a10;
+  --edge: #4a1620;
+  --ink: #f4e9df;
+  --muted: #c9a9a3;
+  --faint: #8c6c6a;
+  --accent: #c81d3a;
+  --accent-2: #7f0d20;
+  --accent-3: #aebfd9;
+  --success: #7fb58a;
+  --warning: #d99a3e;
+  --danger: #ff3b4f;
+  color-scheme: dark;
+
+}
+
+:root[data-style='transilvania'] body {
+
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+
+}
+
+:root[data-style='transilvania'] body {
+
+  background:
+    radial-gradient(70rem 45rem at 15% -12%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 60%),
+    radial-gradient(55rem 36rem at 88% -4%, color-mix(in srgb, var(--accent-2) 30%, transparent), transparent 64%),
+    radial-gradient(40rem 30rem at 50% 118%, color-mix(in srgb, var(--accent-3) 9%, transparent), transparent 66%),
+    var(--canvas) !important;
+
+}
+
+:root[data-style='transilvania'] body::before {
+
+  background-image:
+    radial-gradient(38rem 22rem at 18% 8%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 68%),
+    radial-gradient(32rem 20rem at 82% 22%, color-mix(in srgb, var(--accent-2) 20%, transparent), transparent 70%),
+    radial-gradient(24rem 16rem at 55% 78%, color-mix(in srgb, #5c0a18 18%, transparent), transparent 72%);
+  background-size: 100% 100%;
+  mask-image: radial-gradient(ellipse at 50% 40%, black 0%, transparent 78%);
+  opacity: 0.9;
+
+}
+
+:root[data-style='transilvania'] body::after {
+
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 38%, rgb(0 0 0 / 0.58) 100%);
+
+}
+
+:root[data-style='transilvania'] .gradient-text,
+:root[data-style='transilvania'] .brand-title {
+
+  background: linear-gradient(100deg, #f4e9df 6%, #d92b47 45%, #7f0d20 86%);
+  background-size: 190% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 34%, transparent));
+
+}
+
+:root[data-style='transilvania'] .brand-mark {
+
+  background: linear-gradient(145deg, #1a0508 0%, #7f0d20 48%, #c81d3a 100%);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: #f4e9df;
+  box-shadow:
+    0 0 28px color-mix(in srgb, var(--accent) 40%, transparent),
+    0 0 44px color-mix(in srgb, var(--accent-2) 24%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.14);
+
+}
+
+:root[data-style='transilvania'] .card,
+:root[data-style='transilvania'] .repo-card,
+:root[data-style='transilvania'] .diff-file-card {
+
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--edge));
+  box-shadow:
+    0 0 30px color-mix(in srgb, var(--accent) 10%, transparent),
+    0 20px 60px rgb(0 0 0 / 0.55);
+
+}
+
+:root[data-style='transilvania'] .nav-item-active,
+:root[data-style='transilvania'] .history-row-selected {
+
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 26%, transparent),
+    color-mix(in srgb, var(--accent-2) 18%, transparent) 55%,
+    transparent 95%
+  );
+  box-shadow:
+    inset 3px 0 0 #ff3b4f,
+    0 0 34px color-mix(in srgb, var(--accent) 22%, transparent);
+
+}
+
+:root[data-style='transilvania'] .btn-primary {
+
+  border-color: color-mix(in srgb, #ff3b4f 55%, transparent);
+  background: linear-gradient(135deg, #4a0612 0%, #8f0f26 52%, #c81d3a 100%);
+  background-size: 200% 200%;
+  color: #f4e9df;
+  box-shadow:
+    0 0 26px color-mix(in srgb, var(--accent) 38%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+
+}
+
+:root[data-style='transilvania'] .lane-label {
+
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--edge));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 14%, var(--panel)),
+    color-mix(in srgb, var(--accent-2) 10%, var(--panel))
+  );
+
+}
+
+:root[data-style='transilvania'] .detail-drawer {
+
+  box-shadow:
+    -44px 0 100px -24px rgb(0 0 0 / 0.96),
+    -2px 0 0 color-mix(in srgb, var(--accent) 30%, transparent),
+    -18px 0 55px rgb(0 0 0 / 0.65);
+
+}

@@ -51,6 +51,7 @@ import {
   TagCreateSchema,
   TagDeleteSchema,
   TagPushSchema,
+  ThemeImportSchema,
   UpstreamSchema,
   WorktreeAddSchema,
   WorktreeRemoveSchema,
@@ -99,6 +100,7 @@ import {
 } from './git/safety';
 import * as write from './git/write';
 import { assertRepoFile, assertInsideRoots, listDirectories, toPosix } from './security/paths';
+import { deleteTheme, ensureThemesDir, importTheme, listThemes, readThemeCss } from './themes';
 import type { AppState, OpenRepo } from './state';
 
 export interface BuildAppOptions {
@@ -232,6 +234,7 @@ function isLoopbackOrigin(origin: string): boolean {
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
   const { state, webDist, dev } = options;
   const app = Fastify({ logger: false, bodyLimit: 20 * 1024 * 1024 });
+  await ensureThemesDir();
 
   const allowedOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173']);
   if (process.env.GITASTIC_WEB_ORIGIN) allowedOrigins.add(process.env.GITASTIC_WEB_ORIGIN);
@@ -287,6 +290,28 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   app.put('/api/settings', async (request) => {
     const patch = parseBody(SettingsPatchSchema, request.body);
     return state.updateSettings(patch);
+  });
+
+  app.get('/api/themes', async () => ({ themes: await listThemes() }));
+
+  app.post('/api/themes', async (request) => {
+    const body = parseBody(ThemeImportSchema, request.body);
+    return importTheme(body.css);
+  });
+
+  app.get('/api/themes/:id/css', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const css = await readThemeCss(id);
+    if (!css) throw new AppError(404, 'THEME_NOT_FOUND', `Unknown theme: ${id}`);
+    reply.type('text/css; charset=utf-8');
+    return css;
+  });
+
+  app.delete('/api/themes/:id', async (request) => {
+    const { id } = request.params as { id: string };
+    const removed = await deleteTheme(id);
+    if (!removed) throw new AppError(404, 'THEME_NOT_FOUND', `Unknown theme: ${id}`);
+    return { ok: true };
   });
 
   app.post('/api/cache/clear', async () => {

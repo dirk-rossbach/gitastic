@@ -1,19 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CheckCircle2,
   Heart,
   Info,
+  Palette,
   Save,
   Trash2,
+  Upload,
   UserCheck,
   X,
 } from 'lucide-react';
-import type { Session, SettingsPatch, UiStyle } from '@gitastic/shared';
+import type {
+  Session,
+  SettingsPatch,
+  ThemeManifest,
+  UiStyle,
+} from '@gitastic/shared';
 import { api } from '../api';
 import { applyAppearance } from '../App';
 import { useAction } from '../lib/hooks';
+import { loadCustomThemes, removeThemeCss } from '../lib/theme-loader';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import { resolvedThemeMode, styleForTheme, type StyleMode } from '../ui-styles';
@@ -56,6 +64,38 @@ export function SettingsView({
 
   const update = <K extends keyof SettingsPatch>(key: K, value: SettingsPatch[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const themesQuery = useQuery({
+    queryKey: ['themes'],
+    queryFn: loadCustomThemes,
+    staleTime: 60_000,
+  });
+
+  const importThemeFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    await run(async () => {
+      const css = await file.text();
+      await api.importTheme(css);
+      await queryClient.invalidateQueries({ queryKey: ['themes'] });
+    }, 'Theme imported.');
+  };
+
+  const removeCustomTheme = async (theme: ThemeManifest) => {
+    await run(async () => {
+      await api.deleteTheme(theme.id);
+      removeThemeCss(theme.id);
+      if (form.uiStyle === theme.id) {
+        const mode = resolvedThemeMode(form.theme ?? 'dark');
+        update('uiStyle', 'gorgeous');
+        applyAppearance(mode, 'gorgeous');
+        await api.updateSettings({ ...form, theme: mode, uiStyle: 'gorgeous' });
+      }
+      await queryClient.invalidateQueries({ queryKey: ['themes'] });
+      await queryClient.invalidateQueries({ queryKey: ['session'] });
+    }, `Removed ${theme.name}.`);
   };
 
   const applyAndSaveAppearance = async (nextMode: StyleMode, nextStyle: UiStyle) => {
@@ -160,6 +200,70 @@ export function SettingsView({
               onSelect={(style, mode) => void applyAndSaveAppearance(mode, style)}
             />
           </div>
+        </section>
+
+        <section className="card space-y-4 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="panel-title">Custom themes</h2>
+              <p className="mt-1 text-xs text-muted">
+                Import a <span className="font-mono">.css</span> file with a{' '}
+                <span className="font-mono">{'/* @gitastic-theme { ... } */'}</span> metadata block.
+                Custom themes are stored in your Gitastic data folder and appear in the style picker.
+              </p>
+            </div>
+            <label className="btn h-8 cursor-pointer text-xs">
+              <Upload className="h-3.5 w-3.5 text-accent" />
+              Import theme
+              <input
+                type="file"
+                accept=".css,text/css"
+                className="hidden"
+                onChange={(event) => void importThemeFile(event)}
+              />
+            </label>
+          </div>
+
+          {themesQuery.data && themesQuery.data.length > 0 ? (
+            <div className="space-y-2">
+              {themesQuery.data.map((theme) => (
+                <div
+                  key={theme.id}
+                  className="flex items-center gap-3 rounded-md border border-edge bg-raised/40 px-3 py-2"
+                >
+                  <Palette className="h-4 w-4 shrink-0 text-accent" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{theme.name}</p>
+                    <p className="truncate text-[11px] text-muted">
+                      {theme.tagline || theme.id} · {theme.modes.join(' / ')}
+                    </p>
+                  </div>
+                  <div className="hidden shrink-0 gap-1 sm:flex" aria-hidden>
+                    {theme.swatches.map((color) => (
+                      <span
+                        key={color}
+                        className="h-2.5 w-2.5 rounded-full ring-1 ring-black/10"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="btn h-7 shrink-0 text-[11px]"
+                    disabled={busy}
+                    onClick={() => void removeCustomTheme(theme)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-danger" />
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-faint">
+              No custom themes imported yet. Use the button above to add one.
+            </p>
+          )}
         </section>
 
         <section className="card p-5">

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UiStyle } from '@gitastic/shared';
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { DARK_STYLES, LIGHT_STYLES, uiStyleMeta, type StyleMode } from '../ui-styles';
+import { filterStylesByMode, uiStyleMeta, useStyleLibrary, type StyleMode } from '../ui-styles';
 
 export function StyleMenu({
   current,
@@ -15,12 +15,17 @@ export function StyleMenu({
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const library = useStyleLibrary();
   const currentMeta = uiStyleMeta(current);
   const CurrentIcon = currentMeta.icon;
-  const groups = [
-    { key: 'dark', label: 'Dark styles', mode: 'dark' as const, styles: DARK_STYLES },
-    { key: 'light', label: 'Light styles', mode: 'light' as const, styles: LIGHT_STYLES },
-  ].filter((group) => group.styles.length > 0);
+  const groups = useMemo(
+    () =>
+      [
+        { key: 'dark', label: 'Dark styles', mode: 'dark' as const, styles: filterStylesByMode(library, 'dark') },
+        { key: 'light', label: 'Light styles', mode: 'light' as const, styles: filterStylesByMode(library, 'light') },
+      ].filter((group) => group.styles.length > 0),
+    [library],
+  );
 
   useEffect(() => {
     if (!open) return;

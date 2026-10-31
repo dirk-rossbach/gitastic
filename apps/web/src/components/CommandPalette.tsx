@@ -37,7 +37,7 @@ import { applyAppearance } from '../App';
 import { useAction, useStartJob } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
-import { DARK_STYLES, LIGHT_STYLES, styleForTheme, type StyleMode } from '../ui-styles';
+import { filterStylesByMode, styleForTheme, useStyleLibrary, type StyleMode } from '../ui-styles';
 
 interface CommandItem {
   id: string;
@@ -59,6 +59,7 @@ export function CommandPalette({ session }: { session: Session }) {
   const notify = useStore((state) => state.notify);
   const { run } = useAction();
   const startJob = useStartJob();
+  const styleLibrary = useStyleLibrary();
 
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -443,7 +444,7 @@ export function CommandPalette({ session }: { session: Session }) {
       },
     );
 
-    const styleItems = (styles: typeof DARK_STYLES, mode: StyleMode) =>
+    const styleItems = (styles: typeof styleLibrary, mode: StyleMode) =>
       styles.map((style) => ({
         id: `style-${mode}-${style.id}`,
         group: mode === 'dark' ? 'Dark styles' : 'Light styles',
@@ -454,7 +455,10 @@ export function CommandPalette({ session }: { session: Session }) {
         action: () => saveAppearance(mode, style.id),
       }));
 
-    items.push(...styleItems(DARK_STYLES, 'dark'), ...styleItems(LIGHT_STYLES, 'light'));
+    items.push(
+      ...styleItems(filterStylesByMode(styleLibrary, 'dark'), 'dark'),
+      ...styleItems(filterStylesByMode(styleLibrary, 'light'), 'light'),
+    );
 
     return items;
   }, [
@@ -469,6 +473,7 @@ export function CommandPalette({ session }: { session: Session }) {
     session.config.recentRepos,
     setView,
     startJob,
+    styleLibrary,
   ]);
 
   const filtered = useMemo(() => {

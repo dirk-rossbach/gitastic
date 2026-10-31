@@ -108,6 +108,10 @@ Gitastic ships with **15 visual styles**. Each style is self-contained and alrea
 - **Light styles:** Daybreak, Vellum, Blueprint, Lemon Baby, Cat's Cradle and Ink.
 - **Minimal options:** Focus is available in dark and light versions. Domino and Ink are strictly monochrome. These styles remove animations, gradients and other visual effects.
 
+### Custom themes
+
+Prefer your own palette? Every style is a single CSS file, and you can import your own themes from **Settings → Custom themes**. Add a `.css` file with a `/* @gitastic-theme { ... } */` metadata block, then pick it from the style library. See **[docs/THEMES.md](docs/THEMES.md)** for the format and a full reference.
+
 ### Dark style previews
 
 | Gorgeous (Default) | Synthwave |

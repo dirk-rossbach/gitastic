@@ -1,0 +1,133 @@
+/* Gitastic theme: blueprint */
+
+:root[data-style='blueprint'] body,
+:root[data-style='blueprint'] body {
+
+  font-family: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
+
+}
+
+:root[data-style='blueprint'] {
+
+  --font-display: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
+  --canvas: #eef4fb;
+  --panel: #ffffff;
+  --raised: #e4edf8;
+  --edge: #b9cde2;
+  --ink: #0b2545;
+  --muted: #476a8c;
+  --faint: #7a97b3;
+  --accent: #1d4ed8;
+  --accent-2: #0891b2;
+  --accent-3: #f59e0b;
+  --success: #0e8f6e;
+  --warning: #b45309;
+  --danger: #dc2626;
+  color-scheme: light;
+
+}
+
+:root[data-style='blueprint'] body {
+
+  background:
+    radial-gradient(58rem 36rem at 8% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 62%),
+    radial-gradient(50rem 34rem at 96% 4%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 64%),
+    var(--canvas) !important;
+
+}
+
+:root[data-style='blueprint'] body::before {
+
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--accent) 16%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 16%, transparent) 1px, transparent 1px);
+  background-size:
+    32px 32px,
+    32px 32px,
+    160px 160px,
+    160px 160px;
+  mask-image: radial-gradient(ellipse at 50% 28%, black 0%, transparent 78%);
+  opacity: 0.75;
+
+}
+
+:root[data-style='blueprint'] .gradient-text,
+:root[data-style='blueprint'] .brand-title {
+
+  background: linear-gradient(100deg, var(--ink) 6%, var(--accent) 48%, var(--accent-2) 88%);
+  background-size: 190% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-family: var(--font-mono);
+  letter-spacing: 0.015em;
+  filter: drop-shadow(0 3px 10px color-mix(in srgb, var(--accent) 14%, transparent));
+
+}
+
+:root[data-style='blueprint'] .brand-mark {
+
+  background: linear-gradient(145deg, #0b2545 0%, var(--accent) 62%, var(--accent-2) 100%);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: #ffffff;
+  box-shadow:
+    0 14px 32px color-mix(in srgb, var(--accent) 18%, transparent),
+    inset 0 0 0 1px rgb(255 255 255 / 0.18);
+
+}
+
+:root[data-style='blueprint'] .card,
+:root[data-style='blueprint'] .repo-card,
+:root[data-style='blueprint'] .diff-file-card {
+
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--edge));
+  box-shadow:
+    6px 6px 0 color-mix(in srgb, var(--accent) 6%, transparent),
+    0 16px 38px color-mix(in srgb, #0b2545 12%, transparent);
+
+}
+
+:root[data-style='blueprint'] .nav-item-active,
+:root[data-style='blueprint'] .history-row-selected {
+
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    color-mix(in srgb, var(--accent-2) 8%, transparent) 55%,
+    transparent 95%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 10px 24px color-mix(in srgb, var(--accent) 8%, transparent);
+
+}
+
+:root[data-style='blueprint'] .btn-primary {
+
+  border-color: color-mix(in srgb, var(--accent) 72%, transparent);
+  background: linear-gradient(135deg, #0b2545 0%, var(--accent) 52%, var(--accent-2) 100%);
+  background-size: 200% 200%;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  box-shadow:
+    0 12px 26px color-mix(in srgb, var(--accent) 20%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.3);
+
+}
+
+:root[data-style='blueprint'] .panel-title,
+:root[data-style='blueprint'] .badge {
+
+  font-family: var(--font-mono);
+
+}
+
+:root[data-style='blueprint'] .lane-label {
+
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--edge));
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+
+}

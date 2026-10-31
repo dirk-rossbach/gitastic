@@ -15,7 +15,7 @@ let state: AppState;
 let repoPath: string;
 
 function request(
-  method: 'GET' | 'POST' | 'PUT',
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   url: string,
   payload?: unknown,
   headers: Record<string, string> = {},
@@ -538,5 +538,43 @@ describe('GitHub, GitLab and SSH provider integration', () => {
     );
     const worktreesAfter = await json(await request('GET', '/api/repo/worktrees'));
     expect(worktreesAfter.some((wt: any) => wt.branch === 'wt-branch')).toBe(false);
+  });
+});
+
+describe('custom themes', () => {
+  const themeCss = `/* @gitastic-theme
+  { "id": "test-ocean", "name": "Test Ocean", "modes": ["dark"], "tagline": "Test theme" }
+*/
+:root[data-style='test-ocean'][data-theme='dark'] { --canvas: #001122; }
+`;
+
+  it('imports, lists, serves and deletes a theme', async () => {
+    const imported = await json(await request('POST', '/api/themes', { css: themeCss }));
+    expect(imported.id).toBe('test-ocean');
+
+    const list = await json(await request('GET', '/api/themes'));
+    expect(list.themes.some((theme: any) => theme.id === 'test-ocean')).toBe(true);
+
+    const cssResponse = await request('GET', '/api/themes/test-ocean/css');
+    expect(cssResponse.statusCode).toBe(200);
+    expect(cssResponse.headers['content-type']).toContain('text/css');
+    expect(cssResponse.body).toContain('--canvas: #001122');
+
+    const removed = await json(await request('DELETE', '/api/themes/test-ocean'));
+    expect(removed.ok).toBe(true);
+    const emptyList = await json(await request('GET', '/api/themes'));
+    expect(emptyList.themes.some((theme: any) => theme.id === 'test-ocean')).toBe(false);
+  });
+
+  it('rejects built-in ids and missing metadata', async () => {
+    const builtin = await request('POST', '/api/themes', {
+      css: `/* @gitastic-theme { "id": "gorgeous", "name": "Nope", "modes": ["dark"] } */`,
+    });
+    expect(builtin.statusCode).toBe(400);
+    expect(builtin.json().error.code).toBe('RESERVED_THEME_ID');
+
+    const missing = await request('POST', '/api/themes', { css: `[data-style='x'] {}` });
+    expect(missing.statusCode).toBe(400);
+    expect(missing.json().error.code).toBe('MISSING_THEME_METADATA');
   });
 });

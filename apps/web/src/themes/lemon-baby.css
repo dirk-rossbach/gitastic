@@ -1,0 +1,122 @@
+/* Gitastic theme: lemon-baby */
+
+:root[data-style='lemon-baby'] body {
+
+  font-family: Fredoka, 'Arial Rounded MT Bold', 'Trebuchet MS', ui-sans-serif, sans-serif;
+
+}
+
+:root[data-style='lemon-baby'] {
+
+  --font-display: Fredoka, 'Arial Rounded MT Bold', 'Trebuchet MS', ui-sans-serif, sans-serif;
+  --canvas: #fffbe8;
+  --panel: #fffdf3;
+  --raised: #fef2c7;
+  --edge: #f2d675;
+  --ink: #382a06;
+  --muted: #735a13;
+  --faint: #9a7d2a;
+  --accent: #eab308;
+  --accent-2: #f97316;
+  --accent-3: #65a30d;
+  --success: #4d7c0f;
+  --warning: #c2410c;
+  --danger: #dc2626;
+  color-scheme: light;
+
+}
+
+:root[data-style='lemon-baby'] body {
+
+  background:
+    radial-gradient(64rem 40rem at 6% -12%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%),
+    radial-gradient(54rem 36rem at 96% 2%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 64%),
+    radial-gradient(48rem 32rem at 48% 116%, color-mix(in srgb, var(--accent-3) 16%, transparent), transparent 66%),
+    var(--canvas) !important;
+
+}
+
+:root[data-style='lemon-baby'] body::before {
+
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, var(--accent) 26%, transparent) 0 2px, transparent 2.5px),
+    radial-gradient(circle, color-mix(in srgb, var(--accent-2) 20%, transparent) 0 1.5px, transparent 2px);
+  background-position:
+    0 0,
+    13px 13px;
+  background-size: 26px 26px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 78%);
+  opacity: 0.55;
+
+}
+
+:root[data-style='lemon-baby'] .gradient-text,
+:root[data-style='lemon-baby'] .brand-title {
+
+  background: linear-gradient(100deg, #3f2d06 0%, #ca8a04 32%, #ea580c 62%, #4d7c0f 92%);
+  background-size: 190% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--accent-2) 18%, transparent));
+
+}
+
+:root[data-style='lemon-baby'] .brand-mark {
+
+  background: linear-gradient(145deg, #facc15 0%, #f59e0b 42%, #fb923c 68%, #a3e635 100%);
+  border-color: color-mix(in srgb, var(--accent-2) 45%, transparent);
+  color: #2f2306;
+  box-shadow:
+    0 14px 34px color-mix(in srgb, var(--accent-2) 28%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.55);
+
+}
+
+:root[data-style='lemon-baby'] .card,
+:root[data-style='lemon-baby'] .repo-card,
+:root[data-style='lemon-baby'] .diff-file-card {
+
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--edge));
+  box-shadow:
+    5px 5px 0 color-mix(in srgb, var(--accent) 16%, transparent),
+    0 16px 38px color-mix(in srgb, #b45309 12%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.65);
+
+}
+
+:root[data-style='lemon-baby'] .nav-item-active,
+:root[data-style='lemon-baby'] .history-row-selected {
+
+  border-left-color: var(--accent-2);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    color-mix(in srgb, var(--accent-2) 13%, transparent) 46%,
+    color-mix(in srgb, var(--accent-3) 12%, transparent) 72%,
+    transparent 96%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent-2),
+    0 10px 24px color-mix(in srgb, var(--accent-2) 12%, transparent);
+
+}
+
+:root[data-style='lemon-baby'] .btn-primary {
+
+  border-color: color-mix(in srgb, var(--accent-2) 62%, transparent);
+  background: linear-gradient(135deg, #facc15 0%, #fb923c 54%, #a3e635 100%);
+  background-size: 200% 200%;
+  color: #2f2306;
+  box-shadow:
+    0 12px 26px color-mix(in srgb, var(--accent-2) 26%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.55);
+
+}
+
+:root[data-style='lemon-baby'] .lane-label {
+
+  border-color: color-mix(in srgb, var(--accent-2) 34%, var(--edge));
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+
+}

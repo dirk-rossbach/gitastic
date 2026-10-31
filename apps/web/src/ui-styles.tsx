@@ -1,4 +1,5 @@
-import type { UiStyle } from '@gitastic/shared';
+import { useSyncExternalStore } from 'react';
+import type { BuiltinStyleId, ThemeManifest, UiStyle } from '@gitastic/shared';
 import {
   BookOpen,
   Cat,
@@ -8,6 +9,7 @@ import {
   Footprints,
   Gamepad2,
   MoonStar,
+  Palette,
   PenLine,
   Ruler,
   Skull,
@@ -21,7 +23,7 @@ import {
 export type StyleMode = 'dark' | 'light';
 
 export type UiStyleMeta = {
-  id: UiStyle;
+  id: string;
   name: string;
   tagline: string;
   description: string;
@@ -40,7 +42,7 @@ export const DEFAULT_STYLE_BY_MODE: Record<StyleMode, UiStyle> = {
 
 const STYLE_MEMORY_KEY = 'gitastic:style-by-mode';
 
-export const UI_STYLES: Record<UiStyle, UiStyleMeta> = {
+export const UI_STYLES: Record<BuiltinStyleId, UiStyleMeta> = {
   gorgeous: {
     id: 'gorgeous',
     name: 'Gorgeous',
@@ -224,14 +226,78 @@ export const UI_STYLES: Record<UiStyle, UiStyleMeta> = {
   },
 };
 
-export const UI_STYLE_LIST = Object.values(UI_STYLES);
+export const UI_STYLE_LIST: UiStyleMeta[] = Object.values(UI_STYLES);
 
 export const DARK_STYLES = UI_STYLE_LIST.filter((style) => style.modes.includes('dark'));
 
 export const LIGHT_STYLES = UI_STYLE_LIST.filter((style) => style.modes.includes('light'));
 
+const DEFAULT_SWATCHES = ['#38bdf8', '#a78bfa', '#f472b6'];
+const DEFAULT_LANE_COLORS = [
+  '#38bdf8',
+  '#2dd4bf',
+  '#fbbf24',
+  '#f472b6',
+  '#a78bfa',
+  '#fb923c',
+  '#22d3ee',
+  '#a3e635',
+];
+
+const customStyles = new Map<string, UiStyleMeta>();
+const registryListeners = new Set<() => void>();
+let registryVersion = 0;
+
+function emitRegistryChange() {
+  registryVersion += 1;
+  for (const listener of registryListeners) listener();
+}
+
+export function registerCustomThemes(themes: ThemeManifest[]): void {
+  customStyles.clear();
+  for (const theme of themes) {
+    customStyles.set(theme.id, {
+      id: theme.id,
+      name: theme.name,
+      tagline: theme.tagline,
+      description: theme.description,
+      keywords: theme.keywords,
+      badge: theme.badge ?? 'Custom',
+      icon: Palette,
+      modes: theme.modes,
+      swatches: theme.swatches.length > 0 ? theme.swatches : DEFAULT_SWATCHES,
+      laneColors: theme.laneColors.length > 0 ? theme.laneColors : DEFAULT_LANE_COLORS,
+    });
+  }
+  emitRegistryChange();
+}
+
+export function subscribeThemeRegistry(listener: () => void): () => void {
+  registryListeners.add(listener);
+  return () => {
+    registryListeners.delete(listener);
+  };
+}
+
+function themeRegistrySnapshot(): number {
+  return registryVersion;
+}
+
+export function useStyleLibrary(): UiStyleMeta[] {
+  useSyncExternalStore(subscribeThemeRegistry, themeRegistrySnapshot, () => 0);
+  return [...UI_STYLE_LIST, ...customStyles.values()];
+}
+
+export function filterStylesByMode(styles: UiStyleMeta[], mode: StyleMode): UiStyleMeta[] {
+  return styles.filter((style) => style.modes.includes(mode));
+}
+
 function supportsMode(style: UiStyle, mode: StyleMode): boolean {
-  return UI_STYLES[style].modes.includes(mode);
+  return (customStyles.get(style) ?? UI_STYLES[style as BuiltinStyleId])?.modes.includes(mode) ?? false;
+}
+
+function isKnownStyle(style: string): boolean {
+  return style in UI_STYLES || customStyles.has(style);
 }
 
 function readStyleMemory(): Partial<Record<StyleMode, UiStyle>> {
@@ -243,7 +309,7 @@ function readStyleMemory(): Partial<Record<StyleMode, UiStyle>> {
     const memory: Partial<Record<StyleMode, UiStyle>> = {};
     for (const mode of ['dark', 'light'] as const) {
       const candidate = parsed[mode];
-      if (typeof candidate === 'string' && candidate in UI_STYLES) {
+      if (typeof candidate === 'string' && isKnownStyle(candidate)) {
         memory[mode] = candidate as UiStyle;
       }
     }
@@ -282,7 +348,7 @@ export function rememberStyleForMode(mode: StyleMode, style: UiStyle): void {
 }
 
 export function uiStyleMeta(style: string | null | undefined): UiStyleMeta {
-  return UI_STYLES[style as UiStyle] ?? UI_STYLES.gorgeous;
+  return customStyles.get(style ?? '') ?? UI_STYLES[style as BuiltinStyleId] ?? UI_STYLES.gorgeous;
 }
 
 export function laneColorFor(style: string | null | undefined, lane: number): string {

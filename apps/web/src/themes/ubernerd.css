@@ -1,0 +1,150 @@
+/* Gitastic theme: ubernerd */
+
+:root[data-style='ubernerd'][data-theme='dark'] {
+
+  --font-display: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
+  --canvas: #020604;
+  --panel: #06100a;
+  --raised: #0a1a11;
+  --edge: #174a2a;
+  --ink: #d8ffe4;
+  --muted: #7dbb8f;
+  --faint: #4c7a5a;
+  --accent: #39ff14;
+  --accent-2: #ffb000;
+  --accent-3: #00e5ff;
+  --success: #39ff14;
+  --warning: #ffb000;
+  --danger: #ff3b30;
+  color-scheme: dark;
+
+}
+
+:root[data-style='ubernerd'] body,
+:root[data-style='ubernerd'] body {
+
+  font-family: 'JetBrains Mono', SFMono-Regular, ui-monospace, monospace;
+
+}
+
+:root[data-style='ubernerd'] body {
+
+  background:
+    radial-gradient(58rem 34rem at 50% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
+    radial-gradient(40rem 30rem at 92% 106%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 64%),
+    var(--canvas) !important;
+
+}
+
+:root[data-style='ubernerd'] body::before {
+
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgb(0 0 0 / 0.28) 0,
+    rgb(0 0 0 / 0.28) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  background-size: 100% 3px;
+  mask-image: none;
+  opacity: 0.5;
+
+}
+
+:root[data-style='ubernerd'] body::after {
+
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.42) 100%);
+
+}
+
+:root[data-style='ubernerd'] .gradient-text,
+:root[data-style='ubernerd'] .brand-title {
+
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--accent);
+  -webkit-text-fill-color: var(--accent);
+  filter: none;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 0 12px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 28px color-mix(in srgb, var(--accent) 24%, transparent);
+
+}
+
+:root[data-style='ubernerd'] .brand-mark {
+
+  border-color: var(--accent);
+  background: #020805;
+  color: var(--accent);
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--accent) 35%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--accent) 10%, transparent);
+
+}
+
+:root[data-style='ubernerd'] .card,
+:root[data-style='ubernerd'] .repo-card,
+:root[data-style='ubernerd'] .diff-file-card {
+
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--edge));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent),
+    0 16px 40px rgb(0 0 0 / 0.5);
+
+}
+
+:root[data-style='ubernerd'] .nav-item-active,
+:root[data-style='ubernerd'] .history-row-selected {
+
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    transparent 90%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 0 26px color-mix(in srgb, var(--accent) 18%, transparent);
+
+}
+
+:root[data-style='ubernerd'] .btn-primary {
+
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #031007;
+  font-family: var(--font-mono);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent);
+
+}
+
+:root[data-style='ubernerd'] .panel-title,
+:root[data-style='ubernerd'] .badge,
+:root[data-style='ubernerd'] .btn {
+
+  font-family: var(--font-mono);
+
+}
+
+:root[data-style='ubernerd'] .lane-label {
+
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--edge));
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+
+}
+
+:root[data-style='ubernerd'] .detail-drawer {
+
+  box-shadow:
+    -6px 0 0 color-mix(in srgb, var(--accent) 16%, transparent),
+    -32px 0 80px -20px rgb(0 0 0 / 0.92);
+
+}

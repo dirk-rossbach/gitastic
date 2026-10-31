@@ -33,6 +33,8 @@ import type {
   Stash,
   Status,
   Tag,
+  ThemeManifest,
+  ThemesResponse,
   UndoEntry,
   Worktree,
 } from '@gitastic/shared';
@@ -161,6 +163,11 @@ export const api = {
   settings: () => request<AppConfig>('/settings'),
   updateSettings: (patch: SettingsPatch) =>
     request<AppConfig>('/settings', { method: 'PUT', body: patch }),
+  themes: () => request<ThemesResponse>('/themes'),
+  importTheme: (css: string) => post<ThemeManifest>('/themes', { css }),
+  themeCss: (id: string) => request<string>(`/themes/${encodeURIComponent(id)}/css`),
+  deleteTheme: (id: string) =>
+    request<{ ok: boolean }>(`/themes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   clearCache: () => post<{ ok: boolean }>('/cache/clear'),
   openExternal: (url: string) => {
     if (getTauriInternals()) {

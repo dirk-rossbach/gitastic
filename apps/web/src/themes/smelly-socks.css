@@ -1,0 +1,127 @@
+/* Gitastic theme: smelly-socks */
+
+:root[data-style='smelly-socks'][data-theme='dark'] {
+
+  --font-display: 'Special Elite', 'Courier New', ui-monospace, monospace;
+  --canvas: #0d120a;
+  --panel: #151d10;
+  --raised: #202b17;
+  --edge: #3e512c;
+  --ink: #f3efdc;
+  --muted: #b6b997;
+  --faint: #848b6d;
+  --accent: #b8f34a;
+  --accent-2: #e8d8b7;
+  --accent-3: #6f8f5c;
+  --success: #9ed65b;
+  --warning: #d8a657;
+  --danger: #e06b5a;
+  color-scheme: dark;
+
+}
+
+:root[data-style='smelly-socks'] body {
+
+  background:
+    radial-gradient(62rem 40rem at 6% -12%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 62%),
+    radial-gradient(50rem 34rem at 94% 0%, color-mix(in srgb, var(--accent-2) 9%, transparent), transparent 62%),
+    radial-gradient(46rem 30rem at 50% 116%, color-mix(in srgb, var(--accent-3) 24%, transparent), transparent 68%),
+    var(--canvas) !important;
+
+}
+
+:root[data-style='smelly-socks'] body::before {
+
+  background-image:
+    radial-gradient(circle at 14% 22%, color-mix(in srgb, var(--accent-2) 26%, transparent) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 72% 64%, color-mix(in srgb, var(--accent) 18%, transparent) 0 1px, transparent 1.8px),
+    repeating-linear-gradient(
+      112deg,
+      transparent 0 27px,
+      color-mix(in srgb, var(--accent-3) 18%, transparent) 27px 28px
+    );
+  background-size:
+    19px 19px,
+    29px 29px,
+    auto;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 82%);
+  opacity: 0.6;
+
+}
+
+:root[data-style='smelly-socks'] .gradient-text,
+:root[data-style='smelly-socks'] .brand-title {
+
+  background: linear-gradient(100deg, var(--accent-2) 4%, var(--accent) 43%, #7ec8c0 68%, var(--accent-3) 94%);
+  background-size: 210% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--accent) 14%, transparent));
+
+}
+
+:root[data-style='smelly-socks'] .brand-mark {
+
+  background: linear-gradient(145deg, #2a3820 0%, #6f8f5c 42%, var(--accent) 78%, var(--accent-2) 100%);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: #10150b;
+  box-shadow:
+    0 14px 34px color-mix(in srgb, var(--accent) 18%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.28);
+
+}
+
+:root[data-style='smelly-socks'] .card,
+:root[data-style='smelly-socks'] .repo-card,
+:root[data-style='smelly-socks'] .diff-file-card {
+
+  border-color: color-mix(in srgb, var(--accent-3) 55%, var(--edge));
+  box-shadow:
+    5px 5px 0 color-mix(in srgb, var(--accent-3) 24%, transparent),
+    0 16px 36px rgb(0 0 0 / 0.28),
+    inset 0 1px 0 color-mix(in srgb, var(--accent-2) 12%, transparent);
+
+}
+
+:root[data-style='smelly-socks'] .nav-item-active,
+:root[data-style='smelly-socks'] .history-row-selected {
+
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    color-mix(in srgb, var(--accent-3) 14%, transparent) 55%,
+    transparent 95%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 10px 24px color-mix(in srgb, var(--accent) 8%, transparent);
+
+}
+
+:root[data-style='smelly-socks'] .btn-primary {
+
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: linear-gradient(135deg, #d9e8bd 0%, var(--accent) 46%, #86a45e 100%);
+  background-size: 200% 200%;
+  color: #121809;
+  box-shadow:
+    0 12px 26px color-mix(in srgb, var(--accent) 20%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+
+}
+
+:root[data-style='smelly-socks'] .panel-title,
+:root[data-style='smelly-socks'] .badge {
+
+  font-family: var(--font-display);
+
+}
+
+:root[data-style='smelly-socks'] .lane-label {
+
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--edge));
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+
+}
