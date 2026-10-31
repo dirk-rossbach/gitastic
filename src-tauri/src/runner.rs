@@ -85,6 +85,27 @@ impl GitRunner {
         input: Option<&str>,
         allow_fail: bool,
     ) -> ApiResult<GitResult> {
+        self.run_full(cwd, args, input, &[], allow_fail).await
+    }
+
+    pub async fn run_with_env(
+        &self,
+        cwd: &str,
+        args: &[&str],
+        envs: &[(&str, String)],
+        allow_fail: bool,
+    ) -> ApiResult<GitResult> {
+        self.run_full(cwd, args, None, envs, allow_fail).await
+    }
+
+    async fn run_full(
+        &self,
+        cwd: &str,
+        args: &[&str],
+        input: Option<&str>,
+        envs: &[(&str, String)],
+        allow_fail: bool,
+    ) -> ApiResult<GitResult> {
         let mut cmd = Command::new(&self.git_path);
         cmd.current_dir(cwd)
             .arg("--no-pager")
@@ -104,6 +125,10 @@ impl GitRunner {
             .env("GIT_SEQUENCE_EDITOR", "true")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+
+        for (key, value) in envs {
+            cmd.env(key, value);
+        }
 
         if input.is_some() {
             cmd.stdin(Stdio::piped());

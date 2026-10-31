@@ -36,11 +36,11 @@ use crate::ops::{
 };
 use crate::providers::{
     add_ssh_key_to_agent, approve_pull_request, checkout_pull_request, connect_provider_account,
-    create_pull_request_comment, disconnect_provider_account, generate_ssh_key, get_git_identity,
-    get_providers_status, get_pull_request_detail, list_provider_repos, list_repo_pull_requests,
-    remove_ssh_key, select_primary_remote_info, set_git_identity,
+    create_pull_request, create_pull_request_comment, disconnect_provider_account, generate_ssh_key,
+    get_git_identity, get_providers_status, get_pull_request_detail, list_provider_repos,
+    list_repo_pull_requests, remove_ssh_key, select_primary_remote_info, set_git_identity,
 };
-use crate::runner::GitRunner;
+use crate::runner::{GitResult, GitRunner};
 
 fn home_directory() -> PathBuf {
     for key in ["GITASTIC_HOME", "HOME", "USERPROFILE"] {
@@ -1337,6 +1337,85 @@ async fn dispatch(
             Err(ApiError::new(422, "GIT_FAILED", res.stderr.trim()))
         }
 
+        ("GET", "/repo/rebase/plan") => {
+            let (_, rp, runner, _, _) = state.current_repo().await?;
+            let upstream = q_str(&query, "upstream")
+                .ok_or_else(|| ApiError::new(400, "MISSING_UPSTREAM", "upstream is required"))?;
+            rebase_plan(&runner, &rp, &upstream).await
+        }
+
+        ("POST", "/repo/rebase/interactive") => {
+            let (id, rp, runner, _, _) = state.current_repo().await?;
+            let upstream = b_str(&body, "upstream")
+                .ok_or_else(|| ApiError::new(400, "MISSING_UPSTREAM", "upstream is required"))?;
+            let plan = body
+                .as_ref()
+                .and_then(|value| value.get("plan"))
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            if plan.is_empty() {
+                return Err(ApiError::new(400, "EMPTY_PLAN", "Rebase plan is empty."));
+            }
+            let backup_ref = create_backup_ref(&runner, &rp, "rebase").await;
+            let res = interactive_rebase(&runner, &rp, &upstream, &plan).await?;
+            let status = get_status(&runner, &rp).await?;
+            state.invalidate(&id).await;
+            if res.exit_code == 0 {
+                let undo = if let Some(br) = backup_ref {
+                    Some(
+                        state
+                            .push_undo(&id, "reset", "Rebase", json!({ "type": "reset", "backupRef": br }))
+                            .await,
+                    )
+                } else {
+                    None
+                };
+                return Ok(json!({
+                    "ok": true,
+                    "conflicted": false,
+                    "operation": status.operation,
+                    "output": format!("{}{}", res.stdout, res.stderr).trim(),
+                    "undo": undo,
+                }));
+            }
+            if status.operation.is_some() || status.files.iter().any(|f| f.conflicted) {
+                return Ok(json!({
+                    "ok": false,
+                    "conflicted": true,
+                    "operation": status.operation,
+                    "output": format!("{}{}", res.stdout, res.stderr).trim(),
+                }));
+            }
+            Err(ApiError::new(422, "GIT_FAILED", res.stderr.trim()))
+        }
+
+        ("POST", "/repo/pulls") => {
+            let (_, rp, runner, _, _) = state.current_repo().await?;
+            let title = b_str(&body, "title")
+                .ok_or_else(|| ApiError::new(400, "MISSING_TITLE", "Title is required"))?;
+            let base = b_str(&body, "base")
+                .ok_or_else(|| ApiError::new(400, "MISSING_BASE", "Base branch is required"))?;
+            let description = b_str(&body, "body").unwrap_or_default();
+            let head = b_str(&body, "head");
+            let draft = body
+                .as_ref()
+                .and_then(|value| value.get("draft"))
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            create_pull_request(
+                &runner,
+                &state.home_dir,
+                &rp,
+                &title,
+                &description,
+                &base,
+                head.as_deref(),
+                draft,
+            )
+            .await
+        }
+
         ("POST", "/repo/cherry-pick") => {
             let (id, rp, runner, _, _) = state.current_repo().await?;
             let hashes = b_str_vec(&body, "hashes");
@@ -1806,7 +1885,105 @@ async fn gitastic_api(
         .map_err(|err| err.to_json())
 }
 
+async fn rebase_plan(runner: &GitRunner, repo_path: &str, upstream: &str) -> ApiResult<Value> {
+    let range = format!("{upstream}..HEAD");
+    let result = runner
+        .run(
+            repo_path,
+            &["log", "--reverse", "--format=%H%x00%s%x00%an%x00%aI", &range],
+            true,
+        )
+        .await?;
+    if result.exit_code != 0 {
+        return Err(ApiError::new(
+            400,
+            "REBASE_PLAN_FAILED",
+            result.stderr.trim().to_string(),
+        ));
+    }
+    let commits: Vec<Value> = result
+        .stdout
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(|line| {
+            let mut parts = line.split('\u{0}');
+            json!({
+                "hash": parts.next().unwrap_or(""),
+                "subject": parts.next().unwrap_or(""),
+                "author": parts.next().unwrap_or(""),
+                "date": parts.next().unwrap_or(""),
+            })
+        })
+        .collect();
+    Ok(json!({ "commits": commits }))
+}
+
+fn quote_commit_message(message: &str) -> String {
+    format!("\"{}\"", message.replace('\\', "\\\\").replace('"', "\\\""))
+}
+
+async fn interactive_rebase(
+    runner: &GitRunner,
+    repo_path: &str,
+    upstream: &str,
+    plan: &[Value],
+) -> ApiResult<GitResult> {
+    let dir = std::env::temp_dir().join(format!("gitastic-rebase-{}", random_uuid()));
+    fs::create_dir_all(&dir).await.map_err(|error| {
+        ApiError::new(500, "REBASE_TMP_FAILED", format!("Could not prepare rebase: {error}"))
+    })?;
+    let plan_file = dir.join("todo");
+    let mut lines: Vec<String> = Vec::new();
+    for entry in plan {
+        let hash = entry.get("hash").and_then(Value::as_str).unwrap_or("");
+        let action = entry.get("action").and_then(Value::as_str).unwrap_or("pick");
+        match action {
+            "drop" => lines.push(format!("drop {hash}")),
+            "squash" => lines.push(format!("squash {hash}")),
+            "fixup" => lines.push(format!("fixup {hash}")),
+            "reword" => {
+                lines.push(format!("pick {hash}"));
+                let message = entry.get("message").and_then(Value::as_str).unwrap_or("");
+                lines.push(format!("exec git commit --amend -m {}", quote_commit_message(message)));
+            }
+            _ => lines.push(format!("pick {hash}")),
+        }
+    }
+    fs::write(&plan_file, format!("{}\n", lines.join("\n")))
+        .await
+        .map_err(|error| {
+            ApiError::new(500, "REBASE_TMP_FAILED", format!("Could not write rebase plan: {error}"))
+        })?;
+
+    let exe = std::env::current_exe().unwrap_or_default();
+    let editor = format!(
+        "\"{}\" --git-editor-copy \"{}\"",
+        exe.display(),
+        plan_file.display()
+    );
+    let envs = vec![
+        ("GIT_SEQUENCE_EDITOR", editor),
+        ("GIT_EDITOR", "true".to_string()),
+    ];
+    let result = runner
+        .run_with_env(repo_path, &["rebase", "-i", upstream], &envs, true)
+        .await;
+    let _ = fs::remove_dir_all(&dir).await;
+    result
+}
+
+fn random_uuid() -> String {
+    Uuid::new_v4().to_string()
+}
+
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 4 && args[1] == "--git-editor-copy" {
+        if let Ok(content) = std::fs::read_to_string(&args[2]) {
+            let _ = std::fs::write(&args[3], content);
+        }
+        std::process::exit(0);
+    }
     let app_state = tauri::async_runtime::block_on(AppState::init());
     tauri::Builder::default()
         .manage(Arc::new(app_state))

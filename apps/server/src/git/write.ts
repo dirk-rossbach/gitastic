@@ -1,5 +1,7 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
-import type { OperationKind } from '@gitastic/shared';
+import type { OperationKind, RebasePlanEntry, RebasePlanResponse } from '@gitastic/shared';
 import { AppError } from '../errors';
 import { getStatus } from './repo';
 import type { GitRunner, GitResult } from './runner';
@@ -231,6 +233,73 @@ export async function cherryPick(
   hashes: string[],
 ): Promise<GitResult> {
   return runner.run(repoPath, ['cherry-pick', ...hashes], { allowFail: true });
+}
+
+export async function rebasePlan(
+  runner: GitRunner,
+  repoPath: string,
+  upstream: string,
+): Promise<RebasePlanResponse> {
+  const result = await runner.run(
+    repoPath,
+    ['log', '--reverse', '--format=%H%x00%s%x00%an%x00%aI', `${upstream}..HEAD`],
+    { allowFail: true },
+  );
+  if (result.exitCode !== 0) {
+    throw new AppError(400, 'REBASE_PLAN_FAILED', result.stderr.trim() || 'Could not read commits.');
+  }
+  const commits = result.stdout
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const [hash = '', subject = '', author = '', date = ''] = line.split('\u0000');
+      return { hash, subject, author, date };
+    });
+  return { commits };
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+export async function interactiveRebase(
+  runner: GitRunner,
+  repoPath: string,
+  upstream: string,
+  plan: RebasePlanEntry[],
+): Promise<GitResult> {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitastic-rebase-'));
+  const planFile = path.join(dir, 'todo');
+  try {
+    const lines: string[] = [];
+    for (const entry of plan) {
+      switch (entry.action) {
+        case 'drop':
+          lines.push(`drop ${entry.hash}`);
+          break;
+        case 'squash':
+          lines.push(`squash ${entry.hash}`);
+          break;
+        case 'fixup':
+          lines.push(`fixup ${entry.hash}`);
+          break;
+        case 'reword':
+          lines.push(`pick ${entry.hash}`);
+          lines.push(`exec git commit --amend -m ${shellQuote(entry.message ?? '')}`);
+          break;
+        default:
+          lines.push(`pick ${entry.hash}`);
+      }
+    }
+    await fs.writeFile(planFile, `${lines.join('\n')}\n`);
+    const sequenceEditor = `node -e "require('fs').copyFileSync('${planFile.replace(/'/g, "\\'")}', process.argv[1])"`;
+    return await runner.run(repoPath, ['rebase', '-i', upstream], {
+      allowFail: true,
+      env: { GIT_SEQUENCE_EDITOR: sequenceEditor, GIT_EDITOR: 'true' },
+    });
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 export async function operationAction(

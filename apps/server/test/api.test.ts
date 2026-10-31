@@ -612,3 +612,30 @@ describe('community theme sanitizing', () => {
     ).toThrow();
   });
 });
+
+describe('interactive rebase', () => {
+  it('reads a plan and drops a commit', async () => {
+    writeFile(repoPath, 'b.txt', 'b\n');
+    commitAll(repoPath, 'B');
+    writeFile(repoPath, 'c.txt', 'c\n');
+    commitAll(repoPath, 'C');
+
+    const planResponse = await request('GET', '/api/repo/rebase/plan?upstream=HEAD~2');
+    expect(planResponse.statusCode, planResponse.body).toBeLessThan(400);
+    const plan = planResponse.json() as { commits: Array<{ hash: string; subject: string }> };
+    expect(plan.commits.map((commit) => commit.subject)).toEqual(['B', 'C']);
+
+    const rebase = await request('POST', '/api/repo/rebase/interactive', {
+      upstream: 'HEAD~2',
+      plan: plan.commits.map((commit) => ({
+        hash: commit.hash,
+        action: commit.subject === 'B' ? 'drop' : 'pick',
+      })),
+    });
+    expect(rebase.statusCode, rebase.body).toBeLessThan(400);
+    expect(rebase.json().ok).toBe(true);
+
+    const log = git(repoPath, 'log', '--format=%s');
+    expect(log.trim().split('\n')).toEqual(['C', 'Initial commit']);
+  });
+});

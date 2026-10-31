@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execa } from 'execa';
 import type {
+  CreatePullRequest,
   GitIdentity,
   ProviderAccountStatus,
   ProviderKind,
@@ -996,6 +997,69 @@ async function resolveProviderRepo(runner: GitRunner, repoPath: string): Promise
       ? await getGithubToken(runner, remote.host)
       : await getGitlabToken(runner, remote.host);
   return { remote, auth: auth?.token ? { token: auth.token } : null };
+}
+
+export async function currentBranch(runner: GitRunner, repoPath: string): Promise<string> {
+  const result = await runner.run(repoPath, ['rev-parse', '--abbrev-ref', 'HEAD'], {
+    allowFail: true,
+  });
+  const branch = result.stdout.trim();
+  if (result.exitCode !== 0 || !branch || branch === 'HEAD') {
+    throw new AppError(400, 'DETACHED_HEAD', 'Check out a branch before opening a pull request.');
+  }
+  return branch;
+}
+
+export async function createPullRequest(
+  runner: GitRunner,
+  repoPath: string,
+  input: CreatePullRequest,
+): Promise<{ number: number | null; url: string }> {
+  const { remote, auth } = await resolveProviderRepo(runner, repoPath);
+  if (!auth?.token) {
+    throw new AppError(
+      401,
+      'NOT_CONNECTED',
+      `Connect a ${remote.provider === 'github' ? 'GitHub' : 'GitLab'} account first.`,
+    );
+  }
+  const head = input.head ?? (await currentBranch(runner, repoPath));
+
+  if (remote.provider === 'github') {
+    const pull = await fetchGithubJson<{ number?: number; html_url?: string }>(
+      remote.host,
+      `/repos/${remote.fullName}/pulls`,
+      auth.token,
+      {
+        method: 'POST',
+        body: {
+          title: input.title,
+          body: input.body ?? '',
+          head,
+          base: input.base,
+          draft: input.draft ?? false,
+        },
+      },
+    );
+    return { number: pull.number ?? null, url: pull.html_url ?? remote.pullsUrl };
+  }
+
+  const project = encodeURIComponent(remote.fullName);
+  const mr = await fetchGitlabJson<{ iid?: number; web_url?: string }>(
+    remote.host,
+    `/projects/${project}/merge_requests`,
+    auth.token,
+    {
+      method: 'POST',
+      body: {
+        title: input.title,
+        description: input.body ?? '',
+        source_branch: head,
+        target_branch: input.base,
+      },
+    },
+  );
+  return { number: mr.iid ?? null, url: mr.web_url ?? remote.pullsUrl };
 }
 
 function normalizePullFileStatus(status: string): PullRequestFileStatus {

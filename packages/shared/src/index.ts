@@ -432,6 +432,37 @@ export const PushSchema = z.object({
 });
 export const MergeSchema = z.object({ ref: z.string().min(1), noFf: z.boolean().optional() });
 export const RebaseSchema = z.object({ onto: z.string().min(1) });
+export const RebaseActionSchema = z.enum(['pick', 'reword', 'squash', 'fixup', 'drop']);
+export type RebaseAction = z.infer<typeof RebaseActionSchema>;
+export const RebasePlanEntrySchema = z.object({
+  hash: z.string().min(1),
+  action: RebaseActionSchema,
+  message: z.string().optional(),
+});
+export type RebasePlanEntry = z.infer<typeof RebasePlanEntrySchema>;
+export const InteractiveRebaseSchema = z.object({
+  upstream: z.string().min(1),
+  plan: z.array(RebasePlanEntrySchema).min(1),
+});
+export const RebasePlanCommitSchema = z.object({
+  hash: z.string(),
+  subject: z.string(),
+  author: z.string().optional(),
+  date: z.string().optional(),
+});
+export type RebasePlanCommit = z.infer<typeof RebasePlanCommitSchema>;
+export const RebasePlanResponseSchema = z.object({ commits: z.array(RebasePlanCommitSchema) });
+export type RebasePlanResponse = z.infer<typeof RebasePlanResponseSchema>;
+
+export const CreatePullRequestSchema = z.object({
+  title: z.string().min(1).max(256),
+  body: z.string().max(20_000).optional(),
+  head: z.string().min(1).optional(),
+  base: z.string().min(1),
+  draft: z.boolean().optional(),
+});
+export type CreatePullRequest = z.infer<typeof CreatePullRequestSchema>;
+
 export const CherryPickSchema = z.object({ hashes: z.array(z.string().min(1)).min(1) });
 export const OperationActionSchema = z.object({ action: z.enum(['continue', 'abort', 'skip']) });
 export const StashPushSchema = z.object({

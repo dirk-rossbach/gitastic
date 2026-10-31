@@ -19,7 +19,9 @@ import {
   CommitRequestSchema,
   ConflictBinarySchema,
   ConflictResolveSchema,
+  CreatePullRequestSchema,
   FetchSchema,
+  InteractiveRebaseSchema,
   GitIdentitySchema,
   MergeSchema,
   OpenRepoSchema,
@@ -68,6 +70,7 @@ import {
   approvePullRequest,
   checkoutPullRequest,
   connectProviderAccount,
+  createPullRequest,
   createPullRequestComment,
   disconnectProviderAccount,
   generateSshKey,
@@ -491,6 +494,12 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     return listRepoPullRequests(state.runner, repo.path);
   });
 
+  app.post('/api/repo/pulls', async (request) => {
+    const repo = repoFor(state, request);
+    const body = parseBody(CreatePullRequestSchema, request.body);
+    return createPullRequest(state.runner, repo.path, body);
+  });
+
   app.get('/api/repo/pulls/:number', async (request) => {
     const repo = repoFor(state, request);
     const number = Number((request.params as { number: string }).number);
@@ -825,6 +834,26 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     const body = parseBody(RebaseSchema, request.body);
     const backupRef = await createBackupRef(state.runner, repo.path, 'rebase');
     const result = await write.rebase(state.runner, repo.path, body.onto);
+    return finalizeConflictable(state, repo, result, 'Rebase', backupRef);
+  });
+
+  app.get('/api/repo/rebase/plan', async (request) => {
+    const repo = repoFor(state, request);
+    const upstream = queryValue(request, 'upstream');
+    if (!upstream) throw new AppError(400, 'MISSING_UPSTREAM', 'upstream is required');
+    return write.rebasePlan(state.runner, repo.path, upstream);
+  });
+
+  app.post('/api/repo/rebase/interactive', async (request) => {
+    const repo = repoFor(state, request);
+    const body = parseBody(InteractiveRebaseSchema, request.body);
+    const backupRef = await createBackupRef(state.runner, repo.path, 'rebase');
+    const result = await write.interactiveRebase(
+      state.runner,
+      repo.path,
+      body.upstream,
+      body.plan,
+    );
     return finalizeConflictable(state, repo, result, 'Rebase', backupRef);
   });
 

@@ -7,6 +7,7 @@ import type {
   CommitDetail,
   CommunityThemesResponse,
   ConflictsResponse,
+  CreatePullRequest,
   DiffResponse,
   DirectoryListing,
   FileHistoryResponse,
@@ -22,6 +23,8 @@ import type {
   PullRequestDetailResponse,
   PullRequestsResponse,
   RecentRepo,
+  RebasePlanEntry,
+  RebasePlanResponse,
   ReflogEntry,
   Remote,
   RemoteProviderInfo,
@@ -212,6 +215,8 @@ export const api = {
   repo: () => request<RepoSummary>('/repo'),
   repoProvider: () => request<{ remote: RemoteProviderInfo | null }>('/repo/provider'),
   pulls: () => request<PullRequestsResponse>('/repo/pulls'),
+  createPullRequest: (input: CreatePullRequest) =>
+    post<{ number: number | null; url: string }>('/repo/pulls', input),
   pullRequest: (number: number) =>
     request<PullRequestDetailResponse>(`/repo/pulls/${number}`),
   commentOnPullRequest: (number: number, body: PullRequestCommentCreate) =>
@@ -276,6 +281,10 @@ export const api = {
     post<JobResponse>('/repo/push', body),
   merge: (ref: string, noFf?: boolean) => post<WriteResponse>('/repo/merge', { ref, noFf }),
   rebase: (onto: string) => post<WriteResponse>('/repo/rebase', { onto }),
+  rebasePlan: (upstream: string) =>
+    request<RebasePlanResponse>('/repo/rebase/plan', { query: { upstream } }),
+  interactiveRebase: (upstream: string, plan: RebasePlanEntry[]) =>
+    post<WriteResponse>('/repo/rebase/interactive', { upstream, plan }),
   cherryPick: (hashes: string[]) => post<WriteResponse>('/repo/cherry-pick', { hashes }),
   operation: (kind: string, action: 'continue' | 'abort' | 'skip') =>
     post<WriteResponse>(`/repo/operation/${kind}`, { action }),
@@ -372,6 +381,7 @@ export type {
   CommitDetail,
   CommunityThemesResponse,
   ConflictsResponse,
+  CreatePullRequest,
   DiffResponse,
   DirectoryListing,
   FileHistoryResponse,
@@ -379,6 +389,8 @@ export type {
   Job,
   OnboardingReport,
   RecentRepo,
+  RebasePlanEntry,
+  RebasePlanResponse,
   Remote,
   RepoSummary,
   ResetSchema,

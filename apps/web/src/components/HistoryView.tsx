@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { GitBranch, RefreshCw, Search, Tag, User, X } from 'lucide-react';
+import { GitBranch, RefreshCw, Search, Tag, User, WandSparkles, X } from 'lucide-react';
 import type { CommitSummary } from '@gitastic/shared';
 import { api } from '../api';
 import { useDebouncedValue } from '../lib/hooks';
@@ -8,6 +8,7 @@ import { cn, errorMessage, formatDateShort } from '../lib/utils';
 import { useStore } from '../store';
 import { laneColorFor } from '../ui-styles';
 import { CommitDetail } from './CommitDetail';
+import { InteractiveRebaseDialog } from './InteractiveRebaseDialog';
 import { EmptyState, Spinner } from './ui';
 
 function currentUiStyle(): string {
@@ -235,6 +236,7 @@ export function HistoryView() {
 
   const branches = useQuery({ queryKey: ['branches'], queryFn: api.branches });
   const tags = useQuery({ queryKey: ['tags'], queryFn: api.tags });
+  const [rebaseOpen, setRebaseOpen] = useState(false);
 
   const commits = useMemo(
     () => history.data?.pages.flatMap((page) => page.commits) ?? [],
@@ -333,6 +335,15 @@ export function HistoryView() {
           </optgroup>
         </select>
         <span className="text-xs text-faint">{total.toLocaleString()} commits</span>
+        <button
+          type="button"
+          className="btn h-8 text-xs"
+          disabled={!repo.data?.branch}
+          onClick={() => setRebaseOpen(true)}
+        >
+          <WandSparkles className="h-3.5 w-3.5" />
+          Interactive rebase
+        </button>
         <button type="button" className="btn-icon" title="Refresh history" onClick={reload}>
           <RefreshCw className={cn('h-4 w-4', history.isFetching && 'animate-spin')} />
         </button>
@@ -482,6 +493,15 @@ export function HistoryView() {
           </>
         ) : null}
       </div>
+
+      <InteractiveRebaseDialog
+        open={rebaseOpen}
+        onOpenChange={setRebaseOpen}
+        defaultUpstream={
+          repo.data?.upstream?.split('/').slice(1).join('/') ||
+          (branches.data?.find((branch) => branch.remote)?.name ?? 'origin/main')
+        }
+      />
     </div>
   );
 }

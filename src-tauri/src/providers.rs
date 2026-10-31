@@ -1201,8 +1201,95 @@ async fn resolve_provider_remote(
     Ok((remote, token))
 }
 
-fn normalize_review_state(state: &str) -> String {
-    match state.to_uppercase().as_str() {
+#[allow(clippy::too_many_arguments)]
+pub async fn create_pull_request(
+    runner: &GitRunner,
+    home: &str,
+    repo_path: &str,
+    title: &str,
+    body: &str,
+    base: &str,
+    head: Option<&str>,
+    draft: bool,
+) -> ApiResult<Value> {
+    let (remote, token) = resolve_provider_remote(runner, home, repo_path).await?;
+    let token = token.ok_or_else(|| {
+        ApiError::new(
+            401,
+            "NOT_CONNECTED",
+            format!(
+                "Connect a {} account first.",
+                if remote.provider == "github" { "GitHub" } else { "GitLab" }
+            ),
+        )
+    })?;
+
+    let head = match head {
+        Some(value) if !value.trim().is_empty() => value.to_string(),
+        _ => {
+            let result = runner
+                .run(repo_path, &["rev-parse", "--abbrev-ref", "HEAD"], true)
+                .await?;
+            let branch = result.stdout.trim().to_string();
+            if result.exit_code != 0 || branch.is_empty() || branch == "HEAD" {
+                return Err(ApiError::new(
+                    400,
+                    "DETACHED_HEAD",
+                    "Check out a branch before opening a pull request.",
+                ));
+            }
+            branch
+        }
+    };
+
+    if remote.provider == "github" {
+        let payload = json!({
+            "title": title,
+            "body": body,
+            "head": head,
+            "base": base,
+            "draft": draft,
+        });
+        let response: Value = post_github_json(
+            &remote.host,
+            &format!("/repos/{}/pulls", remote.full_name),
+            Some(&token),
+            &payload,
+        )
+        .await?;
+        Ok(json!({
+            "number": response.get("number").cloned().unwrap_or(Value::Null),
+            "url": response
+                .get("html_url")
+                .and_then(Value::as_str)
+                .unwrap_or(&remote.pulls_url),
+        }))
+    } else {
+        let project = urlencoding::encode(&remote.full_name);
+        let payload = json!({
+            "title": title,
+            "description": body,
+            "source_branch": head,
+            "target_branch": base,
+        });
+        let response: Value = post_gitlab_json(
+            &remote.host,
+            &format!("/projects/{project}/merge_requests"),
+            Some(&token),
+            &payload,
+        )
+        .await?;
+        Ok(json!({
+            "number": response.get("iid").cloned().unwrap_or(Value::Null),
+            "url": response
+                .get("web_url")
+                .and_then(Value::as_str)
+                .unwrap_or(&remote.pulls_url),
+        }))
+    }
+}
+
+fn normalize_review_state(state: &str) -> String {    match state.to_uppercase().as_str() {
         "APPROVED" => "APPROVED".to_string(),
         "CHANGES_REQUESTED" => "CHANGES_REQUESTED".to_string(),
         "COMMENTED" => "COMMENTED".to_string(),

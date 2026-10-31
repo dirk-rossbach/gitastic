@@ -25,6 +25,7 @@ Git is powerful, but it can be hard to see what is going on. Gitastic gives you 
 - See branches, tags and commits in a visual history.
 - Review changes and commit only the parts you want.
 - Resolve merge conflicts without editing conflict markers by hand.
+- Open pull requests and reshape history without leaving the app.
 - Undo mistakes with a built-in safety net.
 
 You do not need to know every Git command to use Gitastic. If you already work with Git, you can keep your existing repositories, remotes and credentials.
@@ -84,7 +85,11 @@ Destructive actions create a backup automatically. If something goes wrong, use 
 
 ### Work with GitHub and GitLab
 
-Clone repositories over HTTPS or SSH, browse open pull requests or merge requests, check them out locally and open the repository, branch or commit in your browser. Gitastic supports GitHub, GitLab and self-hosted GitLab instances. Your access tokens are stored in your operating system's secure credential store, not in Gitastic's own files.
+Clone repositories over HTTPS or SSH, browse open pull requests or merge requests, check them out locally and open the repository, branch or commit in your browser. You can also **open a new pull request or merge request directly from Gitastic** — pick the base branch, write the title and description, and create it as a draft if you want. Gitastic supports GitHub, GitLab and self-hosted GitLab instances. Your access tokens are stored in your operating system's secure credential store, not in Gitastic's own files.
+
+### Reshape history with interactive rebase
+
+Start an **interactive rebase** from the history toolbar. Choose an upstream, load the commits between it and your branch, then reorder them and mark each one as *pick*, *reword*, *squash*, *fixup* or *drop*. Gitastic shows the resulting order before it runs, creates a backup first and hands conflicts to the conflict resolver if the rebase pauses.
 
 ### Manage SSH keys and your Git identity
 
@@ -96,7 +101,7 @@ Set aside only the files you select without committing them. Work on several bra
 
 ### Make Gitastic look like your workspace
 
-Choose from 15 visual styles, from calm monochrome layouts to colourful retro themes. Each style includes its own light or dark appearance, so there is no separate theme switch.
+Choose from 15 visual styles, from calm monochrome layouts to colourful retro themes, build your own with the **Theme Builder**, or install community themes. Each style includes its own light or dark appearance, so there is no separate theme switch. See [Themes](#themes) for details.
 
 ---
 

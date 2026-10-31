@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowRight,
   ExternalLink,
@@ -12,22 +12,28 @@ import {
   Settings,
   User,
 } from 'lucide-react';
-import { buildCreatePullUrl } from '@gitastic/shared';
 import { api } from '../api';
 import { useAction } from '../lib/hooks';
 import { cn, formatDate } from '../lib/utils';
 import { useStore } from '../store';
-import { EmptyState, ErrorState, LoadingState, Spinner } from './ui';
+import { EmptyState, ErrorState, LoadingState, Modal, Spinner } from './ui';
 import { PullRequestDetailView } from './PullRequestDetail';
 
 export function PullRequestsView() {
+  const queryClient = useQueryClient();
   const pulls = useQuery({ queryKey: ['repo-pulls'], queryFn: api.pulls });
   const repo = useQuery({ queryKey: ['repo'], queryFn: api.repo });
   const setView = useStore((state) => state.setView);
   const openSettings = useStore((state) => state.openSettings);
+  const notify = useStore((state) => state.notify);
   const { busy, run } = useAction();
   const [search, setSearch] = useState('');
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [prTitle, setPrTitle] = useState('');
+  const [prBody, setPrBody] = useState('');
+  const [prBase, setPrBase] = useState('');
+  const [prDraft, setPrDraft] = useState(false);
 
   const remote = pulls.data?.remote ?? null;
   const currentBranch = repo.data?.branch ?? null;
@@ -87,15 +93,20 @@ export function PullRequestsView() {
         </span>
 
         {currentBranch ? (
-          <a
-            href={buildCreatePullUrl(remote, currentBranch)}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
             className="btn btn-primary h-8 text-xs"
+            onClick={() => {
+              setPrTitle('');
+              setPrBody('');
+              setPrBase(repo.data?.upstream?.split('/').slice(1).join('/') || 'main');
+              setPrDraft(false);
+              setCreateOpen(true);
+            }}
           >
             <Plus className="h-3.5 w-3.5" />
             Create {remote.provider === 'gitlab' ? 'MR' : 'PR'} ({currentBranch})
-          </a>
+          </button>
         ) : null}
 
         <a href={remote.pullsUrl} target="_blank" rel="noreferrer" className="btn h-8 text-xs">
@@ -251,6 +262,85 @@ export function PullRequestsView() {
           </div>
         ) : null}
       </div>
+
+      <Modal
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title={`Create ${remote.provider === 'gitlab' ? 'merge request' : 'pull request'}`}
+        description={`${currentBranch ?? 'current branch'} → ${prBase || 'base'}`}
+        footer={
+          <>
+            <button type="button" className="btn" onClick={() => setCreateOpen(false)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={busy || !prTitle.trim() || !prBase.trim()}
+              onClick={() =>
+                void run(async () => {
+                  const created = await api.createPullRequest({
+                    title: prTitle.trim(),
+                    body: prBody.trim() || undefined,
+                    base: prBase.trim(),
+                    draft: prDraft,
+                  });
+                  await queryClient.invalidateQueries({ queryKey: ['repo-pulls'] });
+                  setCreateOpen(false);
+                  notify('success', `Created ${prefix}${created.number ?? ''}`.trim(), created.url);
+                }, 'Pull request created.')
+              }
+            >
+              {busy ? <Spinner /> : <GitPullRequest className="h-4 w-4" />}
+              Create
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <label className="block space-y-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-faint">Title</span>
+            <input
+              className="input text-sm"
+              value={prTitle}
+              placeholder="Add my feature"
+              onChange={(event) => setPrTitle(event.target.value)}
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-faint">
+              Base branch
+            </span>
+            <input
+              className="input font-mono text-sm"
+              value={prBase}
+              onChange={(event) => setPrBase(event.target.value)}
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-faint">
+              Description
+            </span>
+            <textarea
+              className="input min-h-28 text-sm"
+              value={prBody}
+              onChange={(event) => setPrBody(event.target.value)}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm text-muted">
+            <input
+              type="checkbox"
+              className="accent-accent"
+              checked={prDraft}
+              onChange={(event) => setPrDraft(event.target.checked)}
+            />
+            Create as draft
+          </label>
+          {remote.provider === 'gitlab' ? (
+            <p className="text-[11px] text-faint">GitLab does not support draft merge requests.</p>
+          ) : null}
+        </div>
+      </Modal>
     </div>
   );
 }
