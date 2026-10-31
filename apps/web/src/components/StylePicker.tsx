@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { UiStyle } from '@gitastic/shared';
 import { Check } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { filterStylesByMode, uiStyleMeta, useStyleLibrary, type StyleMode } from '../ui-styles';
+import { filterStylesByMode, uiStyleMeta, useBuiltinStyles, type StyleMode } from '../ui-styles';
 
 export function StylePicker({
   current,
@@ -14,7 +14,7 @@ export function StylePicker({
   onSelect: (style: UiStyle, mode: StyleMode) => void;
 }) {
   const [preview, setPreview] = useState<{ id: string; mode: StyleMode } | null>(null);
-  const library = useStyleLibrary();
+  const library = useBuiltinStyles();
   const previewMeta = uiStyleMeta(preview?.id ?? current);
   const previewMode = preview?.mode ?? currentMode;
   const PreviewIcon = previewMeta.icon;

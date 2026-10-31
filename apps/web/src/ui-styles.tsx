@@ -288,6 +288,15 @@ export function useStyleLibrary(): UiStyleMeta[] {
   return [...UI_STYLE_LIST, ...customStyles.values()];
 }
 
+export function useBuiltinStyles(): UiStyleMeta[] {
+  return UI_STYLE_LIST;
+}
+
+export function useCustomStyles(): UiStyleMeta[] {
+  useSyncExternalStore(subscribeThemeRegistry, themeRegistrySnapshot, () => 0);
+  return [...customStyles.values()];
+}
+
 export function filterStylesByMode(styles: UiStyleMeta[], mode: StyleMode): UiStyleMeta[] {
   return styles.filter((style) => style.modes.includes(mode));
 }

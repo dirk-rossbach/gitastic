@@ -100,6 +100,7 @@ import {
 } from './git/safety';
 import * as write from './git/write';
 import { assertRepoFile, assertInsideRoots, listDirectories, toPosix } from './security/paths';
+import { installCommunityTheme, listCommunityThemes } from './community-themes';
 import { deleteTheme, ensureThemesDir, importTheme, listThemes, readThemeCss } from './themes';
 import type { AppState, OpenRepo } from './state';
 
@@ -293,6 +294,13 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   });
 
   app.get('/api/themes', async () => ({ themes: await listThemes() }));
+
+  app.get('/api/themes/community', async () => ({ themes: await listCommunityThemes() }));
+
+  app.post('/api/themes/community/:id/install', async (request) => {
+    const { id } = request.params as { id: string };
+    return installCommunityTheme(id);
+  });
 
   app.post('/api/themes', async (request) => {
     const body = parseBody(ThemeImportSchema, request.body);

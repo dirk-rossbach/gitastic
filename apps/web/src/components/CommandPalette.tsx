@@ -37,7 +37,7 @@ import { applyAppearance } from '../App';
 import { useAction, useStartJob } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
-import { filterStylesByMode, styleForTheme, useStyleLibrary, type StyleMode } from '../ui-styles';
+import { filterStylesByMode, styleForTheme, useBuiltinStyles, type StyleMode } from '../ui-styles';
 
 interface CommandItem {
   id: string;
@@ -59,7 +59,7 @@ export function CommandPalette({ session }: { session: Session }) {
   const notify = useStore((state) => state.notify);
   const { run } = useAction();
   const startJob = useStartJob();
-  const styleLibrary = useStyleLibrary();
+  const styleLibrary = useBuiltinStyles();
 
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);

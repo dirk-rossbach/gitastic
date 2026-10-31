@@ -578,3 +578,37 @@ describe('custom themes', () => {
     expect(missing.json().error.code).toBe('MISSING_THEME_METADATA');
   });
 });
+
+describe('community theme sanitizing', () => {
+  it('accepts scoped variable-only css', async () => {
+    const { assertSafeCommunityCss } = await import('../src/community-themes');
+    expect(() =>
+      assertSafeCommunityCss(
+        `:root[data-style='ocean'][data-theme='dark'] { --canvas: #001122; }`,
+        'ocean',
+      ),
+    ).not.toThrow();
+  });
+
+  it('rejects external urls, imports and mixed ids', async () => {
+    const { assertSafeCommunityCss } = await import('../src/community-themes');
+    expect(() =>
+      assertSafeCommunityCss(
+        `:root[data-style='ocean'][data-theme='dark'] { background: url(https://example.com/x.png); }`,
+        'ocean',
+      ),
+    ).toThrow();
+    expect(() =>
+      assertSafeCommunityCss(`@import url('https://example.com/x.css');`, 'ocean'),
+    ).toThrow();
+    expect(() =>
+      assertSafeCommunityCss(
+        `:root[data-style='other'][data-theme='dark'] { --canvas: #000; }`,
+        'ocean',
+      ),
+    ).toThrow();
+    expect(() =>
+      assertSafeCommunityCss(`body { --canvas: #000; }`, 'ocean'),
+    ).toThrow();
+  });
+});

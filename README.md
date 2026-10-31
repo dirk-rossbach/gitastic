@@ -110,7 +110,7 @@ Gitastic ships with **15 visual styles**. Each style is self-contained and alrea
 
 ### Custom themes
 
-Prefer your own palette? Every style is a single CSS file, and you can import your own themes from **Settings → Custom themes**. Add a `.css` file with a `/* @gitastic-theme { ... } */` metadata block, then pick it from the style library. See **[docs/THEMES.md](docs/THEMES.md)** for the format and a full reference.
+Prefer your own palette? Every style is a single CSS file. Open **Settings → Custom themes** to use the visual **Theme Builder** (with live preview), import your own `.css`, or install themes from the community folder. Custom themes are managed only in that section and are stored locally. See **[docs/THEMES.md](docs/THEMES.md)** for the format and a full reference.
 
 ### Dark style previews
 

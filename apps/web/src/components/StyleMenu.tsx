@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UiStyle } from '@gitastic/shared';
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { filterStylesByMode, uiStyleMeta, useStyleLibrary, type StyleMode } from '../ui-styles';
+import { filterStylesByMode, uiStyleMeta, useBuiltinStyles, type StyleMode } from '../ui-styles';
 
 export function StyleMenu({
   current,
@@ -15,7 +15,7 @@ export function StyleMenu({
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const library = useStyleLibrary();
+  const library = useBuiltinStyles();
   const currentMeta = uiStyleMeta(current);
   const CurrentIcon = currentMeta.icon;
   const groups = useMemo(

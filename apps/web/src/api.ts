@@ -5,6 +5,7 @@ import type {
   CherryPickSchema,
   CleanSchema,
   CommitDetail,
+  CommunityThemesResponse,
   ConflictsResponse,
   DiffResponse,
   DirectoryListing,
@@ -168,6 +169,9 @@ export const api = {
   themeCss: (id: string) => request<string>(`/themes/${encodeURIComponent(id)}/css`),
   deleteTheme: (id: string) =>
     request<{ ok: boolean }>(`/themes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  communityThemes: () => request<CommunityThemesResponse>('/themes/community'),
+  installCommunityTheme: (id: string) =>
+    post<ThemeManifest>(`/themes/community/${encodeURIComponent(id)}/install`),
   clearCache: () => post<{ ok: boolean }>('/cache/clear'),
   openExternal: (url: string) => {
     if (getTauriInternals()) {
@@ -366,6 +370,7 @@ export type {
   CherryPickSchema,
   CleanSchema,
   CommitDetail,
+  CommunityThemesResponse,
   ConflictsResponse,
   DiffResponse,
   DirectoryListing,

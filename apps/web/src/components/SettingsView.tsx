@@ -2,10 +2,14 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  Check,
   CheckCircle2,
+  Download,
   Heart,
   Info,
   Palette,
+  Pencil,
+  Plus,
   Save,
   Trash2,
   Upload,
@@ -13,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import type {
+  CommunityTheme,
   Session,
   SettingsPatch,
   ThemeManifest,
@@ -21,12 +26,19 @@ import type {
 import { api } from '../api';
 import { applyAppearance } from '../App';
 import { useAction } from '../lib/hooks';
+import {
+  createDraft,
+  draftFromManifest,
+  serializeTheme,
+  type ThemeDraft,
+} from '../lib/theme-draft';
 import { loadCustomThemes, removeThemeCss } from '../lib/theme-loader';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import { resolvedThemeMode, styleForTheme, type StyleMode } from '../ui-styles';
 import { ProviderAuthAssistant } from './ProvidersPanel';
 import { StylePicker } from './StylePicker';
+import { ThemeBuilder } from './ThemeBuilder';
 import { Spinner } from './ui';
 
 export function SettingsView({
@@ -66,10 +78,20 @@ export function SettingsView({
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  const [builder, setBuilder] = useState<{ draft: ThemeDraft; editing: boolean } | null>(null);
+  const [themeTab, setThemeTab] = useState<'installed' | 'community'>('installed');
+
   const themesQuery = useQuery({
     queryKey: ['themes'],
     queryFn: loadCustomThemes,
     staleTime: 60_000,
+  });
+
+  const communityQuery = useQuery({
+    queryKey: ['community-themes'],
+    queryFn: api.communityThemes,
+    enabled: themeTab === 'community',
+    staleTime: 5 * 60_000,
   });
 
   const importThemeFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -96,6 +118,54 @@ export function SettingsView({
       await queryClient.invalidateQueries({ queryKey: ['themes'] });
       await queryClient.invalidateQueries({ queryKey: ['session'] });
     }, `Removed ${theme.name}.`);
+  };
+
+  const applyCustomTheme = async (theme: ThemeManifest) => {
+    const mode = theme.modes.includes('dark') ? 'dark' : 'light';
+    await applyAndSaveAppearance(mode, theme.id);
+  };
+
+  const openNewTheme = () => {
+    setBuilder({ draft: createDraft(currentMode), editing: false });
+  };
+
+  const openEditTheme = async (theme: ThemeManifest) => {
+    const css = await api.themeCss(theme.id).catch(() => null);
+    const mode = theme.modes.includes(currentMode) ? currentMode : theme.modes[0] === 'light' ? 'light' : 'dark';
+    setBuilder({ draft: draftFromManifest(theme, css, mode), editing: true });
+  };
+
+  const saveBuilderDraft = async (draft: ThemeDraft) => {
+    await run(async () => {
+      const manifest = await api.importTheme(serializeTheme(draft));
+      await queryClient.invalidateQueries({ queryKey: ['themes'] });
+      await queryClient.invalidateQueries({ queryKey: ['session'] });
+      setBuilder(null);
+      if (draft.mode === 'dark' || draft.mode === 'light') {
+        await applyAndSaveAppearance(draft.mode, manifest.id);
+      }
+    }, 'Theme saved.');
+  };
+
+  const installCommunityTheme = async (theme: CommunityTheme) => {
+    await run(async () => {
+      const manifest = await api.installCommunityTheme(theme.id);
+      await queryClient.invalidateQueries({ queryKey: ['themes'] });
+      await queryClient.invalidateQueries({ queryKey: ['community-themes'] });
+      removeThemeCss(manifest.id);
+      await loadCustomThemes();
+    }, `Installed ${theme.name}.`);
+  };
+
+  const exportCustomTheme = async (theme: ThemeManifest) => {
+    const css = await api.themeCss(theme.id);
+    const blob = new Blob([css], { type: 'text/css' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${theme.id}.css`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   const applyAndSaveAppearance = async (nextMode: StyleMode, nextStyle: UiStyle) => {
@@ -148,7 +218,23 @@ export function SettingsView({
 
   const currentMode = resolvedThemeMode(form.theme ?? 'dark');
   const currentStyle = styleForTheme(currentMode, form.uiStyle ?? 'gorgeous');
+  const activeCustomTheme = (themesQuery.data ?? []).find(
+    (theme) => theme.id === form.uiStyle,
+  );
   const gitVersion = session.onboarding.gitVersion;
+
+  if (builder) {
+    return (
+      <ThemeBuilder
+        initialDraft={builder.draft}
+        editing={builder.editing}
+        busy={busy}
+        takenIds={(themesQuery.data ?? []).map((theme) => theme.id)}
+        onBack={() => setBuilder(null)}
+        onSave={saveBuilderDraft}
+      />
+    );
+  }
 
   return (
     <div className="app-backdrop scrollbar-thin h-full overflow-y-auto bg-transparent">
@@ -185,9 +271,16 @@ export function SettingsView({
           <div>
             <h2 className="panel-title">Appearance</h2>
             <p className="mt-1 text-xs text-muted">
-              Pick from the dark and light style libraries. Hover a style to preview it; selecting
-              one applies the look and its matching mode. Focus is available in both groups.
+              Pick from the built-in dark and light style libraries. Hover a style to preview it;
+              selecting one applies the look and its matching mode. Custom themes are managed under
+              Custom themes below.
             </p>
+            {activeCustomTheme ? (
+              <p className="mt-2 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-accent">
+                Active custom theme: <strong>{activeCustomTheme.name}</strong> ({currentMode}) —
+                manage or change it under Custom themes.
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
@@ -207,62 +300,168 @@ export function SettingsView({
             <div>
               <h2 className="panel-title">Custom themes</h2>
               <p className="mt-1 text-xs text-muted">
-                Import a <span className="font-mono">.css</span> file with a{' '}
-                <span className="font-mono">{'/* @gitastic-theme { ... } */'}</span> metadata block.
-                Custom themes are stored in your Gitastic data folder and appear in the style picker.
+                Build your own theme, import a <span className="font-mono">.css</span> file or install
+                one from the community. Custom themes live here and are stored in your Gitastic data
+                folder.
               </p>
             </div>
-            <label className="btn h-8 cursor-pointer text-xs">
-              <Upload className="h-3.5 w-3.5 text-accent" />
-              Import theme
-              <input
-                type="file"
-                accept=".css,text/css"
-                className="hidden"
-                onChange={(event) => void importThemeFile(event)}
-              />
-            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" className="btn h-8 text-xs" onClick={openNewTheme}>
+                <Plus className="h-3.5 w-3.5 text-accent" />
+                Theme Builder
+              </button>
+              <label className="btn h-8 cursor-pointer text-xs">
+                <Upload className="h-3.5 w-3.5 text-accent" />
+                Import theme
+                <input
+                  type="file"
+                  accept=".css,text/css"
+                  className="hidden"
+                  onChange={(event) => void importThemeFile(event)}
+                />
+              </label>
+            </div>
           </div>
 
-          {themesQuery.data && themesQuery.data.length > 0 ? (
-            <div className="space-y-2">
-              {themesQuery.data.map((theme) => (
-                <div
-                  key={theme.id}
-                  className="flex items-center gap-3 rounded-md border border-edge bg-raised/40 px-3 py-2"
-                >
-                  <Palette className="h-4 w-4 shrink-0 text-accent" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{theme.name}</p>
-                    <p className="truncate text-[11px] text-muted">
-                      {theme.tagline || theme.id} · {theme.modes.join(' / ')}
-                    </p>
-                  </div>
-                  <div className="hidden shrink-0 gap-1 sm:flex" aria-hidden>
-                    {theme.swatches.map((color) => (
-                      <span
-                        key={color}
-                        className="h-2.5 w-2.5 rounded-full ring-1 ring-black/10"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    className="btn h-7 shrink-0 text-[11px]"
-                    disabled={busy}
-                    onClick={() => void removeCustomTheme(theme)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-danger" />
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
+          <div className="flex gap-2 border-b border-edge pb-2">
+            {(['installed', 'community'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs capitalize transition',
+                  themeTab === tab
+                    ? 'bg-accent/10 font-medium text-accent'
+                    : 'text-muted hover:bg-raised/60',
+                )}
+                onClick={() => setThemeTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {themeTab === 'installed' ? (
+            themesQuery.data && themesQuery.data.length > 0 ? (
+              <div className="space-y-2">
+                {themesQuery.data.map((theme) => {
+                  const active = theme.id === form.uiStyle;
+                  return (
+                    <div
+                      key={theme.id}
+                      className={cn(
+                        'flex flex-wrap items-center gap-3 rounded-md border px-3 py-2',
+                        active ? 'border-accent/60 bg-accent/10' : 'border-edge bg-raised/40',
+                      )}
+                    >
+                      <Palette className="h-4 w-4 shrink-0 text-accent" />
+                      <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-2 truncate text-sm font-medium">
+                          {theme.name}
+                          {active ? <Check className="h-3.5 w-3.5 text-accent" /> : null}
+                        </p>
+                        <p className="truncate text-[11px] text-muted">
+                          {theme.tagline || theme.id} · {theme.modes.join(' / ')}
+                        </p>
+                      </div>
+                      <div className="hidden shrink-0 gap-1 sm:flex" aria-hidden>
+                        {theme.swatches.map((color) => (
+                          <span
+                            key={color}
+                            className="h-2.5 w-2.5 rounded-full ring-1 ring-black/10"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          className="btn h-7 text-[11px]"
+                          disabled={busy || active}
+                          onClick={() => void applyCustomTheme(theme)}
+                        >
+                          {active ? 'Active' : 'Apply'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn h-7 text-[11px]"
+                          disabled={busy}
+                          onClick={() => void openEditTheme(theme)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn h-7 text-[11px]"
+                          disabled={busy}
+                          onClick={() => void exportCustomTheme(theme)}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn h-7 text-[11px]"
+                          disabled={busy}
+                          onClick={() => void removeCustomTheme(theme)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-danger" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-faint">
+                No custom themes yet. Use Theme Builder or import a .css file.
+              </p>
+            )
           ) : (
-            <p className="text-xs text-faint">
-              No custom themes imported yet. Use the button above to add one.
-            </p>
+            <div className="space-y-2">
+              {communityQuery.isLoading ? (
+                <p className="flex items-center gap-2 text-xs text-muted">
+                  <Spinner /> Loading community themes…
+                </p>
+              ) : communityQuery.isError ? (
+                <p className="text-xs text-danger">
+                  Could not load community themes. Check your connection and try again.
+                </p>
+              ) : communityQuery.data && communityQuery.data.themes.length > 0 ? (
+                communityQuery.data.themes.map((theme) => (
+                  <div
+                    key={theme.id}
+                    className="flex flex-wrap items-center gap-3 rounded-md border border-edge bg-raised/40 px-3 py-2"
+                  >
+                    <Palette className="h-4 w-4 shrink-0 text-accent" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {theme.name}
+                        {theme.author ? (
+                          <span className="ml-2 text-[11px] font-normal text-faint">
+                            by {theme.author}
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="truncate text-[11px] text-muted">
+                        {theme.tagline || theme.id} · {theme.modes.join(' / ')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn h-7 shrink-0 text-[11px]"
+                      disabled={busy || theme.installed}
+                      onClick={() => void installCommunityTheme(theme)}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {theme.installed ? 'Installed' : 'Install'}
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-faint">No community themes available.</p>
+              )}
+            </div>
           )}
         </section>
 

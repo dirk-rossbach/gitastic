@@ -307,6 +307,18 @@ export type ThemeManifest = z.infer<typeof ThemeManifestSchema>;
 export const ThemesResponseSchema = z.object({ themes: z.array(ThemeManifestSchema) });
 export type ThemesResponse = z.infer<typeof ThemesResponseSchema>;
 
+export const CommunityThemeSchema = ThemeManifestSchema.extend({
+  path: z.string().default(''),
+  author: z.string().max(80).optional(),
+  installed: z.boolean().default(false),
+});
+export type CommunityTheme = z.infer<typeof CommunityThemeSchema>;
+
+export const CommunityThemesResponseSchema = z.object({
+  themes: z.array(CommunityThemeSchema),
+});
+export type CommunityThemesResponse = z.infer<typeof CommunityThemesResponseSchema>;
+
 export const ThemeImportSchema = z.object({ css: z.string().min(1).max(200_000) });
 export type ThemeImport = z.infer<typeof ThemeImportSchema>;
 

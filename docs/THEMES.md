@@ -16,11 +16,18 @@ Custom themes are plain `.css` files stored in the Gitastic data folder:
 Every theme file is self-contained: it carries its metadata in a leading comment and then
 overrides the app's CSS variables. The app reads the folder on launch and after an import.
 
-## Importing a theme
+## Creating and installing themes
 
-Open **Settings → Custom themes → Import theme** and pick a `.css` file. Gitastic validates the
-metadata, copies the file into the themes folder and makes it available in the style picker
-immediately. Removing a theme from the same panel deletes the file.
+- **Theme Builder:** **Settings → Custom themes → Theme Builder** opens a visual editor with live
+  preview. Pick dark or light, adjust colors, save locally and optionally export the `.css`.
+- **Import:** **Settings → Custom themes → Import theme** accepts a `.css` file, validates the
+  metadata and copies it into the themes folder.
+- **Community:** **Settings → Custom themes → Community** lists themes published in
+  [`community-themes/`](../community-themes) and installs them locally.
+
+Custom themes only appear under **Custom themes** so the built-in style library stays clean. Each
+custom theme is either dark or light. Installed themes live in `$GITASTIC_DATA_DIR/themes/` and work
+offline.
 
 ## File format
 
@@ -103,10 +110,13 @@ Set `color-scheme: dark` or `color-scheme: light` so native controls match.
 
 ## Tips
 
-- A ready-made example lives at
-  [`docs/themes-examples/copper-pine.css`](themes-examples/copper-pine.css) — import it directly from
-  **Settings → Custom themes** to try a dark and light custom theme.
+- A ready-made dark example lives at
+  [`community-themes/copper-pine.css`](../community-themes/copper-pine.css), and a light one at
+  [`community-themes/parchment.css`](../community-themes/parchment.css). Both can be installed from
+  **Settings → Custom themes → Community**, or imported manually.
 - Start from a built-in file in `apps/web/src/themes/` — copying one and renaming the id is the
   fastest way to get every variable covered.
-- Themes are local CSS only. Gitastic never downloads or executes remote theme files.
+- Custom themes are either dark or light, never both. A theme targets exactly one mode.
+- Themes are local CSS only. Gitastic never downloads or executes remote theme files; community
+  themes are validated before saving.
 - Keep the metadata JSON valid; invalid files are ignored in the picker and rejected on import.

@@ -589,6 +589,20 @@ async fn dispatch(
             Ok(json!({ "themes": themes }))
         }
 
+        ("GET", "/themes/community") => {
+            let themes = themes::list_community_themes(&state.data_dir).await?;
+            Ok(json!({ "themes": themes }))
+        }
+
+        ("POST", path) if path.starts_with("/themes/community/") && path.ends_with("/install") => {
+            let id = path
+                .trim_start_matches("/themes/community/")
+                .trim_end_matches("/install")
+                .trim_end_matches('/');
+            let theme = themes::install_community_theme(&state.data_dir, id).await?;
+            Ok(serde_json::to_value(theme).unwrap())
+        }
+
         ("POST", "/themes") => {
             let css = b_str(&body, "css").ok_or_else(|| {
                 ApiError::new(400, "MISSING_THEME_CSS", "Theme CSS is required.")

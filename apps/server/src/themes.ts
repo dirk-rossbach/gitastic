@@ -27,8 +27,7 @@ function assertValidId(id: string): void {
   }
 }
 
-function parseManifest(css: string, fallbackId: string): ThemeManifest {
-  const match = css.match(METADATA_PATTERN);
+function parseManifest(css: string, fallbackId: string): ThemeManifest {  const match = css.match(METADATA_PATTERN);
   if (!match) {
     throw new AppError(
       400,
@@ -49,6 +48,10 @@ function parseManifest(css: string, fallbackId: string): ThemeManifest {
     });
   }
   return parsed.data;
+}
+
+export function parseThemeMetadata(css: string, fallbackId: string): ThemeManifest {
+  return parseManifest(css, fallbackId);
 }
 
 function themeFile(id: string): string {
