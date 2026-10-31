@@ -26,8 +26,22 @@ overrides the app's CSS variables. The app reads the folder on launch and after 
   [`community-themes/`](../community-themes) and installs them locally.
 
 Custom themes only appear under **Custom themes** so the built-in style library stays clean. Each
-custom theme is either dark or light. Installed themes live in `$GITASTIC_DATA_DIR/themes/` and work
-offline.
+custom theme is either dark or light. The Theme Builder auto-detects the mode from the canvas and
+panel brightness, and the Dark/Light buttons override it. Installed themes live in
+`$GITASTIC_DATA_DIR/themes/` and work offline.
+
+## Sharing a theme
+
+Want your theme in the app for everyone? Add it to the official repository:
+
+1. Create one `.css` file with the `/* @gitastic-theme { ... } */` metadata block.
+2. Put it in [`community-themes/`](../community-themes) (for example `community-themes/my-theme.css`).
+3. Add an entry to [`community-themes/index.json`](../community-themes/index.json) with `id`, `name`,
+   `mode`, `author`, `path` and optional `tagline`, `swatches` and `laneColors`.
+4. Open a pull request against `main`.
+
+Once merged, the theme shows up in **Settings → Custom themes → Community** and can be installed by
+anyone. Downloads are validated (scoped selectors, no external URLs or imports) before they are saved.
 
 ## File format
 
@@ -42,6 +56,7 @@ A theme has two parts: a `@gitastic-theme` JSON block and one or more CSS rule b
   "description": "Cool navy surfaces with sea-glass accents.",
   "keywords": "ocean blue navy dark calm",
   "badge": "Custom",
+  "author": "Your Name",
   "modes": ["dark"],
   "swatches": ["#0b2545", "#7fb3d5", "#eaf4ff"],
   "laneColors": ["#7fb3d5", "#5dade2", "#1abc9c", "#f4d03f", "#ec7063", "#a569bd", "#5d6d7e", "#48c9b0"]
@@ -77,7 +92,8 @@ A theme has two parts: a `@gitastic-theme` JSON block and one or more CSS rule b
 | `description` | no       | Longer text for the preview panel.                                |
 | `keywords`    | no       | Space-separated search terms.                                     |
 | `badge`       | no       | Small label in the picker. Defaults to `Custom`.                  |
-| `swatches`    | no       | Up to 8 colors shown as dots.                                     |
+| `author`      | no       | Creator name or handle, shown as credit in lists and previews.    |
+| `swatches`    | no       | Color dots for lists/previews. The Theme Builder derives them from `--accent`, `--accent-2` and `--accent-3`. |
 | `laneColors`  | no       | Up to 16 colors used for the commit graph.                        |
 
 Built-in ids are reserved and cannot be reused.

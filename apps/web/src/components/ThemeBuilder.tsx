@@ -5,6 +5,8 @@ import {
   FONT_OPTIONS,
   THEME_VARIABLES,
   downloadThemeFile,
+  derivedSwatches,
+  detectMode,
   isValidHex,
   normalizeDraft,
   serializeTheme,
@@ -58,12 +60,14 @@ function ListInput({
   onChange,
   max,
   placeholder,
+  hint,
 }: {
   label: string;
   values: string[];
   onChange: (values: string[]) => void;
   max: number;
   placeholder: string;
+  hint?: string;
 }) {
   const [entry, setEntry] = useState('');
 
@@ -126,7 +130,7 @@ function ListInput({
           Add
         </button>
       </div>
-      <p className="text-[10px] text-faint">Enter a hex color and press Enter. Up to {max} values.</p>
+      <p className="text-[10px] text-faint">{hint ?? `Enter a hex color and press Enter. Up to ${max} values.`}</p>
     </div>
   );
 }
@@ -281,6 +285,7 @@ export function ThemeBuilder({
   const [draft, setDraft] = useState<ThemeDraft>(() => stored ?? normalizeDraft(initialDraft));
   const [advanced, setAdvanced] = useState(false);
   const [idLocked, setIdLocked] = useState(editing || Boolean(stored?.id));
+  const [modeTouched, setModeTouched] = useState(editing || Boolean(stored));
   const [showErrors, setShowErrors] = useState(false);
 
   useEffect(() => {
@@ -298,10 +303,14 @@ export function ThemeBuilder({
     setDraft((current) => ({ ...current, [key]: value }));
 
   const setColor = (variable: ThemeVariable, value: string) =>
-    setDraft((current) => ({
-      ...current,
-      colors: { ...current.colors, [variable]: value },
-    }));
+    setDraft((current) => {
+      const colors = { ...current.colors, [variable]: value };
+      return {
+        ...current,
+        colors,
+        mode: modeTouched ? current.mode : detectMode(colors),
+      };
+    });
 
   const setName = (name: string) => {
     setDraft((current) => ({
@@ -312,7 +321,13 @@ export function ThemeBuilder({
   };
 
   const changeMode = (mode: ThemeDraft['mode']) => {
+    setModeTouched(true);
     setDraft((current) => ({ ...current, mode }));
+  };
+
+  const useDetectedMode = () => {
+    setModeTouched(false);
+    setDraft((current) => ({ ...current, mode: detectMode(current.colors) }));
   };
 
   const discardDraft = () => {
@@ -323,6 +338,7 @@ export function ThemeBuilder({
     }
     setDraft(normalizeDraft(initialDraft));
     setIdLocked(editing);
+    setModeTouched(editing);
     setShowErrors(false);
   };
 
@@ -415,7 +431,22 @@ export function ThemeBuilder({
               </div>
 
               <div className="space-y-1.5">
-                <span className="text-xs font-medium uppercase tracking-wide text-faint">Mode</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium uppercase tracking-wide text-faint">
+                    Mode
+                  </span>
+                  {modeTouched ? (
+                    <button
+                      type="button"
+                      className="text-[11px] text-faint transition hover:text-ink"
+                      onClick={useDetectedMode}
+                    >
+                      Detect from colors
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-accent">Auto-detected</span>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   {(['dark', 'light'] as const).map((mode) => (
                     <button
@@ -432,7 +463,9 @@ export function ThemeBuilder({
                   ))}
                 </div>
                 <p className="text-[11px] text-faint">
-                  A custom theme is either dark or light, never both.
+                  {modeTouched
+                    ? 'Manually set. Use “Detect from colors” to follow the background again.'
+                    : 'Automatically detected from the canvas and panel brightness.'}
                 </p>
               </div>
 
@@ -462,6 +495,17 @@ export function ThemeBuilder({
                     className="input text-sm"
                     value={draft.badge}
                     onChange={(event) => set('badge', event.target.value)}
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium uppercase tracking-wide text-faint">
+                    Creator
+                  </span>
+                  <input
+                    className="input text-sm"
+                    value={draft.author}
+                    placeholder="Your name or handle"
+                    onChange={(event) => set('author', event.target.value)}
                   />
                 </label>
                 <label className="block space-y-1.5">
@@ -530,13 +574,29 @@ export function ThemeBuilder({
                       onChange={(value) => setColor(variable.key, value)}
                     />
                   ))}
-                  <ListInput
-                    label="Swatches"
-                    values={draft.swatches}
-                    max={8}
-                    placeholder="#38bdf8"
-                    onChange={(values) => set('swatches', values)}
-                  />
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-faint">
+                      <span>Swatches</span>
+                      <span className="font-normal normal-case tracking-normal">derived</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {derivedSwatches(draft.colors).map((color) => (
+                        <span
+                          key={color}
+                          className="flex items-center gap-1.5 rounded border border-edge bg-raised px-2 py-0.5 font-mono text-[11px]"
+                        >
+                          <span
+                            className="h-3 w-3 rounded-sm ring-1 ring-black/10"
+                            style={{ backgroundColor: color }}
+                          />
+                          {color}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-faint">
+                      Automatically taken from Accent, Accent 2 and Accent 3.
+                    </p>
+                  </div>
                   <ListInput
                     label="Lane colors"
                     values={draft.laneColors}

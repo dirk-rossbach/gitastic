@@ -41,12 +41,12 @@ export interface ThemeDraft {
   description: string;
   keywords: string;
   badge: string;
+  author: string;
   fontDisplay: string;
   fontBody: string;
   shadowPanel: ShadowConfig;
   shadowCard: ShadowConfig;
   colors: ThemeColors;
-  swatches: string[];
   laneColors: string[];
 }
 
@@ -115,11 +115,6 @@ const LIGHT_DEFAULTS: ThemeColors = {
   danger: '#dc2626',
 };
 
-const DEFAULT_SWATCHES: Record<ThemeDraftMode, string[]> = {
-  dark: ['#38bdf8', '#a78bfa', '#f472b6'],
-  light: ['#2563eb', '#0d9488', '#f59e0b'],
-};
-
 const DEFAULT_LANE_COLORS = [
   '#38bdf8',
   '#2dd4bf',
@@ -130,6 +125,11 @@ const DEFAULT_LANE_COLORS = [
   '#22d3ee',
   '#a3e635',
 ];
+
+export function derivedSwatches(colors: ThemeColors): string[] {
+  const candidates = [colors.accent, colors['accent-2'], colors['accent-3']].filter(isValidHex);
+  return [...new Set(candidates)];
+}
 
 export const DEFAULT_SHADOW_PANEL: ShadowConfig = {
   enabled: true,
@@ -243,6 +243,21 @@ export function defaultColors(mode: ThemeDraftMode): ThemeColors {
   return { ...(mode === 'dark' ? DARK_DEFAULTS : LIGHT_DEFAULTS) };
 }
 
+function relativeLuminance(hex: string): number {
+  if (!isValidHex(hex)) return 0;
+  const { r, g, b } = hexToRgb(hex);
+  const channel = (value: number) => {
+    const c = value / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+export function detectMode(colors: ThemeColors): ThemeDraftMode {
+  const background = isValidHex(colors.canvas) ? colors.canvas : colors.panel;
+  return relativeLuminance(background) < 0.5 ? 'dark' : 'light';
+}
+
 export function createDraft(mode: ThemeDraftMode = 'dark'): ThemeDraft {
   return {
     id: '',
@@ -252,12 +267,12 @@ export function createDraft(mode: ThemeDraftMode = 'dark'): ThemeDraft {
     description: '',
     keywords: '',
     badge: 'Custom',
+    author: '',
     fontDisplay: '',
     fontBody: '',
     shadowPanel: { ...DEFAULT_SHADOW_PANEL },
     shadowCard: { ...DEFAULT_SHADOW_CARD },
     colors: defaultColors(mode),
-    swatches: [...DEFAULT_SWATCHES[mode]],
     laneColors: [...DEFAULT_LANE_COLORS],
   };
 }
@@ -293,15 +308,12 @@ export function normalizeDraft(input: Partial<ThemeDraft> | null | undefined): T
     description: typeof input?.description === 'string' ? input.description : base.description,
     keywords: typeof input?.keywords === 'string' ? input.keywords : base.keywords,
     badge: typeof input?.badge === 'string' ? input.badge : base.badge,
+    author: typeof input?.author === 'string' ? input.author : base.author,
     fontDisplay: typeof input?.fontDisplay === 'string' ? input.fontDisplay : base.fontDisplay,
     fontBody: typeof input?.fontBody === 'string' ? input.fontBody : base.fontBody,
     shadowPanel: normalizeShadow(input?.shadowPanel as unknown, base.shadowPanel),
     shadowCard: normalizeShadow(input?.shadowCard as unknown, base.shadowCard),
     colors: { ...base.colors, ...(input?.colors ?? {}) },
-    swatches:
-      Array.isArray(input?.swatches) && input.swatches.length > 0
-        ? input.swatches
-        : base.swatches,
     laneColors:
       Array.isArray(input?.laneColors) && input.laneColors.length > 0
         ? input.laneColors
@@ -354,8 +366,9 @@ function metadataComment(draft: ThemeDraft): string {
     description: draft.description.trim(),
     keywords: draft.keywords.trim(),
     badge: draft.badge.trim() || undefined,
+    author: draft.author.trim() || undefined,
     modes: [draft.mode],
-    swatches: draft.swatches.filter(isValidHex).slice(0, 8),
+    swatches: derivedSwatches(draft.colors),
     laneColors: draft.laneColors.filter(isValidHex).slice(0, 16),
   };
   return `/* @gitastic-theme\n${JSON.stringify(metadata, null, 2)}\n*/`;
@@ -400,7 +413,7 @@ export function draftFromManifest(
     description: manifest.description,
     keywords: manifest.keywords,
     badge: manifest.badge ?? 'Custom',
-    swatches: manifest.swatches.length > 0 ? [...manifest.swatches] : base.swatches,
+    author: manifest.author ?? '',
     laneColors: manifest.laneColors.length > 0 ? [...manifest.laneColors] : base.laneColors,
   };
   if (!css) return draft;

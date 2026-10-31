@@ -120,11 +120,11 @@ function entryToManifest(entry: IndexEntry, installed: Set<string>): CommunityTh
     description: entry.description ?? '',
     keywords: entry.keywords ?? '',
     badge: entry.badge,
+    author: entry.author,
     modes: [entry.mode],
     swatches: entry.swatches ?? [],
     laneColors: entry.laneColors ?? [],
     path: entry.path,
-    author: entry.author,
     installed: installed.has(entry.id),
   });
 }
@@ -172,6 +172,7 @@ async function scanDirectory(): Promise<IndexEntry[]> {
         description: manifest.description,
         keywords: manifest.keywords,
         badge: manifest.badge,
+        author: manifest.author,
         swatches: manifest.swatches,
         laneColors: manifest.laneColors,
         path: entry.name,

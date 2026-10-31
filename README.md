@@ -112,6 +112,8 @@ Gitastic ships with **15 visual styles**. Each style is self-contained and alrea
 
 Prefer your own palette? Every style is a single CSS file. Open **Settings → Custom themes** to use the visual **Theme Builder** (with live preview), import your own `.css`, or install themes from the community folder. Custom themes are managed only in that section and are stored locally. See **[docs/THEMES.md](docs/THEMES.md)** for the format and a full reference.
 
+**Share your theme:** drop a single `.css` file into [`community-themes/`](community-themes) and open a pull request — it will show up in the app's Community tab for everyone. Add the theme to [`community-themes/index.json`](community-themes/index.json) as well.
+
 ### Dark style previews
 
 | Gorgeous (Default) | Synthwave |

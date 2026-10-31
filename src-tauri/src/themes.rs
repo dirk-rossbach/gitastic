@@ -37,6 +37,8 @@ pub struct ThemeManifest {
     pub keywords: String,
     #[serde(default)]
     pub badge: Option<String>,
+    #[serde(default)]
+    pub author: Option<String>,
     pub modes: Vec<String>,
     #[serde(default)]
     pub swatches: Vec<String>,
@@ -211,7 +213,6 @@ pub struct CommunityTheme {
     #[serde(flatten)]
     pub manifest: ThemeManifest,
     pub path: String,
-    pub author: Option<String>,
     pub installed: bool,
 }
 
@@ -384,6 +385,7 @@ fn entry_to_community(entry: &CommunityIndexEntry, installed: &[String]) -> Comm
             description: entry.description.clone().unwrap_or_default(),
             keywords: entry.keywords.clone().unwrap_or_default(),
             badge: entry.badge.clone(),
+            author: entry.author.clone(),
             modes: vec![if entry.mode == "light" {
                 "light".to_string()
             } else {
@@ -393,7 +395,6 @@ fn entry_to_community(entry: &CommunityIndexEntry, installed: &[String]) -> Comm
             lane_colors: entry.lane_colors.clone().unwrap_or_default(),
         },
         path: entry.path.clone(),
-        author: entry.author.clone(),
         installed: installed.iter().any(|id| id == &entry.id),
     }
 }
@@ -456,7 +457,7 @@ async fn scan_community_directory() -> ApiResult<Vec<CommunityIndexEntry>> {
                 description: Some(manifest.description),
                 keywords: Some(manifest.keywords),
                 badge: manifest.badge,
-                author: None,
+                author: manifest.author,
                 swatches: Some(manifest.swatches),
                 lane_colors: Some(manifest.lane_colors),
                 path: name.to_string(),
@@ -500,7 +501,6 @@ pub async fn install_community_theme(data_dir: &Path, id: &str) -> ApiResult<Com
     Ok(CommunityTheme {
         manifest,
         path,
-        author: None,
         installed: true,
     })
 }

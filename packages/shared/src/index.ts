@@ -298,6 +298,7 @@ export const ThemeManifestSchema = z.object({
   description: z.string().max(500).default(''),
   keywords: z.string().max(240).default(''),
   badge: z.string().max(30).optional(),
+  author: z.string().max(80).optional(),
   modes: z.array(ThemeModeSchema).min(1),
   swatches: z.array(z.string().max(64)).max(8).default([]),
   laneColors: z.array(z.string().max(64)).max(16).default([]),
@@ -309,7 +310,6 @@ export type ThemesResponse = z.infer<typeof ThemesResponseSchema>;
 
 export const CommunityThemeSchema = ThemeManifestSchema.extend({
   path: z.string().default(''),
-  author: z.string().max(80).optional(),
   installed: z.boolean().default(false),
 });
 export type CommunityTheme = z.infer<typeof CommunityThemeSchema>;

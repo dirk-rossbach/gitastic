@@ -959,6 +959,105 @@
         text-transform: uppercase;
       }
 
+      .theme-share {
+        margin-top: clamp(28px, 4vw, 48px);
+        padding: clamp(22px, 3vw, 34px);
+        border: 1.5px solid var(--acid);
+        background: rgba(217, 255, 67, 0.06);
+      }
+
+      .theme-share-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+        gap: clamp(24px, 4vw, 48px);
+        align-items: center;
+      }
+
+      .theme-share h3 {
+        margin: 0 0 12px;
+        font-family: var(--serif);
+        font-size: clamp(28px, 3.6vw, 46px);
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: -0.035em;
+      }
+
+      .theme-share p {
+        max-width: 48ch;
+        margin: 0;
+        color: rgba(242, 239, 230, 0.7);
+        font-size: 15px;
+      }
+
+      .theme-share code {
+        color: var(--acid);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .theme-share-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .theme-share .btn {
+        border-color: var(--paper);
+        background: transparent;
+        color: var(--paper);
+        box-shadow: 4px 4px 0 rgba(242, 239, 230, 0.25);
+      }
+
+      .theme-share .btn:hover {
+        background: var(--acid);
+        color: var(--ink);
+        box-shadow: 2px 2px 0 rgba(242, 239, 230, 0.25);
+      }
+
+      .theme-share .btn-primary {
+        border-color: var(--acid);
+        background: var(--acid);
+        color: var(--ink);
+        box-shadow: 4px 4px 0 var(--paper);
+      }
+
+      .theme-share-meta {
+        padding-left: clamp(20px, 3vw, 32px);
+        border-left: 1.5px solid rgba(242, 239, 230, 0.25);
+      }
+
+      .theme-share-meta ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .theme-share-meta li {
+        padding: 11px 0;
+        border-bottom: 1px solid rgba(242, 239, 230, 0.18);
+        color: rgba(242, 239, 230, 0.72);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .theme-share-meta li:last-child {
+        border-bottom: 0;
+      }
+
+      @media (max-width: 860px) {
+        .theme-share-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .theme-share-meta {
+          padding-top: 18px;
+          padding-left: 0;
+          border-top: 1.5px solid rgba(242, 239, 230, 0.25);
+          border-left: 0;
+        }
+      }
+
       /* Steps */
       .steps {
         display: grid;
@@ -2022,6 +2121,49 @@
             </div>
           </div>
           <p class="sr-only" id="theme-status" aria-live="polite"></p>
+
+          <div class="theme-share reveal">
+            <div class="theme-share-grid">
+              <div>
+                <span class="section-kicker">Share your theme</span>
+                <h3>Built a style? Put it in the repo.</h3>
+                <p>
+                  Add one <code>*.css</code> file to <code>community-themes/</code> and open a pull
+                  request. Once it is merged, everyone can install it from
+                  <strong>Settings → Custom themes → Community</strong>.
+                </p>
+                <div class="theme-share-actions">
+                  <a
+                    class="btn btn-primary"
+                    href="https://github.com/dirk-rossbach/gitastic/new/main/community-themes"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open a pull request
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M7 17 17 7" />
+                      <path d="M8 7h9v9" />
+                    </svg>
+                  </a>
+                  <a
+                    class="btn"
+                    href="https://github.com/dirk-rossbach/gitastic/blob/main/docs/THEMES.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Read the theme guide
+                  </a>
+                </div>
+              </div>
+              <div class="theme-share-meta">
+                <ul>
+                  <li>One <code>.css</code> file with a <code>/* @gitastic-theme */</code> metadata block</li>
+                  <li>Add an entry to <code>community-themes/index.json</code></li>
+                  <li>Themes are validated before they can be installed</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

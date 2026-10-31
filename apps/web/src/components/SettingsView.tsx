@@ -362,6 +362,7 @@ export function SettingsView({
                         </p>
                         <p className="truncate text-[11px] text-muted">
                           {theme.tagline || theme.id} · {theme.modes.join(' / ')}
+                          {theme.author ? ` · by ${theme.author}` : ''}
                         </p>
                       </div>
                       <div className="hidden shrink-0 gap-1 sm:flex" aria-hidden>
