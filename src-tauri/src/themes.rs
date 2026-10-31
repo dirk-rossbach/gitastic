@@ -473,10 +473,27 @@ pub async fn list_community_themes(data_dir: &Path) -> ApiResult<Vec<CommunityTh
         .into_iter()
         .map(|theme| theme.id)
         .collect();
-    let entries = match load_community_index().await {
-        Some(entries) => entries,
-        None => scan_community_directory().await?,
-    };
+    let scanned = scan_community_directory().await.unwrap_or_default();
+    let index = load_community_index().await;
+    let mut entries = scanned;
+    if let Some(index) = index {
+        if entries.is_empty() {
+            entries = index;
+        } else {
+            for entry in index {
+                if let Some(existing) = entries.iter_mut().find(|item| item.id == entry.id) {
+                    *existing = entry;
+                }
+            }
+        }
+    }
+    if entries.is_empty() {
+        return Err(ApiError::new(
+            502,
+            "COMMUNITY_LIST_FAILED",
+            "Could not read the community themes folder.",
+        ));
+    }
     let mut themes: Vec<CommunityTheme> = entries
         .iter()
         .map(|entry| entry_to_community(entry, &installed))

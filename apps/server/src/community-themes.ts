@@ -187,7 +187,21 @@ async function scanDirectory(): Promise<IndexEntry[]> {
 export async function listCommunityThemes(): Promise<CommunityTheme[]> {
   const installed = new Set((await listThemes()).map((theme) => theme.id));
   const index = await loadIndex();
-  const entries = index ?? (await scanDirectory());
+  let scanned: IndexEntry[] = [];
+  try {
+    scanned = await scanDirectory();
+  } catch {
+    scanned = [];
+  }
+
+  // The folder is the source of truth; index.json only enriches entries (author, swatches, ...).
+  const merged = new Map<string, IndexEntry>();
+  for (const entry of scanned) merged.set(entry.id, entry);
+  for (const entry of index ?? []) {
+    merged.set(entry.id, { ...merged.get(entry.id), ...entry });
+  }
+
+  const entries = merged.size > 0 ? [...merged.values()] : (index ?? []);
   return entries
     .map((entry) => entryToManifest(entry, installed))
     .sort((a, b) => a.name.localeCompare(b.name));
