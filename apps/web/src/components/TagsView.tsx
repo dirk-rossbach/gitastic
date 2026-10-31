@@ -7,6 +7,7 @@ import { formatDate } from '../lib/utils';
 import { api } from '../api';
 import { useAction, useStartJob } from '../lib/hooks';
 import { ConfirmDialog, EmptyState, ErrorState, LoadingState, Modal, Spinner } from './ui';
+import { HelpTip } from './HelpTip';
 
 export function TagsView() {
   const tags = useQuery({ queryKey: ['tags'], queryFn: api.tags });
@@ -29,6 +30,7 @@ export function TagsView() {
       <div className="flex shrink-0 items-center gap-2 border-b border-edge px-3 py-2">
         <span className="text-sm font-medium">Tags</span>
         <span className="text-xs text-faint">{tags.data?.length ?? 0}</span>
+        <HelpTip term="tag" />
         <button type="button" className="btn btn-primary ml-auto h-8 text-xs" onClick={() => setCreateOpen(true)}>
           <Plus className="h-3.5 w-3.5" />
           New tag

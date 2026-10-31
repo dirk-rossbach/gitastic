@@ -25,6 +25,7 @@ import { cn, formatDate } from '../lib/utils';
 import { api } from '../api';
 import { useAction } from '../lib/hooks';
 import { ErrorState, LoadingState, Modal, PathText, Spinner } from './ui';
+import { HelpTip } from './HelpTip';
 
 type CommentSide = 'LEFT' | 'RIGHT';
 type CommentTarget = { path: string; line: number; side: CommentSide };
@@ -555,8 +556,11 @@ export function PullRequestDetailView({
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-semibold text-ink">
-              {pull ? `${prefix}${pull.number} · ${pull.title}` : `${label} ${number}`}
+            <h2 className="flex items-center gap-2 truncate text-sm font-semibold text-ink">
+              <span className="truncate">
+                {pull ? `${prefix}${pull.number} · ${pull.title}` : `${label} ${number}`}
+              </span>
+              <HelpTip term="review" />
             </h2>
             <p className="mt-0.5 truncate text-xs text-faint">
               {pull

@@ -23,6 +23,7 @@ import { useAction, useStartJob } from '../lib/hooks';
 import { cn, formatDate } from '../lib/utils';
 import { useStore } from '../store';
 import { ConfirmDialog, EmptyState, ErrorState, LoadingState, Modal, Spinner } from './ui';
+import { HelpTip } from './HelpTip';
 
 type FormMode = 'create' | 'rename' | null;
 
@@ -279,6 +280,8 @@ export function BranchesView() {
           <Plus className="h-3.5 w-3.5" />
           New branch
         </button>
+        <HelpTip term="branch" />
+        <HelpTip term="rebase" />
         <button
           type="button"
           className="btn h-8 text-xs"

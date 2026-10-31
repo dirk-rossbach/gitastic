@@ -5,6 +5,7 @@ import type { Remote } from '@gitastic/shared';
 import { api } from '../api';
 import { useAction, useStartJob } from '../lib/hooks';
 import { ConfirmDialog, EmptyState, ErrorState, LoadingState, Modal, Spinner } from './ui';
+import { HelpTip } from './HelpTip';
 
 export function RemotesView() {
   const remotes = useQuery({ queryKey: ['remotes'], queryFn: api.remotes });
@@ -25,6 +26,7 @@ export function RemotesView() {
       <div className="flex shrink-0 items-center gap-2 border-b border-edge px-3 py-2">
         <span className="text-sm font-medium">Remotes</span>
         <span className="text-xs text-faint">{remotes.data?.length ?? 0}</span>
+        <HelpTip term="remote" />
         <button
           type="button"
           className="btn btn-primary ml-auto h-8 text-xs"

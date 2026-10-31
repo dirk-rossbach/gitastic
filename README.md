@@ -67,6 +67,8 @@ You do not need to know every Git command to use Gitastic. If you already work w
 
 ## What you can do
 
+New to Git? Look for the small <kbd>?</kbd> icons throughout the app — they explain terms like commit, branch, rebase, pull request and merge conflict in plain language.
+
 ### See your repository clearly
 
 Browse branches, tags and commits in a visual history. Search for commits, jump between branches and use the command palette to reach actions quickly. Recently opened repositories are ready when you come back.

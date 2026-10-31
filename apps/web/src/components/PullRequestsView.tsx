@@ -17,6 +17,7 @@ import { useAction } from '../lib/hooks';
 import { cn, formatDate } from '../lib/utils';
 import { useStore } from '../store';
 import { EmptyState, ErrorState, LoadingState, Modal, Spinner } from './ui';
+import { HelpTip } from './HelpTip';
 import { PullRequestDetailView } from './PullRequestDetail';
 
 export function PullRequestsView() {
@@ -91,6 +92,7 @@ export function PullRequestsView() {
         <span className="badge badge-accent font-mono text-[11px]">
           {remote.host}/{remote.fullName}
         </span>
+        <HelpTip term="pull-request" />
 
         {currentBranch ? (
           <button

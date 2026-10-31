@@ -7,6 +7,7 @@ import { useAction } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import { Modal, Spinner } from './ui';
+import { HelpTip } from './HelpTip';
 
 type PlanEntry = { action: RebaseAction; message: string };
 
@@ -122,6 +123,11 @@ export function InteractiveRebaseDialog({
       }
     >
       <div className="space-y-4">
+        <div className="flex items-center gap-2 text-xs text-muted">
+          New to rebasing?
+          <HelpTip term="interactive-rebase" />
+          <HelpTip term="rebase" />
+        </div>
         <div className="flex items-end gap-2">
           <label className="flex-1 space-y-1.5">
             <span className="text-xs font-medium uppercase tracking-wide text-faint">

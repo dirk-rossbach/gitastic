@@ -26,6 +26,7 @@ import { useStore } from '../store';
 import { DiffViewer } from './DiffViewer';
 import { StashDialog } from './StashDialog';
 import { ConfirmDialog, EmptyState, ErrorState, LoadingState, PathText, Spinner } from './ui';
+import { HelpTip } from './HelpTip';
 
 function fileIcon(file: FileStatus) {
   if (file.conflicted) return <AlertTriangle className="h-4 w-4 text-danger" />;
@@ -243,6 +244,7 @@ export function ChangesView() {
             <Minus className="h-3.5 w-3.5" />
             Unstage all
           </button>
+          <HelpTip term="staging" className="ml-1" />
           <div className="ml-auto flex items-center">
             <button
               type="button"

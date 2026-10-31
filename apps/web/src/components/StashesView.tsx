@@ -7,6 +7,7 @@ import { api } from '../api';
 import { useAction } from '../lib/hooks';
 import { StashDialog } from './StashDialog';
 import { ConfirmDialog, EmptyState, ErrorState, LoadingState } from './ui';
+import { HelpTip } from './HelpTip';
 
 export function StashesView() {
   const stashes = useQuery({ queryKey: ['stashes'], queryFn: api.stashes });
@@ -22,6 +23,7 @@ export function StashesView() {
       <div className="flex shrink-0 items-center gap-2 border-b border-edge px-3 py-2">
         <span className="text-sm font-medium">Stashes</span>
         <span className="text-xs text-faint">{stashes.data?.length ?? 0}</span>
+        <HelpTip term="stash" />
         <button
           type="button"
           className="btn btn-primary ml-auto h-8 text-xs"

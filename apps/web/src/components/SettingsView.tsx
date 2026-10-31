@@ -39,6 +39,7 @@ import { resolvedThemeMode, styleForTheme, type StyleMode } from '../ui-styles';
 import { ProviderAuthAssistant } from './ProvidersPanel';
 import { StylePicker } from './StylePicker';
 import { ThemeBuilder } from './ThemeBuilder';
+import { HelpTip } from './HelpTip';
 import { Spinner } from './ui';
 
 export function SettingsView({
@@ -293,8 +294,9 @@ export function SettingsView({
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-faint">
+            <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-faint">
               UI Style
+              <HelpTip term="theme" />
             </span>
             <StylePicker
               current={currentStyle}

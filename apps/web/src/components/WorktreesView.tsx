@@ -14,6 +14,7 @@ import { api } from '../api';
 import { useAction } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { ConfirmDialog, EmptyState, ErrorState, LoadingState, Modal, PathText, Spinner } from './ui';
+import { HelpTip } from './HelpTip';
 
 export function WorktreesView() {
   const queryClient = useQueryClient();
@@ -53,6 +54,7 @@ export function WorktreesView() {
             Git Worktrees
           </span>
           <span className="badge">{list.length}</span>
+          <HelpTip term="worktree" />
         </div>
         <div className="flex items-center gap-1.5">
           <button type="button" className="btn btn-primary h-8 text-xs" onClick={openAddModal}>

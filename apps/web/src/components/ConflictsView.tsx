@@ -15,6 +15,7 @@ import { useAction } from '../lib/hooks';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import { EmptyState, ErrorState, LoadingState, PathText, Spinner } from './ui';
+import { HelpTip } from './HelpTip';
 
 type Choice = 'ours' | 'theirs' | 'both' | 'base';
 type LineChoice = 'ours' | 'theirs';
@@ -548,6 +549,7 @@ export function ConflictsView() {
             <AlertTriangle className="h-4 w-4 text-danger" />
             <span className="text-sm font-medium">Conflicted files</span>
             <span className="badge badge-danger">{files.length}</span>
+            <HelpTip term="conflict" />
             <button
               type="button"
               className="btn-icon ml-auto h-6 w-6"

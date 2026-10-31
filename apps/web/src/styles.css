@@ -683,6 +683,38 @@
     box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 12%, transparent);
   }
 
+  .help-dot {
+    @apply inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] font-semibold transition;
+    border-color: var(--edge);
+    background: var(--raised);
+    color: var(--muted);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .help-dot:hover,
+  .help-dot[aria-expanded='true'] {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--edge));
+    color: var(--accent);
+  }
+
+  .help-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 60;
+    display: block;
+    width: 17rem;
+    padding: 10px 12px;
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    background: var(--panel);
+    box-shadow: var(--shadow-panel);
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
   .input {
     @apply w-full rounded-md border border-edge px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none;
     background: color-mix(in srgb, var(--canvas) 72%, transparent);

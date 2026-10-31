@@ -17,6 +17,7 @@ import { useAction } from '../lib/hooks';
 import { useStore } from '../store';
 import { DiffViewer, type DiffReveal } from './DiffViewer';
 import { ErrorState, LoadingState, Modal, PathText } from './ui';
+import { HelpTip } from './HelpTip';
 
 export function CommitDetail({ hash }: { hash: string }) {
   const detail = useQuery({
@@ -71,6 +72,7 @@ export function CommitDetail({ hash }: { hash: string }) {
                 <GitCommitHorizontal className="h-3.5 w-3.5" />
                 {shortHash(commit.hash)}
               </span>
+              <HelpTip term="commit" />
             </p>
           </div>
           <button
