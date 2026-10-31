@@ -530,10 +530,6 @@
         height: 100%;
       }
 
-      .hero-stamp .stamp-serif {
-        font-family: var(--serif);
-      }
-
       .hero-stamp .stamp-mono {
         font-family: var(--mono);
       }
@@ -1743,18 +1739,19 @@
             <div class="hero-stamp" aria-hidden="true">
               <svg viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="57" fill="#d9ff43" stroke="#171713" stroke-width="1.5" />
-                <circle cx="60" cy="60" r="40" fill="none" stroke="#171713" stroke-width="1" stroke-dasharray="2.5 3.5" />
-                <path id="stamp-top" d="M12 60a48 48 0 0 1 96 0" fill="none" />
-                <path id="stamp-bottom" d="M12 60a48 48 0 0 0 96 0" fill="none" />
-                <text class="stamp-mono" font-size="8.2" letter-spacing="1.2" fill="#171713">
-                  <textPath href="#stamp-top" startOffset="50%" text-anchor="middle">LOCAL-FIRST GIT CLIENT</textPath>
+                <path id="stamp-top" d="M14 60a46 46 0 0 1 92 0" fill="none" />
+                <path id="stamp-bottom" d="M14 60a46 46 0 0 0 92 0" fill="none" />
+                <text class="stamp-mono" font-size="9" letter-spacing="2" fill="#171713">
+                  <textPath href="#stamp-top" startOffset="50%" text-anchor="middle">LOCAL-FIRST</textPath>
                 </text>
-                <text class="stamp-mono" font-size="8.2" letter-spacing="1.2" fill="#b53610">
-                  <textPath href="#stamp-bottom" startOffset="50%" text-anchor="middle">NO CLOUD · NO ACCOUNT</textPath>
+                <text class="stamp-mono" font-size="9" letter-spacing="2" fill="#b53610">
+                  <textPath href="#stamp-bottom" startOffset="50%" text-anchor="middle">NO CLOUD</textPath>
                 </text>
-                <text class="stamp-serif" x="60" y="57" text-anchor="middle" font-size="17" font-weight="600" letter-spacing="-0.4" fill="#171713">Local</text>
-                <text class="stamp-serif" x="60" y="76" text-anchor="middle" font-size="17" font-weight="600" font-style="italic" letter-spacing="-0.4" fill="#b53610">First</text>
-                <text class="stamp-mono" x="60" y="91" text-anchor="middle" font-size="7" letter-spacing="1.4" fill="#171713">100% LOCAL</text>
+                <g fill="none" stroke="#171713" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="42" y="52" width="36" height="26" rx="4" />
+                  <path d="M49 52v-6a11 11 0 0 1 22 0v6" />
+                </g>
+                <circle cx="60" cy="65" r="2.5" fill="#171713" />
               </svg>
             </div>
           </div>
