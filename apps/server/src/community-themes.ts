@@ -129,26 +129,7 @@ function entryToManifest(entry: IndexEntry, installed: Set<string>): CommunityTh
   });
 }
 
-async function loadIndex(): Promise<IndexEntry[] | null> {
-  const raw = await fetchText(`${RAW_BASE}/index.json`);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as { themes?: IndexEntry[] };
-    if (!Array.isArray(parsed.themes)) return null;
-    return parsed.themes.filter(
-      (entry): entry is IndexEntry =>
-        Boolean(entry) &&
-        typeof entry.id === 'string' &&
-        typeof entry.name === 'string' &&
-        (entry.mode === 'dark' || entry.mode === 'light') &&
-        typeof entry.path === 'string',
-    );
-  } catch {
-    return null;
-  }
-}
-
-async function scanDirectory(): Promise<IndexEntry[]> {
+async function loadDirectory(): Promise<IndexEntry[]> {
   const response = await fetch(`https://api.github.com/repos/${REPO}/contents/${DIRECTORY}?ref=${BRANCH}`, {
     headers: { Accept: 'application/vnd.github+json' },
   }).catch(() => null);
@@ -186,31 +167,14 @@ async function scanDirectory(): Promise<IndexEntry[]> {
 
 export async function listCommunityThemes(): Promise<CommunityTheme[]> {
   const installed = new Set((await listThemes()).map((theme) => theme.id));
-  const index = await loadIndex();
-  let scanned: IndexEntry[] = [];
-  try {
-    scanned = await scanDirectory();
-  } catch {
-    scanned = [];
-  }
-
-  // The folder is the source of truth; index.json only enriches entries (author, swatches, ...).
-  const merged = new Map<string, IndexEntry>();
-  for (const entry of scanned) merged.set(entry.id, entry);
-  for (const entry of index ?? []) {
-    merged.set(entry.id, { ...merged.get(entry.id), ...entry });
-  }
-
-  const entries = merged.size > 0 ? [...merged.values()] : (index ?? []);
+  const entries = await loadDirectory();
   return entries
     .map((entry) => entryToManifest(entry, installed))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function installCommunityTheme(id: string): Promise<CommunityTheme> {
-  const index = await loadIndex();
-  const entry = index?.find((theme) => theme.id === id);
-  const path = entry?.path ?? `${id}.css`;
+  const path = `${id}.css`;
   const css = await fetchText(`${RAW_BASE}/${path}`);
   if (!css) {
     throw new AppError(404, 'THEME_NOT_FOUND', `Could not download theme: ${id}`);

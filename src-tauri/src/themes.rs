@@ -217,11 +217,6 @@ pub struct CommunityTheme {
 }
 
 #[derive(Debug, Deserialize)]
-struct CommunityIndex {
-    themes: Vec<CommunityIndexEntry>,
-}
-
-#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CommunityIndexEntry {
     id: String,
@@ -399,13 +394,7 @@ fn entry_to_community(entry: &CommunityIndexEntry, installed: &[String]) -> Comm
     }
 }
 
-async fn load_community_index() -> Option<Vec<CommunityIndexEntry>> {
-    let raw = fetch_community_text(&format!("{COMMUNITY_RAW}/index.json")).await?;
-    let parsed: CommunityIndex = serde_json::from_str(&raw).ok()?;
-    Some(parsed.themes)
-}
-
-async fn scan_community_directory() -> ApiResult<Vec<CommunityIndexEntry>> {
+async fn load_community_directory() -> ApiResult<Vec<CommunityIndexEntry>> {
     let url = format!(
         "https://api.github.com/repos/{COMMUNITY_REPO}/contents/{COMMUNITY_DIR}?ref={COMMUNITY_BRANCH}"
     );
@@ -473,27 +462,7 @@ pub async fn list_community_themes(data_dir: &Path) -> ApiResult<Vec<CommunityTh
         .into_iter()
         .map(|theme| theme.id)
         .collect();
-    let scanned = scan_community_directory().await.unwrap_or_default();
-    let index = load_community_index().await;
-    let mut entries = scanned;
-    if let Some(index) = index {
-        if entries.is_empty() {
-            entries = index;
-        } else {
-            for entry in index {
-                if let Some(existing) = entries.iter_mut().find(|item| item.id == entry.id) {
-                    *existing = entry;
-                }
-            }
-        }
-    }
-    if entries.is_empty() {
-        return Err(ApiError::new(
-            502,
-            "COMMUNITY_LIST_FAILED",
-            "Could not read the community themes folder.",
-        ));
-    }
+    let entries = load_community_directory().await?;
     let mut themes: Vec<CommunityTheme> = entries
         .iter()
         .map(|entry| entry_to_community(entry, &installed))
@@ -504,12 +473,7 @@ pub async fn list_community_themes(data_dir: &Path) -> ApiResult<Vec<CommunityTh
 
 pub async fn install_community_theme(data_dir: &Path, id: &str) -> ApiResult<CommunityTheme> {
     assert_valid_id(id)?;
-    let index = load_community_index().await;
-    let path = index
-        .as_ref()
-        .and_then(|entries| entries.iter().find(|entry| entry.id == id))
-        .map(|entry| entry.path.clone())
-        .unwrap_or_else(|| format!("{id}.css"));
+    let path = format!("{id}.css");
     let css = fetch_community_text(&format!("{COMMUNITY_RAW}/{path}"))
         .await
         .ok_or_else(|| ApiError::new(404, "THEME_NOT_FOUND", format!("Could not download theme: {id}")))?;

@@ -38,9 +38,8 @@ Want your theme in the app for everyone? Add it to the official repository:
 2. Put it in [`community-themes/`](../community-themes) (for example `community-themes/my-theme.css`).
 3. Open a pull request against `main`.
 
-That's it — the folder is the source of truth and is scanned automatically. Optionally, you can add
-an entry to [`community-themes/index.json`](../community-themes/index.json) to enrich the listing
-(for example an author credit) without the app having to read every file.
+That's it — the folder is the source of truth and is scanned automatically. There is no index file to
+maintain: the app reads the metadata directly from each `.css` file.
 
 Once merged, the theme shows up in **Settings → Custom themes → Community** and can be installed by
 anyone. Downloads are validated (scoped selectors, no external URLs or imports) before they are saved.
