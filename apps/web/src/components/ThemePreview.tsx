@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { GitBranch } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { ThemeDraft } from '../lib/theme-draft';
+import { shadowCss } from '../lib/theme-draft';
 
 function cssVariables(draft: ThemeDraft): CSSProperties {
   const style: Record<string, string> = {
@@ -19,9 +20,9 @@ function cssVariables(draft: ThemeDraft): CSSProperties {
     '--warning': draft.colors.warning,
     '--danger': draft.colors.danger,
   };
-  if (draft.fontDisplay.trim()) style['--font-display'] = draft.fontDisplay.trim();
-  if (draft.shadowPanel.trim()) style['--shadow-panel'] = draft.shadowPanel.trim();
-  if (draft.shadowCard.trim()) style['--shadow-card'] = draft.shadowCard.trim();
+  if (draft.fontDisplay?.trim()) style['--font-display'] = draft.fontDisplay.trim();
+  if (draft.shadowPanel) style['--shadow-panel'] = shadowCss(draft.shadowPanel);
+  if (draft.shadowCard) style['--shadow-card'] = shadowCss(draft.shadowCard, true);
   style.boxShadow = 'var(--shadow-card)';
   return style as CSSProperties;
 }
@@ -37,12 +38,13 @@ export function ThemePreview({
 }) {
   const laneColors = draft.laneColors.filter(Boolean).slice(0, 6);
   const swatches = draft.swatches.filter(Boolean).slice(0, 6);
-  const displayFont = draft.fontDisplay.trim() || undefined;
+  const displayFont = draft.fontDisplay?.trim() || undefined;
+  const bodyFont = draft.fontBody?.trim() || undefined;
 
   return (
     <div
       data-theme={draft.mode}
-      style={cssVariables(draft)}
+      style={{ ...cssVariables(draft), fontFamily: bodyFont }}
       className={cn(
         'overflow-hidden rounded-xl border border-edge bg-canvas p-4 text-ink',
         className,

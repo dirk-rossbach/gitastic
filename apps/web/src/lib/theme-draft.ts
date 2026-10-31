@@ -22,6 +22,16 @@ export type ThemeVariable = (typeof THEME_VARIABLES)[number]['key'];
 
 export type ThemeColors = Record<ThemeVariable, string>;
 
+export interface ShadowConfig {
+  enabled: boolean;
+  x: number;
+  y: number;
+  blur: number;
+  spread: number;
+  color: string;
+  opacity: number;
+}
+
 export interface ThemeDraft {
   id: string;
   name: string;
@@ -31,8 +41,9 @@ export interface ThemeDraft {
   keywords: string;
   badge: string;
   fontDisplay: string;
-  shadowPanel: string;
-  shadowCard: string;
+  fontBody: string;
+  shadowPanel: ShadowConfig;
+  shadowCard: ShadowConfig;
   colors: ThemeColors;
   swatches: string[];
   laneColors: string[];
@@ -119,9 +130,104 @@ const DEFAULT_LANE_COLORS = [
   '#a3e635',
 ];
 
-export const DEFAULT_SHADOW_PANEL = '0 24px 70px rgb(0 0 0 / 0.38)';
-export const DEFAULT_SHADOW_CARD =
-  'inset 0 1px 0 rgb(255 255 255 / 0.04), 0 20px 55px rgb(0 0 0 / 0.2)';
+export const DEFAULT_SHADOW_PANEL: ShadowConfig = {
+  enabled: true,
+  x: 0,
+  y: 24,
+  blur: 70,
+  spread: 0,
+  color: '#000000',
+  opacity: 0.38,
+};
+
+export const DEFAULT_SHADOW_CARD: ShadowConfig = {
+  enabled: true,
+  x: 0,
+  y: 20,
+  blur: 55,
+  spread: 0,
+  color: '#000000',
+  opacity: 0.2,
+};
+
+function clamp(value: number, min: number, max: number): number {
+  if (Number.isNaN(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const clean = hex.replace('#', '').trim();
+  const expanded =
+    clean.length === 3
+      ? clean
+          .split('')
+          .map((char) => char + char)
+          .join('')
+      : clean;
+  const value = Number.parseInt(expanded.slice(0, 6) || '000000', 16);
+  return {
+    r: (value >> 16) & 255,
+    g: (value >> 8) & 255,
+    b: value & 255,
+  };
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const part = (value: number) => clamp(Math.round(value), 0, 255).toString(16).padStart(2, '0');
+  return `#${part(r)}${part(g)}${part(b)}`.toUpperCase();
+}
+
+function parseShadowColor(layer: string, fallback: ShadowConfig): { color: string; opacity: number } {
+  const rgba = layer.match(/rgba?\(([^)]+)\)/i);
+  if (rgba) {
+    const parts = rgba[1]
+      .replace(/\//g, ' ')
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .map((part) => Number.parseFloat(part));
+    if (parts.length >= 3) {
+      const alpha = parts.length >= 4 && !Number.isNaN(parts[3]) ? parts[3] : 1;
+      return { color: rgbToHex(parts[0], parts[1], parts[2]), opacity: alpha };
+    }
+  }
+  const hex = layer.match(/#[0-9a-fA-F]{3,8}/);
+  if (hex) {
+    return { color: hex[0].length <= 7 ? hex[0].toUpperCase() : hex[0].slice(0, 7).toUpperCase(), opacity: fallback.opacity };
+  }
+  return { color: fallback.color, opacity: fallback.opacity };
+}
+
+export function parseShadow(css: string | undefined, fallback: ShadowConfig): ShadowConfig {
+  if (!css || !css.trim()) return fallback;
+  const layers = css.split(/,(?![^(]*\))/);
+  const layer = layers.find((candidate) => !candidate.includes('inset')) ?? layers[0] ?? '';
+  const geometry = layer
+    .replace(/rgba?\([^)]*\)/gi, ' ')
+    .replace(/#[0-9a-fA-F]{3,8}/g, ' ');
+  const numbers = geometry.match(/-?\d+(?:\.\d+)?/g)?.map((value) => Number.parseFloat(value)) ?? [];
+  const { color, opacity } = parseShadowColor(layer, fallback);
+  return {
+    enabled: true,
+    x: clamp(numbers[0] ?? fallback.x, -60, 60),
+    y: clamp(numbers[1] ?? fallback.y, -60, 60),
+    blur: clamp(numbers[2] ?? fallback.blur, 0, 160),
+    spread: clamp(numbers[3] ?? fallback.spread, -40, 40),
+    color,
+    opacity: clamp(opacity, 0, 1),
+  };
+}
+
+export function shadowCss(config: ShadowConfig, insetHighlight = false): string {
+  if (!config.enabled) return 'none';
+  const { r, g, b } = hexToRgb(config.color);
+  const alpha = clamp(config.opacity, 0, 1);
+  const offsetX = clamp(config.x, -60, 60);
+  const offsetY = clamp(config.y, -60, 60);
+  const blur = clamp(config.blur, 0, 160);
+  const spread = clamp(config.spread, -40, 40);
+  const layer = `${offsetX}px ${offsetY}px ${blur}px ${spread}px rgb(${r} ${g} ${b} / ${alpha})`;
+  return insetHighlight ? `inset 0 1px 0 rgb(255 255 255 / 0.04), ${layer}` : layer;
+}
 
 export function defaultColors(mode: ThemeDraftMode): ThemeColors {
   return { ...(mode === 'dark' ? DARK_DEFAULTS : LIGHT_DEFAULTS) };
@@ -137,11 +243,58 @@ export function createDraft(mode: ThemeDraftMode = 'dark'): ThemeDraft {
     keywords: '',
     badge: 'Custom',
     fontDisplay: '',
-    shadowPanel: DEFAULT_SHADOW_PANEL,
-    shadowCard: DEFAULT_SHADOW_CARD,
+    fontBody: '',
+    shadowPanel: { ...DEFAULT_SHADOW_PANEL },
+    shadowCard: { ...DEFAULT_SHADOW_CARD },
     colors: defaultColors(mode),
     swatches: [...DEFAULT_SWATCHES[mode]],
     laneColors: [...DEFAULT_LANE_COLORS],
+  };
+}
+
+export function normalizeShadow(input: unknown, fallback: ShadowConfig): ShadowConfig {
+  if (typeof input === 'string') return parseShadow(input, fallback);
+  if (input && typeof input === 'object') {
+    const value = input as Partial<ShadowConfig>;
+    return {
+      enabled: value.enabled ?? fallback.enabled,
+      x: typeof value.x === 'number' ? value.x : fallback.x,
+      y: typeof value.y === 'number' ? value.y : fallback.y,
+      blur: typeof value.blur === 'number' ? value.blur : fallback.blur,
+      spread: typeof value.spread === 'number' ? value.spread : fallback.spread,
+      color: typeof value.color === 'string' ? value.color : fallback.color,
+      opacity: typeof value.opacity === 'number' ? value.opacity : fallback.opacity,
+    };
+  }
+  return fallback;
+}
+
+export function normalizeDraft(input: Partial<ThemeDraft> | null | undefined): ThemeDraft {
+  const mode: ThemeDraftMode = input?.mode === 'light' ? 'light' : 'dark';
+  const base = createDraft(mode);
+  return {
+    ...base,
+    ...input,
+    id: typeof input?.id === 'string' ? input.id : base.id,
+    name: typeof input?.name === 'string' ? input.name : base.name,
+    mode,
+    tagline: typeof input?.tagline === 'string' ? input.tagline : base.tagline,
+    description: typeof input?.description === 'string' ? input.description : base.description,
+    keywords: typeof input?.keywords === 'string' ? input.keywords : base.keywords,
+    badge: typeof input?.badge === 'string' ? input.badge : base.badge,
+    fontDisplay: typeof input?.fontDisplay === 'string' ? input.fontDisplay : base.fontDisplay,
+    fontBody: typeof input?.fontBody === 'string' ? input.fontBody : base.fontBody,
+    shadowPanel: normalizeShadow(input?.shadowPanel as unknown, base.shadowPanel),
+    shadowCard: normalizeShadow(input?.shadowCard as unknown, base.shadowCard),
+    colors: { ...base.colors, ...(input?.colors ?? {}) },
+    swatches:
+      Array.isArray(input?.swatches) && input.swatches.length > 0
+        ? input.swatches
+        : base.swatches,
+    laneColors:
+      Array.isArray(input?.laneColors) && input.laneColors.length > 0
+        ? input.laneColors
+        : base.laneColors,
   };
 }
 
@@ -202,14 +355,17 @@ export function serializeTheme(draft: ThemeDraft): string {
   const lines = THEME_VARIABLES.map(
     (variable) => `  --${variable.key}: ${draft.colors[variable.key].trim()};`,
   );
-  if (draft.fontDisplay.trim()) {
+  if (draft.fontDisplay?.trim()) {
     lines.unshift(`  --font-display: ${draft.fontDisplay.trim()};`);
   }
-  if (draft.shadowPanel.trim()) {
-    lines.unshift(`  --shadow-panel: ${draft.shadowPanel.trim()};`);
+  if (draft.fontBody?.trim()) {
+    lines.unshift(`  --font-sans: ${draft.fontBody.trim()};`);
   }
-  if (draft.shadowCard.trim()) {
-    lines.unshift(`  --shadow-card: ${draft.shadowCard.trim()};`);
+  if (draft.shadowPanel) {
+    lines.unshift(`  --shadow-panel: ${shadowCss(draft.shadowPanel)};`);
+  }
+  if (draft.shadowCard) {
+    lines.unshift(`  --shadow-card: ${shadowCss(draft.shadowCard, true)};`);
   }
   lines.push(`  color-scheme: ${draft.mode};`);
   return `${metadataComment(draft)}\n\n:root[data-style='${id}'][data-theme='${draft.mode}'] {\n${lines.join(
@@ -250,10 +406,12 @@ export function draftFromManifest(
   }
   const font = body.match(/--font-display\s*:\s*([^;]+);/);
   if (font) draft.fontDisplay = font[1].trim();
+  const bodyFont = body.match(/--font-sans\s*:\s*([^;]+);/);
+  if (bodyFont) draft.fontBody = bodyFont[1].trim();
   const shadowPanel = body.match(/--shadow-panel\s*:\s*([^;]+);/);
-  if (shadowPanel) draft.shadowPanel = shadowPanel[1].trim();
+  if (shadowPanel) draft.shadowPanel = parseShadow(shadowPanel[1].trim(), draft.shadowPanel);
   const shadowCard = body.match(/--shadow-card\s*:\s*([^;]+);/);
-  if (shadowCard) draft.shadowCard = shadowCard[1].trim();
+  if (shadowCard) draft.shadowCard = parseShadow(shadowCard[1].trim(), draft.shadowCard);
   return draft;
 }
 

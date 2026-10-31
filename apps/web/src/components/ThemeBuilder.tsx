@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Download, Save, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, Save, Sparkles, Trash2, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import {
   FONT_OPTIONS,
   THEME_VARIABLES,
   downloadThemeFile,
   isValidHex,
+  normalizeDraft,
   serializeTheme,
+  shadowCss,
   slugify,
   validateDraft,
+  type ShadowConfig,
   type ThemeDraft,
   type ThemeVariable,
 } from '../lib/theme-draft';
@@ -49,6 +52,191 @@ function ColorField({
   );
 }
 
+function ListInput({
+  label,
+  values,
+  onChange,
+  max,
+  placeholder,
+}: {
+  label: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+  max: number;
+  placeholder: string;
+}) {
+  const [entry, setEntry] = useState('');
+
+  const add = () => {
+    const value = entry.trim().replace(/,$/, '').toUpperCase();
+    if (!value || !isValidHex(value) || values.length >= max) return;
+    onChange([...values, value]);
+    setEntry('');
+  };
+
+  return (
+    <div className="space-y-1.5 sm:col-span-2">
+      <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-faint">
+        <span>{label}</span>
+        <span className="font-normal normal-case tracking-normal">
+          {values.length} / {max}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {values.map((value, index) => (
+          <span
+            key={`${value}-${index}`}
+            className="flex items-center gap-1.5 rounded border border-edge bg-raised px-2 py-0.5 font-mono text-[11px]"
+          >
+            <span
+              className="h-3 w-3 rounded-sm ring-1 ring-black/10"
+              style={{ backgroundColor: value }}
+            />
+            {value}
+            <button
+              type="button"
+              aria-label={`Remove ${value}`}
+              className="text-faint transition hover:text-danger"
+              onClick={() => onChange(values.filter((_, itemIndex) => itemIndex !== index))}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          className="input h-8 flex-1 font-mono text-xs"
+          value={entry}
+          placeholder={placeholder}
+          onChange={(event) => setEntry(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ',') {
+              event.preventDefault();
+              add();
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="btn h-8 text-xs"
+          disabled={!entry.trim() || values.length >= max}
+          onClick={add}
+        >
+          Add
+        </button>
+      </div>
+      <p className="text-[10px] text-faint">Enter a hex color and press Enter. Up to {max} values.</p>
+    </div>
+  );
+}
+
+function ShadowSlider({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="flex items-center justify-between text-[10px] uppercase tracking-wide text-faint">
+        <span>{label}</span>
+        <span className="font-mono normal-case tracking-normal">{value}px</span>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="w-full accent-accent"
+      />
+    </label>
+  );
+}
+
+function ShadowEditor({
+  label,
+  value,
+  insetHighlight,
+  onChange,
+}: {
+  label: string;
+  value: ShadowConfig;
+  insetHighlight: boolean;
+  onChange: (value: ShadowConfig) => void;
+}) {
+  const css = shadowCss(value, insetHighlight);
+  const set = <K extends keyof ShadowConfig>(key: K, next: ShadowConfig[K]) =>
+    onChange({ ...value, [key]: next });
+
+  return (
+    <div className="space-y-3 rounded-lg border border-edge bg-raised/30 p-3 sm:col-span-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-faint">{label}</span>
+        <label className="flex items-center gap-2 text-[11px] text-muted">
+          <input
+            type="checkbox"
+            className="accent-accent"
+            checked={value.enabled}
+            onChange={(event) => set('enabled', event.target.checked)}
+          />
+          Enabled
+        </label>
+      </div>
+
+      <div className={cn('space-y-3', !value.enabled && 'pointer-events-none opacity-40')}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ShadowSlider label="Offset X" value={value.x} min={-60} max={60} onChange={(next) => set('x', next)} />
+          <ShadowSlider label="Offset Y" value={value.y} min={-60} max={60} onChange={(next) => set('y', next)} />
+          <ShadowSlider label="Blur" value={value.blur} min={0} max={160} onChange={(next) => set('blur', next)} />
+          <ShadowSlider label="Spread" value={value.spread} min={-40} max={40} onChange={(next) => set('spread', next)} />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex items-center gap-2 text-[11px] text-muted">
+            Color
+            <input
+              type="color"
+              value={isValidHex(value.color) ? value.color : '#000000'}
+              onChange={(event) => set('color', event.target.value.toUpperCase())}
+              className="h-7 w-9 cursor-pointer rounded border border-edge bg-raised"
+            />
+            <span className="font-mono text-[10px] text-faint">{value.color}</span>
+          </label>
+          <label className="flex min-w-48 flex-1 items-center gap-2 text-[11px] text-muted">
+            Opacity
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(value.opacity * 100)}
+              onChange={(event) => set('opacity', Number(event.target.value) / 100)}
+              className="flex-1 accent-accent"
+            />
+            <span className="w-10 text-right font-mono">{Math.round(value.opacity * 100)}%</span>
+          </label>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div
+            className="h-12 w-24 shrink-0 rounded-md border border-edge bg-panel"
+            style={{ boxShadow: css }}
+          />
+          <span className="break-all font-mono text-[10px] text-faint">{css}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function readStoredDraft(key: string): ThemeDraft | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -75,8 +263,11 @@ export function ThemeBuilder({
   onSave: (draft: ThemeDraft) => Promise<void> | void;
 }) {
   const draftKey = editing ? `${DRAFT_KEY}:${initialDraft.id}` : `${DRAFT_KEY}:new`;
-  const stored = useMemo(() => readStoredDraft(draftKey), [draftKey]);
-  const [draft, setDraft] = useState<ThemeDraft>(stored ?? initialDraft);
+  const stored = useMemo(() => {
+    const raw = readStoredDraft(draftKey);
+    return raw ? normalizeDraft(raw) : null;
+  }, [draftKey]);
+  const [draft, setDraft] = useState<ThemeDraft>(() => stored ?? normalizeDraft(initialDraft));
   const [advanced, setAdvanced] = useState(false);
   const [idLocked, setIdLocked] = useState(editing || Boolean(stored?.id));
   const [showErrors, setShowErrors] = useState(false);
@@ -119,7 +310,7 @@ export function ThemeBuilder({
     } catch {
       // Ignore.
     }
-    setDraft(initialDraft);
+    setDraft(normalizeDraft(initialDraft));
     setIdLocked(editing);
     setShowErrors(false);
   };
@@ -264,12 +455,28 @@ export function ThemeBuilder({
                 </label>
                 <label className="block space-y-1.5">
                   <span className="text-xs font-medium uppercase tracking-wide text-faint">
-                    Display font
+                    Headline font
                   </span>
                   <select
                     className="select w-full text-sm"
                     value={draft.fontDisplay}
                     onChange={(event) => set('fontDisplay', event.target.value)}
+                  >
+                    {FONT_OPTIONS.map((font) => (
+                      <option key={font.label} value={font.value}>
+                        {font.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium uppercase tracking-wide text-faint">
+                    Copy font
+                  </span>
+                  <select
+                    className="select w-full text-sm"
+                    value={draft.fontBody}
+                    onChange={(event) => set('fontBody', event.target.value)}
                   >
                     {FONT_OPTIONS.map((font) => (
                       <option key={font.label} value={font.value}>
@@ -312,62 +519,32 @@ export function ThemeBuilder({
                       onChange={(value) => setColor(variable.key, value)}
                     />
                   ))}
-                  <label className="block space-y-1.5 sm:col-span-2">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-faint">
-                      Swatches (comma separated)
-                    </span>
-                    <input
-                      className="input font-mono text-xs"
-                      value={draft.swatches.join(', ')}
-                      onChange={(event) =>
-                        set(
-                          'swatches',
-                          event.target.value
-                            .split(',')
-                            .map((value) => value.trim())
-                            .filter(Boolean),
-                        )
-                      }
-                    />
-                  </label>
-                  <label className="block space-y-1.5 sm:col-span-2">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-faint">
-                      Lane colors (comma separated)
-                    </span>
-                    <input
-                      className="input font-mono text-xs"
-                      value={draft.laneColors.join(', ')}
-                      onChange={(event) =>
-                        set(
-                          'laneColors',
-                          event.target.value
-                            .split(',')
-                            .map((value) => value.trim())
-                            .filter(Boolean),
-                        )
-                      }
-                    />
-                  </label>
-                  <label className="block space-y-1.5 sm:col-span-2">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-faint">
-                      Card shadow (CSS box-shadow)
-                    </span>
-                    <input
-                      className="input font-mono text-xs"
-                      value={draft.shadowCard}
-                      onChange={(event) => set('shadowCard', event.target.value)}
-                    />
-                  </label>
-                  <label className="block space-y-1.5 sm:col-span-2">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-faint">
-                      Panel shadow (CSS box-shadow)
-                    </span>
-                    <input
-                      className="input font-mono text-xs"
-                      value={draft.shadowPanel}
-                      onChange={(event) => set('shadowPanel', event.target.value)}
-                    />
-                  </label>
+                  <ListInput
+                    label="Swatches"
+                    values={draft.swatches}
+                    max={8}
+                    placeholder="#38bdf8"
+                    onChange={(values) => set('swatches', values)}
+                  />
+                  <ListInput
+                    label="Lane colors"
+                    values={draft.laneColors}
+                    max={16}
+                    placeholder="#a78bfa"
+                    onChange={(values) => set('laneColors', values)}
+                  />
+                  <ShadowEditor
+                    label="Card shadow"
+                    value={draft.shadowCard}
+                    insetHighlight
+                    onChange={(value) => set('shadowCard', value)}
+                  />
+                  <ShadowEditor
+                    label="Panel shadow"
+                    value={draft.shadowPanel}
+                    insetHighlight={false}
+                    onChange={(value) => set('shadowPanel', value)}
+                  />
                   <label className="block space-y-1.5 sm:col-span-2">
                     <span className="text-[11px] font-medium uppercase tracking-wide text-faint">
                       Keywords

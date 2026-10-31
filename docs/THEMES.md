@@ -104,7 +104,8 @@ Base rules for `--font-display` and `body` font-family can also be set per theme
 | `--ink`, `--muted`, `--faint`  | Text at three emphasis levels    |
 | `--accent`, `--accent-2`, `--accent-3` | Primary and supporting accents |
 | `--success`, `--warning`, `--danger` | Status colors                |
-| `--font-display`               | Display typeface (optional)      |
+| `--font-display`               | Headline typeface (optional)     |
+| `--font-sans`                  | Body/copy typeface (optional)    |
 | `--shadow-card`                | Card shadow (optional)           |
 | `--shadow-panel`               | Overlay/toast shadow (optional)  |
 
@@ -120,8 +121,22 @@ machine:
 - **Serif:** Source Serif 4, Lora, Playfair Display, IM Fell English, Cinzel Decorative, Iowan Old Style
 - **Display:** Orbitron, Special Elite, Fredoka, VT323, Press Start 2P
 
-The app body defaults to Inter, monospace text to JetBrains Mono. Set `--font-display` in a theme to
-use one of the stacks above.
+The app body defaults to Inter, monospace text to JetBrains Mono. Set `--font-display` for headings
+and `--font-sans` for body copy to use one of the stacks above.
+
+## Shadows
+
+The Theme Builder exposes two shadows through accessible controls (offset, blur, spread, color and
+opacity) instead of raw CSS:
+
+- **Card shadow** → `--shadow-card` (used by `.card`)
+- **Panel shadow** → `--shadow-panel` (used by toasts and overlays)
+
+Both can be disabled per theme. In CSS, write a standard `box-shadow` value:
+
+```css
+--shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 20px 55px rgb(0 0 0 / 0.2);
+```
 
 ## Tips
 
