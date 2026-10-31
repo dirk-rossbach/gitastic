@@ -126,9 +126,20 @@ Gitastic ships with **15 visual styles**. Each style is self-contained and alrea
 | :---: | :---: |
 | ![Nightmare on Main Branch Halloween dark Git client theme](docs/screenshots/themes/nightmare-on-main-branch-dark.png) | ![Domino monochrome white-on-black Git client theme](docs/screenshots/themes/domino-dark.png) |
 
-| Focus (Dark) |
-| :---: |
-| ![Focus dark minimal Git client theme without animations or effects](docs/screenshots/themes/focus-dark.png) |
+<table>
+  <thead>
+    <tr>
+      <th width="50%" align="center">Focus (Dark)</th>
+      <th width="50%">&nbsp;</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td width="50%" align="center"><img src="docs/screenshots/themes/focus-dark.png" alt="Focus dark minimal Git client theme without animations or effects"></td>
+      <td width="50%">&nbsp;</td>
+    </tr>
+  </tbody>
+</table>
 
 ### Light style previews
 
@@ -144,9 +155,20 @@ Gitastic ships with **15 visual styles**. Each style is self-contained and alrea
 | :---: | :---: |
 | ![Cat's Cradle handmade light Git client theme](docs/screenshots/themes/cats-cradle-light.png) | ![Ink monochrome black-on-white Git client theme](docs/screenshots/themes/ink-light.png) |
 
-| Focus (Light) |
-| :---: |
-| ![Focus light minimal Git client theme without animations or effects](docs/screenshots/themes/focus-light.png) |
+<table>
+  <thead>
+    <tr>
+      <th width="50%" align="center">Focus (Light)</th>
+      <th width="50%">&nbsp;</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td width="50%" align="center"><img src="docs/screenshots/themes/focus-light.png" alt="Focus light minimal Git client theme without animations or effects"></td>
+      <td width="50%">&nbsp;</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
