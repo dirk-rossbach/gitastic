@@ -154,7 +154,7 @@ test('resolves a merge conflict and continues the merge', async ({ page }) => {
   await page.getByRole('button', { name: 'Expand conflicted files' }).click();
   await page.getByText('Conflicted files').waitFor();
   await page.getByRole('button', { name: 'Save resolution' }).click();
-  await page.getByText('Merge in progress').waitFor();
+  await expect(page.getByText('Conflicted files')).toBeHidden();
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await page.getByText('Merge in progress').waitFor({ state: 'hidden' });
 
