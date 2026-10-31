@@ -4,7 +4,7 @@
 
 **Gitastic** helps you understand your repository, review changes and ship with confidence. It combines a visual branch graph, line-level staging, an interactive merge conflict resolver, a safe undo history and GitHub/GitLab integration in one focused developer tool. The desktop app is powered by **Tauri v2 + Rust**; a standalone local web mode is included for browser and headless workflows.
 
-[![Version](https://img.shields.io/badge/version-1.2.1-38bdf8?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.2.2-38bdf8?style=flat-square)](#)
 [![Latest release](https://img.shields.io/github/v/release/dirk-rossbach/gitastic?style=flat-square)](https://github.com/dirk-rossbach/gitastic/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
 [![Built with Tauri](https://img.shields.io/badge/Tauri_v2-Rust-ff2a85?style=flat-square)](#)
