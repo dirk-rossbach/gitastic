@@ -4,7 +4,7 @@
 
 **Gitastic** is a desktop app that helps you work with Git repositories without living in the terminal. It shows your branches and history as a clear visual graph, lets you review and commit changes, and helps you resolve merge conflicts side by side. Everything runs locally on your computer — no account, no cloud and no telemetry.
 
-[![Version](https://img.shields.io/badge/version-1.3.0-38bdf8?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.4.0-38bdf8?style=flat-square)](#)
 [![Latest release](https://img.shields.io/github/v/release/dirk-rossbach/gitastic?style=flat-square)](https://github.com/dirk-rossbach/gitastic/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
 [![Built with Tauri](https://img.shields.io/badge/Tauri_v2-Rust-ff2a85?style=flat-square)](#)
@@ -73,7 +73,7 @@ New to Git? Look for the small <kbd>?</kbd> icons throughout the app — they ex
 
 Browse branches, tags and commits in a visual history. Search for commits, jump between branches and use the command palette to reach actions quickly. Recently opened repositories are ready when you come back.
 
-The **Files** view lists every tracked and untracked file in your working tree. Open any file to read its contents with line numbers, then jump straight to its **History** or **Blame**.
+The **Files** view lists every tracked and untracked file in your working tree. Open any file to read its contents with line numbers, then jump straight to its **History** or **Blame**. In File history, select a version to preview the file at that commit in a side panel — with arrows to step through the versions without leaving the view.
 
 ### Review and commit changes
 
