@@ -1956,13 +1956,10 @@ async fn interactive_rebase(
         })?;
 
     let exe = std::env::current_exe().unwrap_or_default();
-    let editor = format!(
-        "\"{}\" --git-editor-copy \"{}\"",
-        exe.display(),
-        plan_file.display()
-    );
+    let editor = format!("\"{}\" --git-editor-copy-env", exe.display());
     let envs = vec![
         ("GIT_SEQUENCE_EDITOR", editor),
+        ("GITASTIC_REBASE_PLAN", plan_file.display().to_string()),
         ("GIT_EDITOR", "true".to_string()),
     ];
     let result = runner
@@ -1978,6 +1975,13 @@ fn random_uuid() -> String {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 3 && args[1] == "--git-editor-copy-env" {
+        let plan = std::env::var("GITASTIC_REBASE_PLAN").unwrap_or_default();
+        if let Ok(content) = std::fs::read_to_string(&plan) {
+            let _ = std::fs::write(&args[2], content);
+        }
+        std::process::exit(0);
+    }
     if args.len() >= 4 && args[1] == "--git-editor-copy" {
         if let Ok(content) = std::fs::read_to_string(&args[2]) {
             let _ = std::fs::write(&args[3], content);

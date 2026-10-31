@@ -292,10 +292,15 @@ export async function interactiveRebase(
       }
     }
     await fs.writeFile(planFile, `${lines.join('\n')}\n`);
-    const sequenceEditor = `node -e "require('fs').copyFileSync('${planFile.replace(/'/g, "\\'")}', process.argv[1])"`;
+    const sequenceEditor =
+      "node -e \"require('fs').copyFileSync(process.env.GITASTIC_REBASE_PLAN, process.argv[1])\"";
     return await runner.run(repoPath, ['rebase', '-i', upstream], {
       allowFail: true,
-      env: { GIT_SEQUENCE_EDITOR: sequenceEditor, GIT_EDITOR: 'true' },
+      env: {
+        GIT_SEQUENCE_EDITOR: sequenceEditor,
+        GITASTIC_REBASE_PLAN: planFile,
+        GIT_EDITOR: 'true',
+      },
     });
   } finally {
     await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
