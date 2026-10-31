@@ -362,5 +362,6 @@ export function uiStyleMeta(style: string | null | undefined): UiStyleMeta {
 
 export function laneColorFor(style: string | null | undefined, lane: number): string {
   const palette = uiStyleMeta(style).laneColors;
-  return palette[lane % palette.length] ?? palette[0];
+  if (palette.length === 0) return '#38bdf8';
+  return palette[Math.abs(lane) % palette.length] ?? palette[0];
 }

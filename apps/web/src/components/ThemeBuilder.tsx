@@ -181,15 +181,26 @@ function ShadowEditor({
     <div className="space-y-3 rounded-lg border border-edge bg-raised/30 p-3 sm:col-span-2">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium uppercase tracking-wide text-faint">{label}</span>
-        <label className="flex items-center gap-2 text-[11px] text-muted">
-          <input
-            type="checkbox"
-            className="accent-accent"
-            checked={value.enabled}
-            onChange={(event) => set('enabled', event.target.checked)}
-          />
-          Enabled
-        </label>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-[11px] text-muted">
+            <input
+              type="checkbox"
+              className="accent-accent"
+              checked={value.enabled}
+              onChange={(event) => set('enabled', event.target.checked)}
+            />
+            Enabled
+          </label>
+          <label className="flex items-center gap-2 text-[11px] text-muted">
+            <input
+              type="checkbox"
+              className="accent-accent"
+              checked={value.inset}
+              onChange={(event) => set('inset', event.target.checked)}
+            />
+            Inset
+          </label>
+        </div>
       </div>
 
       <div className={cn('space-y-3', !value.enabled && 'pointer-events-none opacity-40')}>

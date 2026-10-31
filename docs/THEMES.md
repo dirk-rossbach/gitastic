@@ -82,6 +82,10 @@ A theme has two parts: a `@gitastic-theme` JSON block and one or more CSS rule b
 
 Built-in ids are reserved and cannot be reused.
 
+Lane colors are applied cyclically: lane `n` uses `laneColors[n % laneColors.length]`. With two
+colors the lanes alternate, and when there are more lanes than colors the sequence wraps back to the
+first color.
+
 ## Selectors
 
 The app sets `data-style="<id>"` and `data-theme="dark"` or `data-theme="light"` on `<html>`.
@@ -126,8 +130,8 @@ and `--font-sans` for body copy to use one of the stacks above.
 
 ## Shadows
 
-The Theme Builder exposes two shadows through accessible controls (offset, blur, spread, color and
-opacity) instead of raw CSS:
+The Theme Builder exposes two shadows through accessible controls (offset, blur, spread, color,
+opacity and an inset toggle) instead of raw CSS:
 
 - **Card shadow** → `--shadow-card` (used by `.card`)
 - **Panel shadow** → `--shadow-panel` (used by toasts and overlays)

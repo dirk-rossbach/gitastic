@@ -24,6 +24,7 @@ export type ThemeColors = Record<ThemeVariable, string>;
 
 export interface ShadowConfig {
   enabled: boolean;
+  inset: boolean;
   x: number;
   y: number;
   blur: number;
@@ -132,6 +133,7 @@ const DEFAULT_LANE_COLORS = [
 
 export const DEFAULT_SHADOW_PANEL: ShadowConfig = {
   enabled: true,
+  inset: false,
   x: 0,
   y: 24,
   blur: 70,
@@ -142,6 +144,7 @@ export const DEFAULT_SHADOW_PANEL: ShadowConfig = {
 
 export const DEFAULT_SHADOW_CARD: ShadowConfig = {
   enabled: true,
+  inset: false,
   x: 0,
   y: 20,
   blur: 55,
@@ -200,7 +203,7 @@ function parseShadowColor(layer: string, fallback: ShadowConfig): { color: strin
 export function parseShadow(css: string | undefined, fallback: ShadowConfig): ShadowConfig {
   if (!css || !css.trim()) return fallback;
   const layers = css.split(/,(?![^(]*\))/);
-  const layer = layers.find((candidate) => !candidate.includes('inset')) ?? layers[0] ?? '';
+  const layer = layers[layers.length - 1] ?? '';
   const geometry = layer
     .replace(/rgba?\([^)]*\)/gi, ' ')
     .replace(/#[0-9a-fA-F]{3,8}/g, ' ');
@@ -208,6 +211,7 @@ export function parseShadow(css: string | undefined, fallback: ShadowConfig): Sh
   const { color, opacity } = parseShadowColor(layer, fallback);
   return {
     enabled: true,
+    inset: /\binset\b/.test(layer),
     x: clamp(numbers[0] ?? fallback.x, -60, 60),
     y: clamp(numbers[1] ?? fallback.y, -60, 60),
     blur: clamp(numbers[2] ?? fallback.blur, 0, 160),
@@ -225,8 +229,14 @@ export function shadowCss(config: ShadowConfig, insetHighlight = false): string 
   const offsetY = clamp(config.y, -60, 60);
   const blur = clamp(config.blur, 0, 160);
   const spread = clamp(config.spread, -40, 40);
-  const layer = `${offsetX}px ${offsetY}px ${blur}px ${spread}px rgb(${r} ${g} ${b} / ${alpha})`;
+  const layer = `${config.inset ? 'inset ' : ''}${offsetX}px ${offsetY}px ${blur}px ${spread}px rgb(${r} ${g} ${b} / ${alpha})`;
   return insetHighlight ? `inset 0 1px 0 rgb(255 255 255 / 0.04), ${layer}` : layer;
+}
+
+export function cycleColors(colors: string[], count: number): string[] {
+  const palette = colors.filter(Boolean);
+  if (palette.length === 0) return [];
+  return Array.from({ length: count }, (_, index) => palette[index % palette.length]);
 }
 
 export function defaultColors(mode: ThemeDraftMode): ThemeColors {
@@ -258,6 +268,7 @@ export function normalizeShadow(input: unknown, fallback: ShadowConfig): ShadowC
     const value = input as Partial<ShadowConfig>;
     return {
       enabled: value.enabled ?? fallback.enabled,
+      inset: value.inset ?? fallback.inset,
       x: typeof value.x === 'number' ? value.x : fallback.x,
       y: typeof value.y === 'number' ? value.y : fallback.y,
       blur: typeof value.blur === 'number' ? value.blur : fallback.blur,

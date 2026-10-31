@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { GitBranch } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { ThemeDraft } from '../lib/theme-draft';
-import { shadowCss } from '../lib/theme-draft';
+import { shadowCss, cycleColors } from '../lib/theme-draft';
 
 function cssVariables(draft: ThemeDraft): CSSProperties {
   const style: Record<string, string> = {
@@ -36,7 +36,7 @@ export function ThemePreview({
   className?: string;
   compact?: boolean;
 }) {
-  const laneColors = draft.laneColors.filter(Boolean).slice(0, 6);
+  const laneColors = cycleColors(draft.laneColors, 8);
   const swatches = draft.swatches.filter(Boolean).slice(0, 6);
   const displayFont = draft.fontDisplay?.trim() || undefined;
   const bodyFont = draft.fontBody?.trim() || undefined;
