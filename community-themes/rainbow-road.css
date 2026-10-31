@@ -1,0 +1,146 @@
+/* @gitastic-theme
+{
+  "id": "rainbow-road",
+  "name": "Rainbow Road",
+  "tagline": "Neon rainbow over deep space",
+  "description": "A dark cosmic theme with a neon rainbow sky, starfield surfaces and saturated rainbow accents.",
+  "keywords": "rainbow road neon retro space dark cosmic mario kart racing",
+  "badge": "Community",
+  "author": "Dirk Rossbach",
+  "modes": ["dark"],
+  "swatches": ["#ff2a6d", "#ffd23f", "#00f5d4"],
+  "laneColors": ["#ff2a6d", "#ff8a3d", "#ffd23f", "#22e07a", "#00f5d4", "#3d8bff", "#7c5cff", "#ff5ce1"]
+}
+*/
+
+:root[data-style='rainbow-road'][data-theme='dark'] {
+  --font-display: 'Orbitron', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --canvas: #0a0618;
+  --panel: #140a2a;
+  --raised: #1e1040;
+  --edge: #3b1f73;
+  --ink: #f5f0ff;
+  --muted: #b9a7e6;
+  --faint: #7d6bb0;
+  --accent: #ff2a6d;
+  --accent-2: #00f5d4;
+  --accent-3: #ffd23f;
+  --success: #22e07a;
+  --warning: #ffb020;
+  --danger: #ff4d6d;
+  color-scheme: dark;
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 20px 55px rgb(0 0 0 / 0.45);
+  --shadow-panel: 0 24px 70px rgb(0 0 0 / 0.55);
+}
+
+:root[data-style='rainbow-road'][data-theme='dark'] body {
+  background:
+    radial-gradient(
+      62rem 42rem at 12% -12%,
+      color-mix(in srgb, #ff2a6d 20%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      54rem 38rem at 92% -4%,
+      color-mix(in srgb, #00f5d4 15%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      64rem 44rem at 50% 112%,
+      color-mix(in srgb, #ffd23f 13%, transparent),
+      transparent 66%
+    ),
+    var(--canvas) !important;
+}
+
+:root[data-style='rainbow-road'][data-theme='dark'] body::before {
+  background-image:
+    radial-gradient(rgb(255 255 255 / 0.5) 0.7px, transparent 1px),
+    radial-gradient(rgb(255 255 255 / 0.35) 0.7px, transparent 1px);
+  background-size:
+    34px 34px,
+    52px 52px;
+  background-position:
+    0 0,
+    17px 17px;
+  mask-image: radial-gradient(ellipse at 50% 12%, black 0%, transparent 82%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 12%, black 0%, transparent 82%);
+  opacity: 0.65;
+}
+
+:root[data-style='rainbow-road'][data-theme='dark'] .gradient-text,
+:root[data-style='rainbow-road'][data-theme='dark'] .brand-title {
+  background: linear-gradient(
+    100deg,
+    #ff2a6d 0%,
+    #ff8a3d 20%,
+    #ffd23f 38%,
+    #22e07a 56%,
+    #00f5d4 72%,
+    #7c5cff 90%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:root[data-style='rainbow-road'][data-theme='dark'] .brand-mark {
+  background: linear-gradient(
+    135deg,
+    #ff2a6d 0%,
+    #ffd23f 34%,
+    #22e07a 58%,
+    #00f5d4 78%,
+    #7c5cff 100%
+  );
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  color: #0a0618;
+  box-shadow:
+    0 0 26px color-mix(in srgb, var(--accent) 40%, transparent),
+    inset 0 0 0 1px rgb(255 255 255 / 0.3);
+}
+
+:root[data-style='rainbow-road'][data-theme='dark'] .card,
+:root[data-style='rainbow-road'][data-theme='dark'] .repo-card,
+:root[data-style='rainbow-road'][data-theme='dark'] .diff-file-card {
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--edge));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 18px 42px rgb(0 0 0 / 0.5);
+}
+
+:root[data-style='rainbow-road'][data-theme='dark'] .nav-item-active,
+:root[data-style='rainbow-road'][data-theme='dark'] .history-row-selected {
+  border-left-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #ff2a6d 18%, transparent),
+    color-mix(in srgb, #00f5d4 12%, transparent) 55%,
+    transparent 96%
+  );
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 0 24px color-mix(in srgb, var(--accent-2) 16%, transparent);
+}
+
+:root[data-style='rainbow-road'][data-theme='dark'] .btn-primary {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: linear-gradient(135deg, #ff2a6d 0%, #7c5cff 55%, #00f5d4 100%);
+  background-size: 200% 200%;
+  color: #ffffff;
+  box-shadow:
+    0 0 22px color-mix(in srgb, var(--accent) 30%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+:root[data-style='rainbow-road'][data-theme='dark'] .panel-title,
+:root[data-style='rainbow-road'][data-theme='dark'] .badge {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+:root[data-style='rainbow-road'][data-theme='dark'] .lane-label {
+  border-color: color-mix(in srgb, var(--accent-2) 32%, var(--edge));
+  background: color-mix(in srgb, var(--accent-2) 8%, var(--panel));
+}
