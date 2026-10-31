@@ -350,6 +350,26 @@ export function ThemeBuilder({
                   </label>
                   <label className="block space-y-1.5 sm:col-span-2">
                     <span className="text-[11px] font-medium uppercase tracking-wide text-faint">
+                      Card shadow (CSS box-shadow)
+                    </span>
+                    <input
+                      className="input font-mono text-xs"
+                      value={draft.shadowCard}
+                      onChange={(event) => set('shadowCard', event.target.value)}
+                    />
+                  </label>
+                  <label className="block space-y-1.5 sm:col-span-2">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-faint">
+                      Panel shadow (CSS box-shadow)
+                    </span>
+                    <input
+                      className="input font-mono text-xs"
+                      value={draft.shadowPanel}
+                      onChange={(event) => set('shadowPanel', event.target.value)}
+                    />
+                  </label>
+                  <label className="block space-y-1.5 sm:col-span-2">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-faint">
                       Keywords
                     </span>
                     <input

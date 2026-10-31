@@ -31,6 +31,8 @@ export interface ThemeDraft {
   keywords: string;
   badge: string;
   fontDisplay: string;
+  shadowPanel: string;
+  shadowCard: string;
   colors: ThemeColors;
   swatches: string[];
   laneColors: string[];
@@ -101,6 +103,10 @@ const DEFAULT_LANE_COLORS = [
   '#a3e635',
 ];
 
+export const DEFAULT_SHADOW_PANEL = '0 24px 70px rgb(0 0 0 / 0.38)';
+export const DEFAULT_SHADOW_CARD =
+  'inset 0 1px 0 rgb(255 255 255 / 0.04), 0 20px 55px rgb(0 0 0 / 0.2)';
+
 export function defaultColors(mode: ThemeDraftMode): ThemeColors {
   return { ...(mode === 'dark' ? DARK_DEFAULTS : LIGHT_DEFAULTS) };
 }
@@ -115,6 +121,8 @@ export function createDraft(mode: ThemeDraftMode = 'dark'): ThemeDraft {
     keywords: '',
     badge: 'Custom',
     fontDisplay: '',
+    shadowPanel: DEFAULT_SHADOW_PANEL,
+    shadowCard: DEFAULT_SHADOW_CARD,
     colors: defaultColors(mode),
     swatches: [...DEFAULT_SWATCHES[mode]],
     laneColors: [...DEFAULT_LANE_COLORS],
@@ -181,6 +189,12 @@ export function serializeTheme(draft: ThemeDraft): string {
   if (draft.fontDisplay.trim()) {
     lines.unshift(`  --font-display: ${draft.fontDisplay.trim()};`);
   }
+  if (draft.shadowPanel.trim()) {
+    lines.unshift(`  --shadow-panel: ${draft.shadowPanel.trim()};`);
+  }
+  if (draft.shadowCard.trim()) {
+    lines.unshift(`  --shadow-card: ${draft.shadowCard.trim()};`);
+  }
   lines.push(`  color-scheme: ${draft.mode};`);
   return `${metadataComment(draft)}\n\n:root[data-style='${id}'][data-theme='${draft.mode}'] {\n${lines.join(
     '\n',
@@ -220,6 +234,10 @@ export function draftFromManifest(
   }
   const font = body.match(/--font-display\s*:\s*([^;]+);/);
   if (font) draft.fontDisplay = font[1].trim();
+  const shadowPanel = body.match(/--shadow-panel\s*:\s*([^;]+);/);
+  if (shadowPanel) draft.shadowPanel = shadowPanel[1].trim();
+  const shadowCard = body.match(/--shadow-card\s*:\s*([^;]+);/);
+  if (shadowCard) draft.shadowCard = shadowCard[1].trim();
   return draft;
 }
 

@@ -20,6 +20,9 @@ function cssVariables(draft: ThemeDraft): CSSProperties {
     '--danger': draft.colors.danger,
   };
   if (draft.fontDisplay.trim()) style['--font-display'] = draft.fontDisplay.trim();
+  if (draft.shadowPanel.trim()) style['--shadow-panel'] = draft.shadowPanel.trim();
+  if (draft.shadowCard.trim()) style['--shadow-card'] = draft.shadowCard.trim();
+  style.boxShadow = 'var(--shadow-card)';
   return style as CSSProperties;
 }
 
@@ -66,7 +69,7 @@ export function ThemePreview({
         ) : null}
       </div>
 
-      <div className="mt-3 rounded-lg border border-edge bg-panel/95 p-3">
+      <div className="mt-3 rounded-lg border border-edge bg-panel/95 p-3" style={{ boxShadow: 'var(--shadow-panel)' }}>
         <div className="flex items-center justify-between gap-2">
           <p
             className="truncate text-xs font-medium text-ink"

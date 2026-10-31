@@ -105,6 +105,8 @@ Base rules for `--font-display` and `body` font-family can also be set per theme
 | `--accent`, `--accent-2`, `--accent-3` | Primary and supporting accents |
 | `--success`, `--warning`, `--danger` | Status colors                |
 | `--font-display`               | Display typeface (optional)      |
+| `--shadow-card`                | Card shadow (optional)           |
+| `--shadow-panel`               | Overlay/toast shadow (optional)  |
 
 Set `color-scheme: dark` or `color-scheme: light` so native controls match.
 
