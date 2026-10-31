@@ -19,15 +19,18 @@ overrides the app's CSS variables. The app reads the folder on launch and after 
 ## Creating and installing themes
 
 - **Theme Builder:** **Settings → Custom themes → Theme Builder** opens a visual editor with live
-  preview. Pick dark or light, adjust colors, save locally and optionally export the `.css`.
+  preview. Dark/light is auto-detected from the canvas brightness (with a manual override), and you
+  can set a creator credit, headline and copy fonts, colors, derived swatches and card/panel shadows
+  (offset, blur, spread, color, opacity, inset). Save locally and optionally export the `.css`.
 - **Import:** **Settings → Custom themes → Import theme** accepts a `.css` file, validates the
   metadata and copies it into the themes folder.
 - **Community:** **Settings → Custom themes → Community** lists themes published in
-  [`community-themes/`](../community-themes) and installs them locally.
+  [`community-themes/`](../community-themes) and installs them locally. The folder is scanned
+  automatically — there is no index file to maintain.
 
 Custom themes only appear under **Custom themes** so the built-in style library stays clean. Each
-custom theme is either dark or light. The Theme Builder auto-detects the mode from the canvas and
-panel brightness, and the Dark/Light buttons override it. Installed themes live in
+custom theme is either dark or light. The Theme Builder auto-detects the mode from the canvas
+brightness, and the Dark/Light buttons override it. Installed themes live in
 `$GITASTIC_DATA_DIR/themes/` and work offline.
 
 ## Sharing a theme
@@ -88,7 +91,7 @@ A theme has two parts: a `@gitastic-theme` JSON block and one or more CSS rule b
 | ------------- | -------- | ----------------------------------------------------------------- |
 | `id`          | yes      | Lowercase letters, numbers and dashes. Must match the file name.  |
 | `name`        | yes      | Shown in the style picker.                                        |
-| `modes`       | yes      | `["dark"]`, `["light"]` or both.                                  |
+| `modes`       | yes      | Exactly one of `["dark"]` or `["light"]` for custom themes.       |
 | `tagline`     | no       | One short line under the name.                                    |
 | `description` | no       | Longer text for the preview panel.                                |
 | `keywords`    | no       | Space-separated search terms.                                     |
@@ -114,7 +117,7 @@ base variables:
 :root[data-style='midnight-ocean'] body { /* optional global tweaks */ }
 ```
 
-Base rules for `--font-display` and `body` font-family can also be set per theme.
+Base rules for `--font-display`, `--font-sans` and `body` font-family can also be set per theme.
 
 ### CSS variables
 
@@ -134,12 +137,13 @@ Set `color-scheme: dark` or `color-scheme: light` so native controls match.
 
 ## Fonts
 
-All fonts offered by the Theme Builder are bundled with Gitastic, so themes look the same on every
+The Theme Builder offers 17 type stacks. All of them are bundled with Gitastic — except
+**Iowan Old Style**, which is a system font used when available — so themes look the same on every
 machine:
 
 - **Sans:** Inter, Space Grotesk, Lexend, Atkinson Hyperlegible
 - **Mono:** JetBrains Mono, IBM Plex Mono
-- **Serif:** Source Serif 4, Lora, Playfair Display, IM Fell English, Cinzel Decorative, Iowan Old Style
+- **Serif:** Source Serif 4, Lora, Playfair Display, IM Fell English, Cinzel Decorative, Iowan Old Style (system)
 - **Display:** Orbitron, Special Elite, Fredoka, VT323, Press Start 2P
 
 The app body defaults to Inter, monospace text to JetBrains Mono. Set `--font-display` for headings
