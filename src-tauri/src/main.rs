@@ -7,6 +7,7 @@ mod ops;
 mod parse;
 mod providers;
 mod runner;
+mod themes;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -238,6 +239,7 @@ impl AppState {
 
         let _ = fs::create_dir_all(&config_dir).await;
         let _ = fs::create_dir_all(data_dir.join("trash")).await;
+        let _ = fs::create_dir_all(data_dir.join("themes")).await;
         let config_path = config_dir.join("config.json");
 
         let default_config = AppConfig {
@@ -579,6 +581,45 @@ async fn dispatch(
 
         ("POST", "/cache/clear") => {
             state.clear_cache().await;
+            Ok(json!({ "ok": true }))
+        }
+
+        ("GET", "/themes") => {
+            let themes = themes::list_themes(&state.data_dir).await?;
+            Ok(json!({ "themes": themes }))
+        }
+
+        ("POST", "/themes") => {
+            let css = b_str(&body, "css").ok_or_else(|| {
+                ApiError::new(400, "MISSING_THEME_CSS", "Theme CSS is required.")
+            })?;
+            let manifest = themes::import_theme(&state.data_dir, &css).await?;
+            Ok(serde_json::to_value(manifest).unwrap())
+        }
+
+        ("GET", path) if path.starts_with("/themes/") && path.ends_with("/css") => {
+            let id = path
+                .trim_start_matches("/themes/")
+                .trim_end_matches("/css")
+                .trim_end_matches('/');
+            let css = themes::read_theme_css(&state.data_dir, id)
+                .await?
+                .ok_or_else(|| ApiError::new(404, "THEME_NOT_FOUND", format!("Unknown theme: {id}")))?;
+            Ok(Value::String(css))
+        }
+
+        ("DELETE", path) if path.starts_with("/themes/") => {
+            let id = path.trim_start_matches("/themes/");
+            if id.contains('/') {
+                return Err(ApiError::new(400, "INVALID_THEME_ID", "Invalid theme id."));
+            }
+            if !themes::delete_theme(&state.data_dir, id).await? {
+                return Err(ApiError::new(
+                    404,
+                    "THEME_NOT_FOUND",
+                    format!("Unknown theme: {id}"),
+                ));
+            }
             Ok(json!({ "ok": true }))
         }
 
