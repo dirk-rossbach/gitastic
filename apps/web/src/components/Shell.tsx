@@ -249,8 +249,6 @@ export function Shell({ session }: { session: Session }) {
           <div className="my-2 border-t border-edge" />
           <NavItem view="worktrees" label="Worktrees" icon={FolderGit2} />
           <NavItem view="reflog" label="Reflog" icon={Clock} />
-          <NavItem view="blame" label="Blame" icon={FileDiff} />
-          <NavItem view="file-history" label="File history" icon={History} />
         </nav>
 
         <div className="space-y-0.5 border-t border-edge p-2">
