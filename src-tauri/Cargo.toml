@@ -1,6 +1,6 @@
 [package]
 name = "gitastic"
-version = "1.4.1"
+version = "1.4.2"
 description = "Gitastic — Cross-platform Local Git Client"
 license = "Apache-2.0"
 authors = ["Gitastic"]
