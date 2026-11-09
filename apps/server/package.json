@@ -13,7 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fastify/static": "^10.1.8",
+    "@fastify/static": "^10.1.10",
     "@gitastic/shared": "*",
     "env-paths": "^4.0.0",
     "execa": "^10.2.1",
