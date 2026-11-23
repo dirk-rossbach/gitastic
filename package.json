@@ -39,22 +39,22 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
-    "@playwright/test": "^1.49.1",
-    "@tauri-apps/cli": "^2.12.4",
+    "@playwright/test": "^1.65.1",
+    "@tauri-apps/cli": "^2.12.6",
     "@types/node": "^26.6.6",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "concurrently": "^10.0.6",
-    "eslint": "^10.14.0",
+    "concurrently": "^10.0.7",
+    "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.7",
+    "eslint-plugin-react-refresh": "^0.5.8",
     "globals": "^17.13.0",
-    "prettier": "^3.4.2",
+    "prettier": "^3.10.1",
     "tsup": "^9.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.72.1",
-    "vitest": "^5.0.5"
+    "typescript-eslint": "^8.73.0",
+    "vitest": "^5.1.1"
   }
 }
